@@ -205,7 +205,7 @@ const AppSidebar = () => {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-md transition-colors ${
+                className={`flex flex-col items-center gap-0.5 py-1 transition-colors ${
                   isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"
                 }`}
               >
