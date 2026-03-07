@@ -12,6 +12,7 @@ import Receipts from "@/pages/Receipts";
 import Companies from "@/pages/Companies";
 import ExpenseReport from "@/pages/ExpenseReport";
 import AdminUsers from "@/pages/AdminUsers";
+import Impressum from "@/pages/Impressum";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
+              <Route path="/impressum" element={<Impressum />} />
               <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/receipts" element={<Receipts />} />

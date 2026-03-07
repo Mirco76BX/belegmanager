@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -141,6 +141,14 @@ const AppSidebar = () => {
             <LogOut className="h-4 w-4" />
             {t("auth.logout")}
           </Button>
+          <Link
+            to="/impressum"
+            state={{ from: location.pathname }}
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 text-xs text-sidebar-foreground/50 hover:text-sidebar-foreground"
+          >
+            Impressum
+          </Link>
         </div>
       )}
 
