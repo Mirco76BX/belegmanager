@@ -167,7 +167,7 @@ const AppSidebar = () => {
 
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border safe-area-bottom">
-        <div className="flex items-center justify-around py-2 relative">
+        <div className="grid grid-cols-5 items-end py-2">
           {/* First two nav items */}
           {navItems.slice(0, 2).map((item) => {
             const isActive = location.pathname === item.path;
@@ -175,7 +175,7 @@ const AppSidebar = () => {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-md transition-colors ${
+                className={`flex flex-col items-center gap-0.5 py-1 transition-colors ${
                   isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"
                 }`}
               >
@@ -185,16 +185,18 @@ const AppSidebar = () => {
             );
           })}
 
-          {/* Central Scan Button */}
-          <button
-            onClick={() => {
-              navigate("/receipts");
-              setTimeout(() => window.dispatchEvent(new CustomEvent("open-scan")), 100);
-            }}
-            className="flex items-center justify-center -mt-8 h-16 w-16 rounded-full bg-primary text-primary-foreground shadow-xl active:scale-95 transition-transform"
-          >
-            <ScanLine className="h-7 w-7" />
-          </button>
+          {/* Central Scan Button — exact center column */}
+          <div className="flex justify-center">
+            <button
+              onClick={() => {
+                navigate("/receipts");
+                setTimeout(() => window.dispatchEvent(new CustomEvent("open-scan")), 100);
+              }}
+              className="flex items-center justify-center -mt-10 h-[4.5rem] w-[4.5rem] rounded-full bg-primary text-primary-foreground shadow-2xl active:scale-95 transition-transform ring-4 ring-sidebar"
+            >
+              <ScanLine className="h-8 w-8" />
+            </button>
+          </div>
 
           {/* Last two nav items */}
           {navItems.slice(2).map((item) => {
