@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { FileText, Globe } from "lucide-react";
+import receiptScanImg from "@/assets/receipt-scan.jpg";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
