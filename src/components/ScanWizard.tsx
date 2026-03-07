@@ -232,45 +232,45 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId }: Sca
 
         {/* Step 3: Company + Core Data */}
         {step === "company" && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {preview && (
-              <img src={preview} alt="Receipt" className="max-h-32 w-full rounded-lg border object-contain" />
+              <img src={preview} alt="Receipt" className="max-h-24 w-full rounded-lg border object-contain" />
             )}
 
             {scanResult && (
-              <div className="rounded-md bg-muted/50 p-3 text-sm space-y-1">
-                <p className="font-medium text-foreground">
+              <div className="rounded-md bg-muted/50 p-2.5 text-sm space-y-0.5">
+                <p className="font-medium text-foreground text-xs">
                   {lang === "de" ? "Erkannte Daten:" : "Detected data:"}
                 </p>
-                {scanResult.vendor && <p className="text-muted-foreground">📍 {scanResult.vendor}</p>}
-                {scanResult.amount && <p className="text-muted-foreground">💰 {scanResult.amount.toFixed(2)} €</p>}
-                {scanResult.date && <p className="text-muted-foreground">📅 {scanResult.date}</p>}
+                {scanResult.vendor && <p className="text-muted-foreground text-xs">📍 {scanResult.vendor}</p>}
+                {scanResult.amount && <p className="text-muted-foreground text-xs">💰 {scanResult.amount.toFixed(2)} €</p>}
+                {scanResult.date && <p className="text-muted-foreground text-xs">📅 {scanResult.date}</p>}
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>{lang === "de" ? "Datum" : "Date"}</Label>
-                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              <div className="space-y-1.5">
+                <Label className="text-sm">{lang === "de" ? "Datum" : "Date"}</Label>
+                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-10" />
               </div>
-              <div className="space-y-2">
-                <Label>{lang === "de" ? "Betrag (€)" : "Amount (€)"}</Label>
-                <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+              <div className="space-y-1.5">
+                <Label className="text-sm">{lang === "de" ? "Betrag (€)" : "Amount (€)"}</Label>
+                <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className="h-10" />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>{lang === "de" ? "Beschreibung" : "Description"}</Label>
-              <Input value={description} onChange={(e) => setDescription(e.target.value)} />
+            <div className="space-y-1.5">
+              <Label className="text-sm">{lang === "de" ? "Beschreibung" : "Description"}</Label>
+              <Input value={description} onChange={(e) => setDescription(e.target.value)} className="h-10" />
             </div>
 
-            <div className="space-y-2">
-              <Label>{lang === "de" ? "Unternehmen zuordnen" : "Assign Company"}</Label>
+            <div className="space-y-1.5">
+              <Label className="text-sm">{lang === "de" ? "Unternehmen zuordnen" : "Assign Company"}</Label>
               <Select value={companyId} onValueChange={setCompanyId}>
-                <SelectTrigger>
+                <SelectTrigger className="h-10">
                   <SelectValue placeholder={lang === "de" ? "Unternehmen wählen..." : "Select company..."} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" sideOffset={4} className="max-h-48">
                   {companies.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
@@ -278,18 +278,18 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId }: Sca
               </Select>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-1">
               <Button
                 variant="outline"
-                className="flex-1 gap-2"
+                className="flex-1 gap-2 h-11"
                 onClick={() => handleSave(true)}
                 disabled={saving}
               >
                 <SkipForward className="h-4 w-4" />
-                {lang === "de" ? "Speichern & Überspringen" : "Save & Skip"}
+                {lang === "de" ? "Speichern & Skip" : "Save & Skip"}
               </Button>
               <Button
-                className="flex-1 gap-2"
+                className="flex-1 gap-2 h-11"
                 onClick={() => setStep("details")}
               >
                 <ArrowRight className="h-4 w-4" />
