@@ -71,6 +71,13 @@ const Receipts = () => {
 
   useEffect(() => { fetchData(); }, [user]);
 
+  // Listen for scan trigger from bottom nav
+  useEffect(() => {
+    const handler = () => setScanOpen(true);
+    window.addEventListener("open-scan", handler);
+    return () => window.removeEventListener("open-scan", handler);
+  }, []);
+
   const openEdit = (r: Receipt) => {
     setEditingReceipt(r);
     setEditDate(r.date);
