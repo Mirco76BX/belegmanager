@@ -48,7 +48,7 @@ const Auth = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="flex w-full max-w-4xl animate-fade-in gap-10 items-center">
-        <div className="hidden flex-1 lg:block">
+        <div className="hidden flex-1 md:block">
           <img
             src={receiptScanImg}
             alt={lang === "de" ? "Quittung scannen mit dem Smartphone" : "Scanning a receipt with a smartphone"}
