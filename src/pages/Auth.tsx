@@ -61,7 +61,7 @@ const Auth = () => {
           </div>
           <div className="w-full max-w-md">
             {/* Mobile image */}
-            <div className="mb-6 md:hidden">
+            <div className="mb-0 md:hidden">
               <div className="mx-auto h-36 w-48 overflow-hidden rounded-xl shadow-md">
                 <img
                   src={receiptScanImg}
@@ -70,8 +70,8 @@ const Auth = () => {
                 />
               </div>
             </div>
-            <div className="mb-8 text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary">
+            <div className="mb-6 text-center -mt-7 relative z-10 md:mb-8 md:mt-0">
+              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-primary shadow-lg">
                 <FileText className="h-7 w-7 text-primary-foreground" />
               </div>
               <h1 className="text-2xl font-bold text-foreground">{t("app.name")}</h1>
