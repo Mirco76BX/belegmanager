@@ -243,22 +243,22 @@ const ExpenseReport = () => {
           <CardTitle className="text-lg">{t("expense.period")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <div className="space-y-2 flex-1">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2 min-w-0">
               <Label>{t("expense.from")}</Label>
-              <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+              <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full" />
             </div>
-            <div className="space-y-2 flex-1">
+            <div className="space-y-2 min-w-0">
               <Label>{t("expense.to")}</Label>
-              <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+              <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full" />
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button className="flex-1 gap-2" onClick={generatePDF} disabled={generating || receipts.length === 0}>
+          <div className="grid grid-cols-2 gap-3">
+            <Button className="gap-2" onClick={generatePDF} disabled={generating || receipts.length === 0}>
               <Download className="h-4 w-4" />
               {generating ? t("general.loading") : "PDF"}
             </Button>
-            <Button variant="outline" className="flex-1 gap-2" onClick={exportCSV} disabled={receipts.length === 0}>
+            <Button variant="outline" className="gap-2" onClick={exportCSV} disabled={receipts.length === 0}>
               <FileSpreadsheet className="h-4 w-4" />
               CSV
             </Button>
