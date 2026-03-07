@@ -12,6 +12,7 @@ import Receipts from "@/pages/Receipts";
 import Companies from "@/pages/Companies";
 import ExpenseReport from "@/pages/ExpenseReport";
 import AdminUsers from "@/pages/AdminUsers";
+import Impressum from "@/pages/Impressum";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
