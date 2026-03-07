@@ -40,7 +40,7 @@ const translations = {
   "receipts.person": { de: "Getroffene Person", en: "Person Met" },
   "receipts.organization": { de: "Unternehmung/Organisation", en: "Organization" },
   "receipts.meetingPurpose": { de: "Zweck des Meetings", en: "Meeting Purpose" },
-  "receipts.assignCompany": { de: "GmbH zuordnen", en: "Assign Company" },
+  "receipts.assignCompany": { de: "Organisation zuordnen", en: "Assign Organization" },
   "receipts.noReceipts": { de: "Noch keine Belege vorhanden", en: "No receipts yet" },
   "receipts.details": { de: "Details", en: "Details" },
   "receipts.save": { de: "Speichern", en: "Save" },
