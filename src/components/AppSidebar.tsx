@@ -53,6 +53,20 @@ const AppSidebar = () => {
       </nav>
 
       <div className="border-t border-sidebar-border px-3 py-3 space-y-1">
+        {isAdmin && (
+          <button
+            onClick={() => navigate("/admin/users")}
+            className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
+              location.pathname === "/admin/users"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            }`}
+          >
+            <Shield className="h-4 w-4" />
+            {lang === "de" ? "Benutzerverwaltung" : "User Management"}
+          </button>
+        )}
+        <InviteDialog />
         <Button
           variant="ghost"
           size="sm"
