@@ -24,7 +24,7 @@ const translations = {
   "dashboard.totalReceipts": { de: "Belege gesamt", en: "Total Receipts" },
   "dashboard.thisMonth": { de: "Diesen Monat", en: "This Month" },
   "dashboard.totalAmount": { de: "Gesamtbetrag", en: "Total Amount" },
-  "dashboard.companies": { de: "Unternehmen", en: "Companies" },
+  "dashboard.companies": { de: "Organisationen", en: "Organizations" },
   "dashboard.recentReceipts": { de: "Letzte Belege", en: "Recent Receipts" },
 
   // Receipts
