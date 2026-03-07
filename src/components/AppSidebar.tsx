@@ -155,36 +155,37 @@ const AppSidebar = () => {
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border safe-area-bottom">
         <div className="flex items-center justify-around py-2 relative">
-          {navItems.map((item, index) => {
+          {/* First two nav items */}
+          {navItems.slice(0, 2).map((item) => {
             const isActive = location.pathname === item.path;
+            return (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-md transition-colors ${
+                  isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="text-[10px] font-medium">{t(item.key)}</span>
+              </button>
+            );
+          })}
 
-            // Insert scan button in the middle
-            if (index === 2) {
-              return (
-                <div key="scan-group" className="contents">
-                  <button
-                    onClick={() => {
-                      navigate("/receipts");
-                      // Trigger scan via custom event
-                      setTimeout(() => window.dispatchEvent(new CustomEvent("open-scan")), 100);
-                    }}
-                    className="flex items-center justify-center -mt-6 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 transition-transform"
-                  >
-                    <ScanLine className="h-6 w-6" />
-                  </button>
-                  <button
-                    onClick={() => navigate(item.path)}
-                    className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-md transition-colors ${
-                      isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"
-                    }`}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    <span className="text-[10px] font-medium">{t(item.key)}</span>
-                  </button>
-                </div>
-              );
-            }
+          {/* Central Scan Button */}
+          <button
+            onClick={() => {
+              navigate("/receipts");
+              setTimeout(() => window.dispatchEvent(new CustomEvent("open-scan")), 100);
+            }}
+            className="flex items-center justify-center -mt-8 h-16 w-16 rounded-full bg-primary text-primary-foreground shadow-xl active:scale-95 transition-transform"
+          >
+            <ScanLine className="h-7 w-7" />
+          </button>
 
+          {/* Last two nav items */}
+          {navItems.slice(2).map((item) => {
+            const isActive = location.pathname === item.path;
             return (
               <button
                 key={item.path}
