@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Camera, Upload, Loader2, Check, SkipForward, ArrowRight } from "lucide-react";
+import { Camera, Upload, Loader2, Check, SkipForward, ArrowRight, Plus } from "lucide-react";
 
 interface ScanResult {
   date: string | null;
@@ -30,9 +30,10 @@ interface ScanWizardProps {
   onSaved: () => void;
   companies: Company[];
   defaultCompanyId: string | null;
+  onCompaniesChanged?: () => void;
 }
 
-const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId }: ScanWizardProps) => {
+const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCompaniesChanged }: ScanWizardProps) => {
   const { user } = useAuth();
   const { lang } = useLanguage();
   const { toast } = useToast();
@@ -54,6 +55,17 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId }: Sca
   const [organization, setOrganization] = useState("");
   const [meetingPurpose, setMeetingPurpose] = useState("");
 
+  // Inline new company
+  const [showNewCompany, setShowNewCompany] = useState(false);
+  const [newCompanyName, setNewCompanyName] = useState("");
+  const [creatingCompany, setCreatingCompany] = useState(false);
+  const [localCompanies, setLocalCompanies] = useState<Company[]>(companies);
+
+  // Sync companies prop
+  useEffect(() => {
+    setLocalCompanies(companies);
+  }, [companies]);
+
   // Reset on open
   useEffect(() => {
     if (open) {
@@ -68,22 +80,21 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId }: Sca
       setPersonMet("");
       setOrganization("");
       setMeetingPurpose("");
+      setShowNewCompany(false);
+      setNewCompanyName("");
     }
   }, [open, defaultCompanyId]);
 
   const handleFileSelected = async (selectedFile: File) => {
     setFile(selectedFile);
 
-    // Create preview
     const reader = new FileReader();
     reader.onloadend = () => setPreview(reader.result as string);
     reader.readAsDataURL(selectedFile);
 
-    // Start scanning
     setStep("scanning");
 
     try {
-      // Convert to base64
       const base64 = await new Promise<string>((resolve) => {
         const r = new FileReader();
         r.onloadend = () => resolve(r.result as string);
@@ -97,13 +108,10 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId }: Sca
       if (error) throw error;
 
       setScanResult(data);
-      // Pre-fill form
       if (data.date) setDate(data.date);
       if (data.amount) setAmount(String(data.amount));
       if (data.description || data.vendor) {
-        setDescription(
-          [data.vendor, data.description].filter(Boolean).join(" – ")
-        );
+        setDescription([data.vendor, data.description].filter(Boolean).join(" – "));
       }
 
       setStep("company");
@@ -118,18 +126,42 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId }: Sca
     }
   };
 
+  const handleCreateCompany = async () => {
+    if (!user || !newCompanyName.trim()) return;
+    setCreatingCompany(true);
+    try {
+      const { data, error } = await supabase
+        .from("companies")
+        .insert({ name: newCompanyName.trim(), user_id: user.id })
+        .select("id, name")
+        .single();
+
+      if (error) throw error;
+
+      setLocalCompanies((prev) => [...prev, data]);
+      setCompanyId(data.id);
+      setShowNewCompany(false);
+      setNewCompanyName("");
+      onCompaniesChanged?.();
+
+      toast({ title: lang === "de" ? "Unternehmen erstellt!" : "Company created!" });
+    } catch (err: any) {
+      toast({ title: err.message, variant: "destructive" });
+    } finally {
+      setCreatingCompany(false);
+    }
+  };
+
   const handleSave = async (skipDetails = false) => {
     if (!user || !file) return;
     setSaving(true);
 
     try {
-      // Upload file
       const ext = file.name.split(".").pop() || "jpg";
       const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
       const { error: uploadError } = await supabase.storage.from("receipts").upload(path, file);
       if (uploadError) throw uploadError;
 
-      // Save receipt
       const { error } = await supabase.from("receipts").insert({
         user_id: user.id,
         date: date || new Date().toISOString().split("T")[0],
@@ -266,16 +298,64 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId }: Sca
 
             <div className="space-y-1.5">
               <Label className="text-sm">{lang === "de" ? "Unternehmen zuordnen" : "Assign Company"}</Label>
-              <Select value={companyId} onValueChange={setCompanyId}>
-                <SelectTrigger className="h-10">
-                  <SelectValue placeholder={lang === "de" ? "Unternehmen wählen..." : "Select company..."} />
-                </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4} className="max-h-48">
-                  {companies.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {!showNewCompany ? (
+                <div className="flex gap-2">
+                  <Select value={companyId} onValueChange={setCompanyId}>
+                    <SelectTrigger className="h-10 flex-1">
+                      <SelectValue placeholder={lang === "de" ? "Unternehmen wählen..." : "Select company..."} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="max-h-48">
+                      {localCompanies.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 shrink-0"
+                    onClick={() => setShowNewCompany(true)}
+                    title={lang === "de" ? "Neues Unternehmen" : "New company"}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    value={newCompanyName}
+                    onChange={(e) => setNewCompanyName(e.target.value)}
+                    placeholder={lang === "de" ? "Name des Unternehmens..." : "Company name..."}
+                    className="h-10 flex-1"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleCreateCompany();
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    className="h-10 w-10 shrink-0"
+                    onClick={handleCreateCompany}
+                    disabled={creatingCompany || !newCompanyName.trim()}
+                  >
+                    {creatingCompany ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-10 px-2 text-xs text-muted-foreground"
+                    onClick={() => { setShowNewCompany(false); setNewCompanyName(""); }}
+                  >
+                    {lang === "de" ? "Abbrechen" : "Cancel"}
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-2 pt-1">
