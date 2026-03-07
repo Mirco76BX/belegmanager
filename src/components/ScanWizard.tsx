@@ -316,7 +316,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                     size="icon"
                     className="h-11 w-11 shrink-0"
                     onClick={() => setShowNewCompany(true)}
-                    title={lang === "de" ? "Neues Unternehmen" : "New company"}
+                    title={lang === "de" ? "Neue Organisation" : "New organization"}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
