@@ -59,7 +59,7 @@ const AdminUsers = () => {
     }
   };
 
-  if (roleLoading || loading) {
+  if (roleLoading) {
     return <div className="text-muted-foreground">{t("general.loading")}</div>;
   }
 
