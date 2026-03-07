@@ -154,11 +154,11 @@ const Receipts = () => {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t("receipts.title")}</h1>
-        <Button className="gap-2" onClick={() => { resetForm(); setDialogOpen(true); }}>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-xl md:text-2xl font-bold">{t("receipts.title")}</h1>
+        <Button size="sm" className="gap-2" onClick={() => { resetForm(); setDialogOpen(true); }}>
           <Upload className="h-4 w-4" />
-          {t("receipts.scan")}
+          <span className="hidden sm:inline">{t("receipts.scan")}</span>
         </Button>
       </div>
 
