@@ -65,6 +65,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          default_company_id: string | null
           display_name: string | null
           email: string
           id: string
@@ -72,6 +73,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_company_id?: string | null
           display_name?: string | null
           email: string
           id: string
@@ -79,12 +81,21 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_company_id?: string | null
           display_name?: string | null
           email?: string
           id?: string
           is_blocked?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_default_company_id_fkey"
+            columns: ["default_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       receipts: {
         Row: {

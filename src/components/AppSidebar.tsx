@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, Globe, FileText, Shield, Menu, X } from "lucide-react";
+import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, Globe, FileText, Shield, Menu, X, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InviteDialog from "@/components/InviteDialog";
 import { useState } from "react";
@@ -145,18 +145,44 @@ const AppSidebar = () => {
       )}
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border">
-        <div className="flex items-center justify-around py-2">
-          {navItems.map((item) => {
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border safe-area-bottom">
+        <div className="flex items-center justify-around py-2 relative">
+          {navItems.map((item, index) => {
             const isActive = location.pathname === item.path;
+
+            // Insert scan button in the middle
+            if (index === 2) {
+              return (
+                <div key="scan-group" className="contents">
+                  <button
+                    onClick={() => {
+                      navigate("/receipts");
+                      // Trigger scan via custom event
+                      setTimeout(() => window.dispatchEvent(new CustomEvent("open-scan")), 100);
+                    }}
+                    className="flex items-center justify-center -mt-6 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 transition-transform"
+                  >
+                    <ScanLine className="h-6 w-6" />
+                  </button>
+                  <button
+                    onClick={() => navigate(item.path)}
+                    className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-md transition-colors ${
+                      isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"
+                    }`}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    <span className="text-[10px] font-medium">{t(item.key)}</span>
+                  </button>
+                </div>
+              );
+            }
+
             return (
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
                 className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-md transition-colors ${
-                  isActive
-                    ? "text-sidebar-primary"
-                    : "text-sidebar-foreground/50"
+                  isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"
                 }`}
               >
                 <item.icon className="h-5 w-5" />
