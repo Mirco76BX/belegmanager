@@ -202,7 +202,7 @@ const ExpenseReport = () => {
         <CardHeader>
           <CardTitle className="text-lg">{t("expense.period")}</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="flex gap-4">
             <div className="space-y-2 flex-1">
               <Label>{t("expense.from")}</Label>
@@ -213,6 +213,10 @@ const ExpenseReport = () => {
               <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
             </div>
           </div>
+          <Button className="w-full gap-2" onClick={generatePDF} disabled={generating || receipts.length === 0}>
+            <Download className="h-4 w-4" />
+            {generating ? t("general.loading") : (lang === "de" ? "PDF erstellen" : "Generate PDF")}
+          </Button>
         </CardContent>
       </Card>
 
