@@ -9,6 +9,7 @@ import InviteDialog from "@/components/InviteDialog";
 const AppSidebar = () => {
   const { signOut } = useAuth();
   const { t, lang, setLang } = useLanguage();
+  const { isAdmin } = useUserRole();
   const navigate = useNavigate();
   const location = useLocation();
 
