@@ -262,7 +262,7 @@ const Receipts = () => {
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{lang === "de" ? "Unternehmen" : "Company"}</span>
+                  <span className="text-muted-foreground">{lang === "de" ? "Organisation" : "Organization"}</span>
                   <span>{companyName(detailReceipt.company_id)}</span>
                 </div>
                 {detailReceipt.person_met && (

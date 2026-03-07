@@ -326,7 +326,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                   <Input
                     value={newCompanyName}
                     onChange={(e) => setNewCompanyName(e.target.value)}
-                    placeholder={lang === "de" ? "Name des Unternehmens..." : "Company name..."}
+                    placeholder={lang === "de" ? "Name der Organisation..." : "Organization name..."}
                     className="h-11 flex-1 text-base"
                     autoFocus
                     onKeyDown={(e) => {
