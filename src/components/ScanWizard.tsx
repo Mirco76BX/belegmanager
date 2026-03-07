@@ -144,7 +144,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       setNewCompanyName("");
       onCompaniesChanged?.();
 
-      toast({ title: lang === "de" ? "Unternehmen erstellt!" : "Company created!" });
+      toast({ title: lang === "de" ? "Organisation erstellt!" : "Organization created!" });
     } catch (err: any) {
       toast({ title: err.message, variant: "destructive" });
     } finally {
