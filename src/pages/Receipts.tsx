@@ -154,11 +154,11 @@ const Receipts = () => {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t("receipts.title")}</h1>
-        <Button className="gap-2" onClick={() => { resetForm(); setDialogOpen(true); }}>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-xl md:text-2xl font-bold">{t("receipts.title")}</h1>
+        <Button size="sm" className="gap-2" onClick={() => { resetForm(); setDialogOpen(true); }}>
           <Upload className="h-4 w-4" />
-          {t("receipts.scan")}
+          <span className="hidden sm:inline">{t("receipts.scan")}</span>
         </Button>
       </div>
 
@@ -171,44 +171,84 @@ const Receipts = () => {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("receipts.date")}</TableHead>
-                  <TableHead>{t("receipts.amount")}</TableHead>
-                  <TableHead>{t("receipts.description")}</TableHead>
-                  <TableHead>{t("receipts.company")}</TableHead>
-                  <TableHead className="text-right">{lang === "de" ? "Aktionen" : "Actions"}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {receipts.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell>{new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}</TableCell>
-                    <TableCell className="font-mono">{formatAmount(r.amount)}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{r.description || "–"}</TableCell>
-                    <TableCell>{companies.find(c => c.id === r.company_id)?.name || "–"}</TableCell>
-                    <TableCell className="text-right space-x-1">
+        <>
+          {/* Desktop Table */}
+          <Card className="hidden md:block">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("receipts.date")}</TableHead>
+                    <TableHead>{t("receipts.amount")}</TableHead>
+                    <TableHead>{t("receipts.description")}</TableHead>
+                    <TableHead>{t("receipts.company")}</TableHead>
+                    <TableHead className="text-right">{lang === "de" ? "Aktionen" : "Actions"}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {receipts.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell>{new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}</TableCell>
+                      <TableCell className="font-mono">{formatAmount(r.amount)}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{r.description || "–"}</TableCell>
+                      <TableCell>{companies.find(c => c.id === r.company_id)?.name || "–"}</TableCell>
+                      <TableCell className="text-right space-x-1">
+                        {r.file_path && (
+                          <Button variant="ghost" size="sm" onClick={() => viewFile(r.file_path!)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(r.id, r.file_path)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden space-y-3">
+            {receipts.map((r) => (
+              <Card key={r.id}>
+                <CardContent className="py-3 px-4">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm font-semibold">{formatAmount(r.amount)}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}
+                        </span>
+                      </div>
+                      {r.description && <p className="text-sm text-foreground truncate">{r.description}</p>}
+                      {r.company_id && (
+                        <p className="text-xs text-muted-foreground">{companies.find(c => c.id === r.company_id)?.name}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-0.5 ml-2">
                       {r.file_path && (
-                        <Button variant="ghost" size="sm" onClick={() => viewFile(r.file_path!)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewFile(r.file_path!)}>
                           <Eye className="h-4 w-4" />
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(r)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(r.id, r.file_path)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(r.id, r.file_path)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Add/Edit Dialog */}
