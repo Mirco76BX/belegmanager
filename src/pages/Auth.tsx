@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { FileText, Globe } from "lucide-react";
+import { Globe } from "lucide-react";
 import receiptScanImg from "@/assets/receipt-scan.jpg";
+import logoImg from "@/assets/logo.png";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -62,16 +63,16 @@ const Auth = () => {
           <div className="w-full max-w-md">
             {/* Mobile image */}
             <div className="mb-6 md:hidden">
-              <img
-                src={receiptScanImg}
-                alt={lang === "de" ? "Quittung scannen mit dem Smartphone" : "Scanning a receipt with a smartphone"}
-                className="mx-auto w-48 rounded-xl shadow-md"
-              />
+              <div className="mx-auto h-36 w-48 overflow-hidden rounded-xl shadow-md">
+                <img
+                  src={receiptScanImg}
+                  alt={lang === "de" ? "Quittung scannen mit dem Smartphone" : "Scanning a receipt with a smartphone"}
+                  className="h-full w-full object-cover object-center scale-150"
+                />
+              </div>
             </div>
             <div className="mb-8 text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary">
-                <FileText className="h-7 w-7 text-primary-foreground" />
-              </div>
+              <img src={logoImg} alt="Logo" className="mx-auto mb-4 h-14 w-14" />
               <h1 className="text-2xl font-bold text-foreground">{t("app.name")}</h1>
               <p className="mt-1 text-sm text-muted-foreground">{t("app.tagline")}</p>
             </div>
