@@ -48,12 +48,12 @@ const translations = {
   "receipts.scanHint": { de: "Beleg fotografieren oder PDF hochladen", en: "Take a photo or upload a PDF" },
 
   // Companies
-  "companies.title": { de: "Unternehmen (GmbHs)", en: "Companies" },
-  "companies.add": { de: "Unternehmen hinzufügen", en: "Add Company" },
-  "companies.name": { de: "Firmenname", en: "Company Name" },
+  "companies.title": { de: "Organisationen", en: "Organizations" },
+  "companies.add": { de: "Organisation hinzufügen", en: "Add Organization" },
+  "companies.name": { de: "Name", en: "Name" },
   "companies.taxId": { de: "Steuernummer", en: "Tax ID" },
   "companies.address": { de: "Adresse", en: "Address" },
-  "companies.noCompanies": { de: "Noch keine Unternehmen angelegt", en: "No companies yet" },
+  "companies.noCompanies": { de: "Noch keine Organisationen angelegt", en: "No organizations yet" },
   "companies.edit": { de: "Bearbeiten", en: "Edit" },
 
   // Expense Report
