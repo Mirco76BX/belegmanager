@@ -267,35 +267,63 @@ const ExpenseReport = () => {
       </Card>
 
       {receipts.length > 0 ? (
-        <Card>
+        <Card className="overflow-hidden">
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("receipts.date")}</TableHead>
-                  <TableHead>{t("receipts.amount")}</TableHead>
-                  <TableHead>{t("receipts.description")}</TableHead>
-                  <TableHead>{t("receipts.company")}</TableHead>
-                  <TableHead>{t("receipts.person")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {receipts.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell>{new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}</TableCell>
-                    <TableCell className="font-mono">{r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}</TableCell>
-                    <TableCell>{r.description || "–"}</TableCell>
-                    <TableCell>{getCompanyName(r.company_id)}</TableCell>
-                    <TableCell>{r.person_met || "–"}</TableCell>
+            {/* Desktop table */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("receipts.date")}</TableHead>
+                    <TableHead className="text-right">{t("receipts.amount")}</TableHead>
+                    <TableHead>{t("receipts.description")}</TableHead>
+                    <TableHead>{t("receipts.company")}</TableHead>
+                    <TableHead>{t("receipts.person")}</TableHead>
                   </TableRow>
-                ))}
-                <TableRow className="font-bold border-t-2">
-                  <TableCell>{lang === "de" ? "Gesamt" : "Total"}</TableCell>
-                  <TableCell className="font-mono">{totalAmount.toFixed(2)} €</TableCell>
-                  <TableCell colSpan={3} />
-                </TableRow>
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {receipts.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}</TableCell>
+                      <TableCell className="font-mono text-right whitespace-nowrap">{r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}</TableCell>
+                      <TableCell>{r.description || "–"}</TableCell>
+                      <TableCell>{getCompanyName(r.company_id)}</TableCell>
+                      <TableCell>{r.person_met || "–"}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="font-bold border-t-2">
+                    <TableCell>{lang === "de" ? "Gesamt" : "Total"}</TableCell>
+                    <TableCell className="font-mono text-right whitespace-nowrap">{totalAmount.toFixed(2)} €</TableCell>
+                    <TableCell colSpan={3} />
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="md:hidden divide-y">
+              {receipts.map((r) => (
+                <div key={r.id} className="px-4 py-3 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}
+                    </span>
+                    <span className="font-mono text-sm font-semibold whitespace-nowrap">
+                      {r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}
+                    </span>
+                  </div>
+                  {r.description && <p className="text-sm truncate">{r.description}</p>}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{getCompanyName(r.company_id)}</span>
+                    {r.person_met && <span>{r.person_met}</span>}
+                  </div>
+                </div>
+              ))}
+              <div className="px-4 py-3 flex items-center justify-between font-bold">
+                <span>{lang === "de" ? "Gesamt" : "Total"}</span>
+                <span className="font-mono whitespace-nowrap">{totalAmount.toFixed(2)} €</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       ) : (
