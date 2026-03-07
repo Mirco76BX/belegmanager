@@ -200,16 +200,24 @@ const Receipts = () => {
             {receipts.map((r) => (
               <Card key={r.id} className={`cursor-pointer active:bg-muted/50 transition-colors ${r.status === "pending" ? "border-warning/50" : ""}`} onClick={() => openDetail(r)}>
                 <CardContent className="py-3 px-4">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-semibold">{formatAmount(r.amount)}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}
-                    </span>
-                    {r.status === "pending" && (
-                      <span className="text-[10px] bg-warning/20 text-warning px-1.5 py-0.5 rounded">
-                        {lang === "de" ? "Offen" : "Pending"}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-mono text-sm font-semibold whitespace-nowrap">{formatAmount(r.amount)}</span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}
                       </span>
-                    )}
+                      {r.status === "pending" && (
+                        <span className="text-[10px] bg-warning/20 text-warning px-1.5 py-0.5 rounded whitespace-nowrap">
+                          {lang === "de" ? "Offen" : "Pending"}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDelete(r.id, r.file_path); }}
+                      className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                   {r.description && <p className="text-sm text-foreground truncate mt-0.5">{r.description}</p>}
                 </CardContent>
