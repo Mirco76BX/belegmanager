@@ -101,3 +101,18 @@
     font-family: 'IBM Plex Mono', monospace;
   }
 }
+
+/* Fix native date input calendar icon alignment */
+input[type="date"] {
+  position: relative;
+  padding-right: 2.5rem;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  opacity: 0.6;
+}
