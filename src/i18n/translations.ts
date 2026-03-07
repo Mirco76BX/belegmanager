@@ -15,8 +15,8 @@ const translations = {
   // Navigation
   "nav.dashboard": { de: "Übersicht", en: "Dashboard" },
   "nav.receipts": { de: "Belege", en: "Receipts" },
-  "nav.companies": { de: "Organisationen", en: "Organizations" },
-  "nav.expenseReport": { de: "Reisekostenabrechnung", en: "Expense Report" },
+  "nav.companies": { de: "Orga", en: "Orgs" },
+  "nav.expenseReport": { de: "Report", en: "Report" },
   "nav.settings": { de: "Einstellungen", en: "Settings" },
 
   // Dashboard
