@@ -302,7 +302,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                 <div className="flex items-end gap-2">
                   <Select value={companyId} onValueChange={setCompanyId}>
                     <SelectTrigger className="h-11 flex-1 text-base">
-                      <SelectValue placeholder={lang === "de" ? "Unternehmen wählen..." : "Select company..."} />
+                      <SelectValue placeholder={lang === "de" ? "Organisation wählen..." : "Select organization..."} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="max-h-48">
                       {localCompanies.map((c) => (
