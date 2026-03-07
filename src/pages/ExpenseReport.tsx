@@ -73,7 +73,7 @@ const ExpenseReport = () => {
     lang === "de" ? "Datum" : "Date",
     lang === "de" ? "Betrag" : "Amount",
     lang === "de" ? "Beschreibung" : "Description",
-    lang === "de" ? "Unternehmen" : "Company",
+    lang === "de" ? "Organisation" : "Organization",
     lang === "de" ? "Person" : "Person",
     lang === "de" ? "Zweck" : "Purpose",
   ];

@@ -83,9 +83,9 @@ const Companies = () => {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t("companies.title")}</h1>
-        <Button className="gap-2" onClick={() => { resetForm(); setDialogOpen(true); }}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl md:text-2xl font-bold">{t("companies.title")}</h1>
+        <Button className="gap-2 w-full sm:w-auto" onClick={() => { resetForm(); setDialogOpen(true); }}>
           <Plus className="h-4 w-4" />
           {t("companies.add")}
         </Button>

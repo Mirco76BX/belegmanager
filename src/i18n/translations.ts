@@ -15,7 +15,7 @@ const translations = {
   // Navigation
   "nav.dashboard": { de: "Übersicht", en: "Dashboard" },
   "nav.receipts": { de: "Belege", en: "Receipts" },
-  "nav.companies": { de: "Unternehmen", en: "Companies" },
+  "nav.companies": { de: "Organisationen", en: "Organizations" },
   "nav.expenseReport": { de: "Reisekostenabrechnung", en: "Expense Report" },
   "nav.settings": { de: "Einstellungen", en: "Settings" },
 
@@ -24,7 +24,7 @@ const translations = {
   "dashboard.totalReceipts": { de: "Belege gesamt", en: "Total Receipts" },
   "dashboard.thisMonth": { de: "Diesen Monat", en: "This Month" },
   "dashboard.totalAmount": { de: "Gesamtbetrag", en: "Total Amount" },
-  "dashboard.companies": { de: "Unternehmen", en: "Companies" },
+  "dashboard.companies": { de: "Organisationen", en: "Organizations" },
   "dashboard.recentReceipts": { de: "Letzte Belege", en: "Recent Receipts" },
 
   // Receipts
@@ -34,13 +34,13 @@ const translations = {
   "receipts.camera": { de: "Kamera", en: "Camera" },
   "receipts.date": { de: "Datum", en: "Date" },
   "receipts.amount": { de: "Betrag", en: "Amount" },
-  "receipts.company": { de: "Unternehmen", en: "Company" },
+  "receipts.company": { de: "Organisation", en: "Organization" },
   "receipts.description": { de: "Beschreibung", en: "Description" },
   "receipts.status": { de: "Status", en: "Status" },
   "receipts.person": { de: "Getroffene Person", en: "Person Met" },
   "receipts.organization": { de: "Unternehmung/Organisation", en: "Organization" },
   "receipts.meetingPurpose": { de: "Zweck des Meetings", en: "Meeting Purpose" },
-  "receipts.assignCompany": { de: "GmbH zuordnen", en: "Assign Company" },
+  "receipts.assignCompany": { de: "Organisation zuordnen", en: "Assign Organization" },
   "receipts.noReceipts": { de: "Noch keine Belege vorhanden", en: "No receipts yet" },
   "receipts.details": { de: "Details", en: "Details" },
   "receipts.save": { de: "Speichern", en: "Save" },
@@ -48,12 +48,12 @@ const translations = {
   "receipts.scanHint": { de: "Beleg fotografieren oder PDF hochladen", en: "Take a photo or upload a PDF" },
 
   // Companies
-  "companies.title": { de: "Unternehmen (GmbHs)", en: "Companies" },
-  "companies.add": { de: "Unternehmen hinzufügen", en: "Add Company" },
-  "companies.name": { de: "Firmenname", en: "Company Name" },
+  "companies.title": { de: "Organisationen", en: "Organizations" },
+  "companies.add": { de: "Organisation hinzufügen", en: "Add Organization" },
+  "companies.name": { de: "Name", en: "Name" },
   "companies.taxId": { de: "Steuernummer", en: "Tax ID" },
   "companies.address": { de: "Adresse", en: "Address" },
-  "companies.noCompanies": { de: "Noch keine Unternehmen angelegt", en: "No companies yet" },
+  "companies.noCompanies": { de: "Noch keine Organisationen angelegt", en: "No organizations yet" },
   "companies.edit": { de: "Bearbeiten", en: "Edit" },
 
   // Expense Report

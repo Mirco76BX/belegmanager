@@ -144,7 +144,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       setNewCompanyName("");
       onCompaniesChanged?.();
 
-      toast({ title: lang === "de" ? "Unternehmen erstellt!" : "Company created!" });
+      toast({ title: lang === "de" ? "Organisation erstellt!" : "Organization created!" });
     } catch (err: any) {
       toast({ title: err.message, variant: "destructive" });
     } finally {
@@ -297,12 +297,12 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-sm">{lang === "de" ? "Unternehmen zuordnen" : "Assign Company"}</Label>
+              <Label className="text-sm">{lang === "de" ? "Organisation zuordnen" : "Assign Organization"}</Label>
               {!showNewCompany ? (
                 <div className="flex items-end gap-2">
                   <Select value={companyId} onValueChange={setCompanyId}>
                     <SelectTrigger className="h-11 flex-1 text-base">
-                      <SelectValue placeholder={lang === "de" ? "Unternehmen wählen..." : "Select company..."} />
+                      <SelectValue placeholder={lang === "de" ? "Organisation wählen..." : "Select organization..."} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="max-h-48">
                       {localCompanies.map((c) => (
@@ -316,7 +316,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                     size="icon"
                     className="h-11 w-11 shrink-0"
                     onClick={() => setShowNewCompany(true)}
-                    title={lang === "de" ? "Neues Unternehmen" : "New company"}
+                    title={lang === "de" ? "Neue Organisation" : "New organization"}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -326,7 +326,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                   <Input
                     value={newCompanyName}
                     onChange={(e) => setNewCompanyName(e.target.value)}
-                    placeholder={lang === "de" ? "Name des Unternehmens..." : "Company name..."}
+                    placeholder={lang === "de" ? "Name der Organisation..." : "Organization name..."}
                     className="h-11 flex-1 text-base"
                     autoFocus
                     onKeyDown={(e) => {
