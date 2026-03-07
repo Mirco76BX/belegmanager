@@ -253,10 +253,16 @@ const ExpenseReport = () => {
               <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
             </div>
           </div>
-          <Button className="w-full gap-2" onClick={generatePDF} disabled={generating || receipts.length === 0}>
-            <Download className="h-4 w-4" />
-            {generating ? t("general.loading") : (lang === "de" ? "PDF erstellen" : "Generate PDF")}
-          </Button>
+          <div className="flex gap-2">
+            <Button className="flex-1 gap-2" onClick={generatePDF} disabled={generating || receipts.length === 0}>
+              <Download className="h-4 w-4" />
+              {generating ? t("general.loading") : "PDF"}
+            </Button>
+            <Button variant="outline" className="flex-1 gap-2" onClick={exportCSV} disabled={receipts.length === 0}>
+              <FileSpreadsheet className="h-4 w-4" />
+              CSV
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
