@@ -44,9 +44,12 @@ const Receipts = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [defaultCompanyId, setDefaultCompanyId] = useState<string | null>(null);
 
-  // Edit dialog state
-  const [editOpen, setEditOpen] = useState(false);
-  const [editingReceipt, setEditingReceipt] = useState<Receipt | null>(null);
+  // Detail/Edit dialog
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailReceipt, setDetailReceipt] = useState<Receipt | null>(null);
+  const [detailImageUrl, setDetailImageUrl] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+
   const [editDate, setEditDate] = useState("");
   const [editAmount, setEditAmount] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -71,28 +74,38 @@ const Receipts = () => {
 
   useEffect(() => { fetchData(); }, [user]);
 
-  // Listen for scan trigger from bottom nav
   useEffect(() => {
     const handler = () => setScanOpen(true);
     window.addEventListener("open-scan", handler);
     return () => window.removeEventListener("open-scan", handler);
   }, []);
 
-  const openEdit = (r: Receipt) => {
-    setEditingReceipt(r);
-    setEditDate(r.date);
-    setEditAmount(r.amount?.toString() || "");
-    setEditDescription(r.description || "");
-    setEditPersonMet(r.person_met || "");
-    setEditOrganization(r.organization || "");
-    setEditMeetingPurpose(r.meeting_purpose || "");
-    setEditCompanyId(r.company_id || "");
-    setEditOpen(true);
+  const openDetail = async (r: Receipt) => {
+    setDetailReceipt(r);
+    setIsEditing(false);
+    setDetailImageUrl(null);
+    setDetailOpen(true);
+    if (r.file_path) {
+      const { data } = await supabase.storage.from("receipts").createSignedUrl(r.file_path, 300);
+      if (data?.signedUrl) setDetailImageUrl(data.signedUrl);
+    }
+  };
+
+  const startEditing = () => {
+    if (!detailReceipt) return;
+    setEditDate(detailReceipt.date);
+    setEditAmount(detailReceipt.amount?.toString() || "");
+    setEditDescription(detailReceipt.description || "");
+    setEditPersonMet(detailReceipt.person_met || "");
+    setEditOrganization(detailReceipt.organization || "");
+    setEditMeetingPurpose(detailReceipt.meeting_purpose || "");
+    setEditCompanyId(detailReceipt.company_id || "");
+    setIsEditing(true);
   };
 
   const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingReceipt) return;
+    if (!detailReceipt) return;
     setEditSaving(true);
     const { error } = await supabase.from("receipts").update({
       date: editDate,
@@ -103,12 +116,12 @@ const Receipts = () => {
       meeting_purpose: editMeetingPurpose || null,
       company_id: editCompanyId || null,
       status: "complete",
-    }).eq("id", editingReceipt.id);
+    }).eq("id", detailReceipt.id);
     if (error) {
       toast({ title: error.message, variant: "destructive" });
     } else {
       toast({ title: lang === "de" ? "Gespeichert" : "Saved" });
-      setEditOpen(false);
+      setDetailOpen(false);
       fetchData();
     }
     setEditSaving(false);
@@ -117,15 +130,11 @@ const Receipts = () => {
   const handleDelete = async (id: string, filePath: string | null) => {
     if (filePath) await supabase.storage.from("receipts").remove([filePath]);
     const { error } = await supabase.from("receipts").delete().eq("id", id);
-    if (!error) fetchData();
-  };
-
-  const viewFile = async (filePath: string) => {
-    const { data } = await supabase.storage.from("receipts").createSignedUrl(filePath, 300);
-    if (data?.signedUrl) setPreviewUrl(data.signedUrl);
+    if (!error) { setDetailOpen(false); fetchData(); }
   };
 
   const formatAmount = (a: number | null) => a != null ? `${a.toFixed(2)} €` : "–";
+  const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "–";
 
   return (
     <div className="animate-fade-in space-y-4">
@@ -166,19 +175,14 @@ const Receipts = () => {
                 </TableHeader>
                 <TableBody>
                   {receipts.map((r) => (
-                    <TableRow key={r.id}>
+                    <TableRow key={r.id} className="cursor-pointer" onClick={() => openDetail(r)}>
                       <TableCell>{new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}</TableCell>
                       <TableCell className="font-mono">{formatAmount(r.amount)}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{r.description || "–"}</TableCell>
-                      <TableCell>{companies.find(c => c.id === r.company_id)?.name || "–"}</TableCell>
-                      <TableCell className="text-right space-x-1">
-                        {r.file_path && (
-                          <Button variant="ghost" size="sm" onClick={() => viewFile(r.file_path!)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
-                          <Pencil className="h-4 w-4" />
+                      <TableCell>{companyName(r.company_id)}</TableCell>
+                      <TableCell className="text-right space-x-1" onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="sm" onClick={() => openDetail(r)}>
+                          <Eye className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(r.id, r.file_path)}>
                           <Trash2 className="h-4 w-4" />
@@ -194,34 +198,20 @@ const Receipts = () => {
           {/* Mobile Cards */}
           <div className="md:hidden space-y-2">
             {receipts.map((r) => (
-              <Card key={r.id} className={r.status === "pending" ? "border-warning/50" : ""}>
+              <Card key={r.id} className={`cursor-pointer active:bg-muted/50 transition-colors ${r.status === "pending" ? "border-warning/50" : ""}`} onClick={() => openDetail(r)}>
                 <CardContent className="py-3 px-4">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-0.5 flex-1 min-w-0" onClick={() => openEdit(r)}>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-semibold">{formatAmount(r.amount)}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}
-                        </span>
-                        {r.status === "pending" && (
-                          <span className="text-[10px] bg-warning/20 text-warning px-1.5 py-0.5 rounded">
-                            {lang === "de" ? "Offen" : "Pending"}
-                          </span>
-                        )}
-                      </div>
-                      {r.description && <p className="text-sm text-foreground truncate">{r.description}</p>}
-                    </div>
-                    <div className="flex items-center gap-0.5 ml-2">
-                      {r.file_path && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewFile(r.file_path!)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(r.id, r.file_path)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm font-semibold">{formatAmount(r.amount)}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}
+                    </span>
+                    {r.status === "pending" && (
+                      <span className="text-[10px] bg-warning/20 text-warning px-1.5 py-0.5 rounded">
+                        {lang === "de" ? "Offen" : "Pending"}
+                      </span>
+                    )}
                   </div>
+                  {r.description && <p className="text-sm text-foreground truncate mt-0.5">{r.description}</p>}
                 </CardContent>
               </Card>
             ))}
@@ -236,54 +226,131 @@ const Receipts = () => {
         onSaved={fetchData}
         companies={companies}
         defaultCompanyId={defaultCompanyId}
+        onCompaniesChanged={fetchData}
       />
 
-      {/* Edit Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+      {/* Detail / Edit Dialog */}
+      <Dialog open={detailOpen} onOpenChange={(o) => { if (!o) { setDetailOpen(false); setIsEditing(false); } }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t("receipts.details")}</DialogTitle>
+            <DialogTitle>
+              {isEditing
+                ? (lang === "de" ? "Beleg bearbeiten" : "Edit Receipt")
+                : (lang === "de" ? "Beleg-Details" : "Receipt Details")}
+            </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleEditSave} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>{t("receipts.date")}</Label>
-                <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+
+          {!isEditing && detailReceipt && (
+            <div className="space-y-4">
+              {detailImageUrl && (
+                <img src={detailImageUrl} alt="Receipt" className="w-full max-h-48 object-contain rounded-lg border bg-muted" />
+              )}
+
+              <div className="space-y-2.5">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{lang === "de" ? "Datum" : "Date"}</span>
+                  <span className="font-medium">{new Date(detailReceipt.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{lang === "de" ? "Betrag" : "Amount"}</span>
+                  <span className="font-mono font-semibold">{formatAmount(detailReceipt.amount)}</span>
+                </div>
+                {detailReceipt.description && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{lang === "de" ? "Beschreibung" : "Description"}</span>
+                    <span className="text-right max-w-[60%]">{detailReceipt.description}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{lang === "de" ? "Unternehmen" : "Company"}</span>
+                  <span>{companyName(detailReceipt.company_id)}</span>
+                </div>
+                {detailReceipt.person_met && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{lang === "de" ? "Person" : "Person Met"}</span>
+                    <span>{detailReceipt.person_met}</span>
+                  </div>
+                )}
+                {detailReceipt.organization && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{lang === "de" ? "Organisation" : "Organization"}</span>
+                    <span>{detailReceipt.organization}</span>
+                  </div>
+                )}
+                {detailReceipt.meeting_purpose && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{lang === "de" ? "Zweck" : "Purpose"}</span>
+                    <span className="text-right max-w-[60%]">{detailReceipt.meeting_purpose}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Status</span>
+                  <span className={detailReceipt.status === "pending" ? "text-warning" : "text-green-600"}>
+                    {detailReceipt.status === "pending" ? (lang === "de" ? "Offen" : "Pending") : (lang === "de" ? "Vollständig" : "Complete")}
+                  </span>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>{t("receipts.amount")}</Label>
-                <Input type="number" step="0.01" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} />
+
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" className="flex-1 gap-2" onClick={startEditing}>
+                  <Pencil className="h-4 w-4" />
+                  {lang === "de" ? "Bearbeiten" : "Edit"}
+                </Button>
+                <Button variant="outline" className="gap-2 text-destructive hover:text-destructive" onClick={() => handleDelete(detailReceipt.id, detailReceipt.file_path)}>
+                  <Trash2 className="h-4 w-4" />
+                  {lang === "de" ? "Löschen" : "Delete"}
+                </Button>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>{t("receipts.description")}</Label>
-              <Input value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>{t("receipts.assignCompany")}</Label>
-              <Select value={editCompanyId} onValueChange={setEditCompanyId}>
-                <SelectTrigger><SelectValue placeholder="–" /></SelectTrigger>
-                <SelectContent>
-                  {companies.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>{t("receipts.person")}</Label>
-              <Input value={editPersonMet} onChange={(e) => setEditPersonMet(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>{t("receipts.organization")}</Label>
-              <Input value={editOrganization} onChange={(e) => setEditOrganization(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>{t("receipts.meetingPurpose")}</Label>
-              <Input value={editMeetingPurpose} onChange={(e) => setEditMeetingPurpose(e.target.value)} />
-            </div>
-            <Button type="submit" className="w-full" disabled={editSaving}>
-              {editSaving ? t("general.loading") : t("receipts.save")}
-            </Button>
-          </form>
+          )}
+
+          {isEditing && detailReceipt && (
+            <form onSubmit={handleEditSave} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-sm">{t("receipts.date")}</Label>
+                  <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="h-10" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">{t("receipts.amount")}</Label>
+                  <Input type="number" step="0.01" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} className="h-10" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">{t("receipts.description")}</Label>
+                <Input value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="h-10" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">{t("receipts.assignCompany")}</Label>
+                <Select value={editCompanyId} onValueChange={setEditCompanyId}>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="–" /></SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="max-h-48">
+                    {companies.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">{t("receipts.person")}</Label>
+                <Input value={editPersonMet} onChange={(e) => setEditPersonMet(e.target.value)} className="h-10" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">{t("receipts.organization")}</Label>
+                <Input value={editOrganization} onChange={(e) => setEditOrganization(e.target.value)} className="h-10" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">{t("receipts.meetingPurpose")}</Label>
+                <Input value={editMeetingPurpose} onChange={(e) => setEditMeetingPurpose(e.target.value)} className="h-10" />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setIsEditing(false)}>
+                  {lang === "de" ? "Abbrechen" : "Cancel"}
+                </Button>
+                <Button type="submit" className="flex-1" disabled={editSaving}>
+                  {editSaving ? (lang === "de" ? "Speichern..." : "Saving...") : (lang === "de" ? "Speichern" : "Save")}
+                </Button>
+              </div>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
 
