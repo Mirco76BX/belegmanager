@@ -11,6 +11,7 @@ import Dashboard from "@/pages/Dashboard";
 import Receipts from "@/pages/Receipts";
 import Companies from "@/pages/Companies";
 import ExpenseReport from "@/pages/ExpenseReport";
+import AdminUsers from "@/pages/AdminUsers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
