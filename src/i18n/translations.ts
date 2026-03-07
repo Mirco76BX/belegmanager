@@ -34,7 +34,7 @@ const translations = {
   "receipts.camera": { de: "Kamera", en: "Camera" },
   "receipts.date": { de: "Datum", en: "Date" },
   "receipts.amount": { de: "Betrag", en: "Amount" },
-  "receipts.company": { de: "Unternehmen", en: "Company" },
+  "receipts.company": { de: "Organisation", en: "Organization" },
   "receipts.description": { de: "Beschreibung", en: "Description" },
   "receipts.status": { de: "Status", en: "Status" },
   "receipts.person": { de: "Getroffene Person", en: "Person Met" },
