@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      companies: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          name: string
+          tax_id: string | null
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          tax_id?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          tax_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       invitations: {
         Row: {
           created_at: string
@@ -58,6 +85,62 @@ export type Database = {
           is_blocked?: boolean
         }
         Relationships: []
+      }
+      receipts: {
+        Row: {
+          amount: number | null
+          company_id: string | null
+          created_at: string
+          date: string
+          description: string | null
+          file_path: string | null
+          id: string
+          meeting_purpose: string | null
+          organization: string | null
+          person_met: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          company_id?: string | null
+          created_at?: string
+          date?: string
+          description?: string | null
+          file_path?: string | null
+          id?: string
+          meeting_purpose?: string | null
+          organization?: string | null
+          person_met?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          company_id?: string | null
+          created_at?: string
+          date?: string
+          description?: string | null
+          file_path?: string | null
+          id?: string
+          meeting_purpose?: string | null
+          organization?: string | null
+          person_met?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
