@@ -2,10 +2,11 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, Globe, FileText, Shield, Menu, X, ScanLine, Upload } from "lucide-react";
+import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, Globe, Shield, Menu, X, ScanLine, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InviteDialog from "@/components/InviteDialog";
 import { useState } from "react";
+import logoImg from "@/assets/logo.png";
 
 const AppSidebar = () => {
   const { signOut } = useAuth();
