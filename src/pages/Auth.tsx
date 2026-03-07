@@ -47,7 +47,18 @@ const Auth = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md animate-fade-in">
+      <div className="flex w-full max-w-4xl animate-fade-in gap-10 items-center">
+        <div className="hidden flex-1 lg:block">
+          <img
+            src={receiptScanImg}
+            alt={lang === "de" ? "Quittung scannen mit dem Smartphone" : "Scanning a receipt with a smartphone"}
+            className="w-full rounded-2xl shadow-lg"
+          />
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            {lang === "de" ? "Belege einfach scannen und digital verwalten" : "Simply scan receipts and manage them digitally"}
+          </p>
+        </div>
+        <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary">
             <FileText className="h-7 w-7 text-primary-foreground" />
