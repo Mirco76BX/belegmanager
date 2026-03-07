@@ -280,28 +280,28 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label className="text-sm">{lang === "de" ? "Datum" : "Date"}</Label>
-                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-10" />
+                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-11 text-base" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm">{lang === "de" ? "Betrag (€)" : "Amount (€)"}</Label>
-                <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className="h-10" />
+                <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className="h-11 text-base" />
               </div>
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-sm">{lang === "de" ? "Beschreibung" : "Description"}</Label>
-              <Input value={description} onChange={(e) => setDescription(e.target.value)} className="h-10" />
+              <Input value={description} onChange={(e) => setDescription(e.target.value)} className="h-11 text-base" />
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-sm">{lang === "de" ? "Unternehmen zuordnen" : "Assign Company"}</Label>
               {!showNewCompany ? (
-                <div className="flex gap-2">
+                <div className="flex items-end gap-2">
                   <Select value={companyId} onValueChange={setCompanyId}>
-                    <SelectTrigger className="h-10 flex-1">
+                    <SelectTrigger className="h-11 flex-1 text-base">
                       <SelectValue placeholder={lang === "de" ? "Unternehmen wählen..." : "Select company..."} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="max-h-48">
@@ -314,7 +314,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                     type="button"
                     variant="outline"
                     size="icon"
-                    className="h-10 w-10 shrink-0"
+                    className="h-11 w-11 shrink-0"
                     onClick={() => setShowNewCompany(true)}
                     title={lang === "de" ? "Neues Unternehmen" : "New company"}
                   >
@@ -322,12 +322,12 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                   </Button>
                 </div>
               ) : (
-                <div className="flex gap-2">
+                <div className="flex items-end gap-2">
                   <Input
                     value={newCompanyName}
                     onChange={(e) => setNewCompanyName(e.target.value)}
                     placeholder={lang === "de" ? "Name des Unternehmens..." : "Company name..."}
-                    className="h-10 flex-1"
+                    className="h-11 flex-1 text-base"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -339,7 +339,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                   <Button
                     type="button"
                     size="icon"
-                    className="h-10 w-10 shrink-0"
+                    className="h-11 w-11 shrink-0"
                     onClick={handleCreateCompany}
                     disabled={creatingCompany || !newCompanyName.trim()}
                   >
@@ -348,8 +348,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                   <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
-                    className="h-10 px-2 text-xs text-muted-foreground"
+                    className="h-11 px-3 text-sm text-muted-foreground"
                     onClick={() => { setShowNewCompany(false); setNewCompanyName(""); }}
                   >
                     {lang === "de" ? "Abbrechen" : "Cancel"}
