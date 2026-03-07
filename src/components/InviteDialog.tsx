@@ -104,23 +104,17 @@ const InviteDialog = () => {
             </form>
           </TabsContent>
           <TabsContent value="whatsapp">
-            <form onSubmit={handleWhatsAppInvite} className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label htmlFor="invite-phone">{lang === "de" ? "Telefonnummer (mit Ländervorwahl)" : "Phone number (with country code)"}</Label>
-                <Input
-                  id="invite-phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+491701234567"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full gap-2" disabled={!phone.trim()}>
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">
+                {lang === "de"
+                  ? "WhatsApp öffnet sich mit einem vorformulierten Einladungstext. Wähle dort den Kontakt aus."
+                  : "WhatsApp will open with a pre-written invitation. Choose your contact there."}
+              </p>
+              <Button onClick={handleWhatsAppInvite} className="w-full gap-2">
                 <MessageCircle className="h-4 w-4" />
-                {lang === "de" ? "Via WhatsApp einladen" : "Invite via WhatsApp"}
+                {lang === "de" ? "Mit WhatsApp teilen" : "Share via WhatsApp"}
               </Button>
-            </form>
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>
