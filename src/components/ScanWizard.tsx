@@ -381,17 +381,17 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         {/* Step 4: Additional Details */}
         {step === "details" && (
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>{lang === "de" ? "Getroffene Person" : "Person Met"}</Label>
-              <Input value={personMet} onChange={(e) => setPersonMet(e.target.value)} />
+            <div className="space-y-1.5">
+              <Label className="text-sm">{lang === "de" ? "Getroffene Person" : "Person Met"}</Label>
+              <Input value={personMet} onChange={(e) => setPersonMet(e.target.value)} className="h-11 text-base" />
             </div>
-            <div className="space-y-2">
-              <Label>{lang === "de" ? "Unternehmung/Organisation" : "Organization"}</Label>
-              <Input value={organization} onChange={(e) => setOrganization(e.target.value)} />
+            <div className="space-y-1.5">
+              <Label className="text-sm">{lang === "de" ? "Unternehmung/Organisation" : "Organization"}</Label>
+              <Input value={organization} onChange={(e) => setOrganization(e.target.value)} className="h-11 text-base" />
             </div>
-            <div className="space-y-2">
-              <Label>{lang === "de" ? "Zweck des Meetings" : "Meeting Purpose"}</Label>
-              <Input value={meetingPurpose} onChange={(e) => setMeetingPurpose(e.target.value)} />
+            <div className="space-y-1.5">
+              <Label className="text-sm">{lang === "de" ? "Zweck des Meetings" : "Meeting Purpose"}</Label>
+              <Input value={meetingPurpose} onChange={(e) => setMeetingPurpose(e.target.value)} className="h-11 text-base" />
             </div>
 
             <Button
