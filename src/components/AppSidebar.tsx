@@ -2,11 +2,10 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, Globe, Shield, Menu, X, ScanLine, Upload } from "lucide-react";
+import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, Globe, FileText, Shield, Menu, X, ScanLine, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InviteDialog from "@/components/InviteDialog";
 import { useState } from "react";
-import logoImg from "@/assets/logo.png";
 
 const AppSidebar = () => {
   const { signOut } = useAuth();
@@ -28,7 +27,9 @@ const AppSidebar = () => {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex h-screen w-64 flex-col bg-sidebar text-sidebar-foreground">
         <div className="flex items-center gap-3 border-b border-sidebar-border px-5 py-5">
-          <img src={logoImg} alt="Logo" className="h-9 w-9" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary">
+            <FileText className="h-5 w-5 text-sidebar-primary-foreground" />
+          </div>
           <div>
             <h2 className="text-sm font-semibold text-sidebar-foreground">{t("app.name")}</h2>
             <p className="text-xs text-sidebar-foreground/60">{t("app.tagline")}</p>
@@ -107,7 +108,9 @@ const AppSidebar = () => {
       {/* Mobile Header */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-sidebar px-4 py-3">
         <div className="flex items-center gap-2">
-          <img src={logoImg} alt="Logo" className="h-8 w-8" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
+            <FileText className="h-4 w-4 text-sidebar-primary-foreground" />
+          </div>
           <span className="text-sm font-semibold text-sidebar-foreground">{t("app.name")}</span>
         </div>
         <Button
