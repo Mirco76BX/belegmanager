@@ -1,8 +1,10 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, Settings, LogOut, Globe, FileText } from "lucide-react";
+import { useUserRole } from "@/hooks/useUserRole";
+import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, Globe, FileText, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import InviteDialog from "@/components/InviteDialog";
 
 const AppSidebar = () => {
   const { signOut } = useAuth();
