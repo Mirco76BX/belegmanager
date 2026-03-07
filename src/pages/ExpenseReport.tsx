@@ -69,6 +69,44 @@ const ExpenseReport = () => {
 
   const totalAmount = receipts.reduce((sum, r) => sum + (r.amount || 0), 0);
 
+  const getTableHeaders = () => [
+    lang === "de" ? "Datum" : "Date",
+    lang === "de" ? "Betrag" : "Amount",
+    lang === "de" ? "Beschreibung" : "Description",
+    lang === "de" ? "Unternehmen" : "Company",
+    lang === "de" ? "Person" : "Person",
+    lang === "de" ? "Zweck" : "Purpose",
+  ];
+
+  const getTableRows = () =>
+    receipts.map((r) => [
+      new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US"),
+      r.amount != null ? `${r.amount.toFixed(2)} €` : "–",
+      r.description || "–",
+      getCompanyName(r.company_id),
+      r.person_met || "–",
+      r.meeting_purpose || "–",
+    ]);
+
+  const exportCSV = () => {
+    if (receipts.length === 0) return;
+    const headers = getTableHeaders();
+    const rows = getTableRows();
+    const csvContent = [
+      headers.join(";"),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(";")),
+      [lang === "de" ? "Gesamt" : "Total", `${totalAmount.toFixed(2)} €`, "", "", "", ""].map((c) => `"${c}"`).join(";"),
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${lang === "de" ? "Reisekostenabrechnung" : "expense-report"}_${fromDate}_${toDate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const generatePDF = async () => {
     if (receipts.length === 0) {
       toast({ title: lang === "de" ? "Keine Belege im Zeitraum" : "No receipts in period", variant: "destructive" });
@@ -80,45 +118,23 @@ const ExpenseReport = () => {
     try {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 14;
 
       // Title
       doc.setFontSize(18);
       doc.text(
         lang === "de" ? "Reisekostenabrechnung" : "Travel Expense Report",
-        pageWidth / 2,
-        20,
-        { align: "center" }
+        pageWidth / 2, 20, { align: "center" }
       );
 
-      // Period
       doc.setFontSize(11);
       doc.text(
         `${lang === "de" ? "Zeitraum" : "Period"}: ${fromDate} – ${toDate}`,
-        pageWidth / 2,
-        30,
-        { align: "center" }
+        pageWidth / 2, 30, { align: "center" }
       );
 
-      // Table
-      const headers = [
-        lang === "de" ? "Datum" : "Date",
-        lang === "de" ? "Betrag" : "Amount",
-        lang === "de" ? "Beschreibung" : "Description",
-        lang === "de" ? "Unternehmen" : "Company",
-        lang === "de" ? "Person" : "Person",
-        lang === "de" ? "Zweck" : "Purpose",
-      ];
-
-      const rows = receipts.map((r) => [
-        new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US"),
-        r.amount != null ? `${r.amount.toFixed(2)} €` : "–",
-        r.description || "–",
-        getCompanyName(r.company_id),
-        r.person_met || "–",
-        r.meeting_purpose || "–",
-      ]);
-
-      // Add total row
+      const rows = getTableRows();
       rows.push([
         lang === "de" ? "Gesamt" : "Total",
         `${totalAmount.toFixed(2)} €`,
@@ -127,7 +143,7 @@ const ExpenseReport = () => {
 
       autoTable(doc, {
         startY: 40,
-        head: [headers],
+        head: [getTableHeaders()],
         body: rows,
         styles: { fontSize: 8, cellPadding: 3 },
         headStyles: { fillColor: [41, 74, 112] },
@@ -135,53 +151,77 @@ const ExpenseReport = () => {
         theme: "grid",
       });
 
-      // Collect receipt images/files as attachments
-      const receiptFiles = receipts.filter((r) => r.file_path);
+      // Collect receipt images – multiple per page
+      const receiptFiles = receipts.filter(
+        (r) => r.file_path && !r.file_path.toLowerCase().endsWith(".pdf")
+      );
 
-      for (let i = 0; i < receiptFiles.length; i++) {
-        const receipt = receiptFiles[i];
-        if (!receipt.file_path) continue;
+      if (receiptFiles.length > 0) {
+        // Grid layout: 2 columns, multiple rows per page
+        const colCount = 2;
+        const colWidth = (pageWidth - margin * 2 - 10) / colCount; // 10 = gap
+        const maxImgHeight = 80;
+        const headerHeight = 12;
+        const cellHeight = maxImgHeight + headerHeight + 6;
 
-        // Skip PDFs - we can only embed images
-        if (receipt.file_path.toLowerCase().endsWith(".pdf")) continue;
+        let curX = margin;
+        let curY = margin;
+        let col = 0;
 
-        try {
-          const { data: urlData } = await supabase.storage
-            .from("receipts")
-            .createSignedUrl(receipt.file_path, 60);
+        doc.addPage();
+        doc.setFontSize(14);
+        doc.text(lang === "de" ? "Beleganhänge" : "Receipt Attachments", pageWidth / 2, curY, { align: "center" });
+        curY += 10;
 
-          if (!urlData?.signedUrl) continue;
+        for (let i = 0; i < receiptFiles.length; i++) {
+          const receipt = receiptFiles[i];
+          if (!receipt.file_path) continue;
 
-          const response = await fetch(urlData.signedUrl);
-          const blob = await response.blob();
+          try {
+            const { data: urlData } = await supabase.storage
+              .from("receipts")
+              .createSignedUrl(receipt.file_path, 60);
+            if (!urlData?.signedUrl) continue;
 
-          const imgData = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          });
+            const response = await fetch(urlData.signedUrl);
+            const blob = await response.blob();
+            const imgData = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
 
-          doc.addPage();
+            // Check if we need a new page
+            if (curY + cellHeight > pageHeight - margin) {
+              doc.addPage();
+              curY = margin;
+              col = 0;
+            }
 
-          // Header for the attachment page
-          doc.setFontSize(12);
-          doc.text(
-            `${lang === "de" ? "Beleg" : "Receipt"} ${i + 1}: ${receipt.description || receipt.date}`,
-            14,
-            20
-          );
+            curX = margin + col * (colWidth + 10);
 
-          // Add image
-          const imgProps = doc.getImageProperties(imgData);
-          const maxW = pageWidth - 28;
-          const maxH = 240;
-          const ratio = Math.min(maxW / imgProps.width, maxH / imgProps.height);
-          const w = imgProps.width * ratio;
-          const h = imgProps.height * ratio;
+            // Label
+            doc.setFontSize(7);
+            doc.text(
+              `${i + 1}. ${(receipt.description || receipt.date).substring(0, 30)}`,
+              curX, curY + 4
+            );
 
-          doc.addImage(imgData, "JPEG", 14, 30, w, h);
-        } catch (err) {
-          console.error("Error adding receipt image:", err);
+            // Image
+            const imgProps = doc.getImageProperties(imgData);
+            const ratio = Math.min(colWidth / imgProps.width, maxImgHeight / imgProps.height);
+            const w = imgProps.width * ratio;
+            const h = imgProps.height * ratio;
+            doc.addImage(imgData, "JPEG", curX, curY + headerHeight, w, h);
+
+            col++;
+            if (col >= colCount) {
+              col = 0;
+              curY += cellHeight;
+            }
+          } catch (err) {
+            console.error("Error adding receipt image:", err);
+          }
         }
       }
 
@@ -213,10 +253,16 @@ const ExpenseReport = () => {
               <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
             </div>
           </div>
-          <Button className="w-full gap-2" onClick={generatePDF} disabled={generating || receipts.length === 0}>
-            <Download className="h-4 w-4" />
-            {generating ? t("general.loading") : (lang === "de" ? "PDF erstellen" : "Generate PDF")}
-          </Button>
+          <div className="flex gap-2">
+            <Button className="flex-1 gap-2" onClick={generatePDF} disabled={generating || receipts.length === 0}>
+              <Download className="h-4 w-4" />
+              {generating ? t("general.loading") : "PDF"}
+            </Button>
+            <Button variant="outline" className="flex-1 gap-2" onClick={exportCSV} disabled={receipts.length === 0}>
+              <FileSpreadsheet className="h-4 w-4" />
+              CSV
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
