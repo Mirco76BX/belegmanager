@@ -62,11 +62,13 @@ const Auth = () => {
           <div className="w-full max-w-md">
             {/* Mobile image */}
             <div className="mb-6 md:hidden">
-              <img
-                src={receiptScanImg}
-                alt={lang === "de" ? "Quittung scannen mit dem Smartphone" : "Scanning a receipt with a smartphone"}
-                className="mx-auto w-48 rounded-xl shadow-md"
-              />
+              <div className="mx-auto h-36 w-48 overflow-hidden rounded-xl shadow-md">
+                <img
+                  src={receiptScanImg}
+                  alt={lang === "de" ? "Quittung scannen mit dem Smartphone" : "Scanning a receipt with a smartphone"}
+                  className="h-full w-full object-cover object-center scale-150"
+                />
+              </div>
             </div>
             <div className="mb-8 text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary">
