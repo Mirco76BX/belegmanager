@@ -2,9 +2,10 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, Globe, FileText, Shield } from "lucide-react";
+import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, Globe, FileText, Shield, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InviteDialog from "@/components/InviteDialog";
+import { useState } from "react";
 
 const AppSidebar = () => {
   const { signOut } = useAuth();
@@ -12,6 +13,7 @@ const AppSidebar = () => {
   const { isAdmin } = useUserRole();
   const navigate = useNavigate();
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
     { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/" },
@@ -21,72 +23,150 @@ const AppSidebar = () => {
   ];
 
   return (
-    <aside className="flex h-screen w-64 flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex items-center gap-3 border-b border-sidebar-border px-5 py-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary">
-          <FileText className="h-5 w-5 text-sidebar-primary-foreground" />
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex h-screen w-64 flex-col bg-sidebar text-sidebar-foreground">
+        <div className="flex items-center gap-3 border-b border-sidebar-border px-5 py-5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary">
+            <FileText className="h-5 w-5 text-sidebar-primary-foreground" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-sidebar-foreground">{t("app.name")}</h2>
+            <p className="text-xs text-sidebar-foreground/60">{t("app.tagline")}</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-sm font-semibold text-sidebar-foreground">{t("app.name")}</h2>
-          <p className="text-xs text-sidebar-foreground/60">{t("app.tagline")}</p>
-        </div>
-      </div>
 
-      <nav className="flex-1 space-y-1 px-3 py-4">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
+        <nav className="flex-1 space-y-1 px-3 py-4">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                }`}
+              >
+                <item.icon className="h-4 w-4" />
+                {t(item.key)}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="border-t border-sidebar-border px-3 py-3 space-y-1">
+          {isAdmin && (
             <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
+              onClick={() => navigate("/admin/users")}
               className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
-                isActive
+                location.pathname === "/admin/users"
                   ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                   : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
               }`}
             >
-              <item.icon className="h-4 w-4" />
-              {t(item.key)}
+              <Shield className="h-4 w-4" />
+              {lang === "de" ? "Benutzerverwaltung" : "User Management"}
             </button>
-          );
-        })}
-      </nav>
-
-      <div className="border-t border-sidebar-border px-3 py-3 space-y-1">
-        {isAdmin && (
-          <button
-            onClick={() => navigate("/admin/users")}
-            className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
-              location.pathname === "/admin/users"
-                ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-            }`}
+          )}
+          <InviteDialog />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLang(lang === "de" ? "en" : "de")}
+            className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
           >
-            <Shield className="h-4 w-4" />
-            {lang === "de" ? "Benutzerverwaltung" : "User Management"}
-          </button>
-        )}
-        <InviteDialog />
+            <Globe className="h-4 w-4" />
+            {lang === "de" ? "English" : "Deutsch"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => signOut()}
+            className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+          >
+            <LogOut className="h-4 w-4" />
+            {t("auth.logout")}
+          </Button>
+        </div>
+      </aside>
+
+      {/* Mobile Header */}
+      <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-sidebar px-4 py-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
+            <FileText className="h-4 w-4 text-sidebar-primary-foreground" />
+          </div>
+          <span className="text-sm font-semibold text-sidebar-foreground">{t("app.name")}</span>
+        </div>
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setLang(lang === "de" ? "en" : "de")}
-          className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="text-sidebar-foreground"
         >
-          <Globe className="h-4 w-4" />
-          {lang === "de" ? "English" : "Deutsch"}
+          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => signOut()}
-          className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-        >
-          <LogOut className="h-4 w-4" />
-          {t("auth.logout")}
-        </Button>
-      </div>
-    </aside>
+      </header>
+
+      {/* Mobile Dropdown Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed top-[52px] left-0 right-0 z-40 bg-sidebar border-b border-sidebar-border px-4 py-3 space-y-1 animate-fade-in">
+          {isAdmin && (
+            <button
+              onClick={() => { navigate("/admin/users"); setMobileMenuOpen(false); }}
+              className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50"
+            >
+              <Shield className="h-4 w-4" />
+              {lang === "de" ? "Benutzerverwaltung" : "User Management"}
+            </button>
+          )}
+          <InviteDialog />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setLang(lang === "de" ? "en" : "de"); setMobileMenuOpen(false); }}
+            className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+          >
+            <Globe className="h-4 w-4" />
+            {lang === "de" ? "English" : "Deutsch"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { signOut(); setMobileMenuOpen(false); }}
+            className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+          >
+            <LogOut className="h-4 w-4" />
+            {t("auth.logout")}
+          </Button>
+        </div>
+      )}
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border">
+        <div className="flex items-center justify-around py-2">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-md transition-colors ${
+                  isActive
+                    ? "text-sidebar-primary"
+                    : "text-sidebar-foreground/50"
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="text-[10px] font-medium">{t(item.key)}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+    </>
   );
 };
 
