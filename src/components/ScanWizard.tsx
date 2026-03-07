@@ -297,7 +297,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-sm">{lang === "de" ? "Unternehmen zuordnen" : "Assign Company"}</Label>
+              <Label className="text-sm">{lang === "de" ? "Organisation zuordnen" : "Assign Organization"}</Label>
               {!showNewCompany ? (
                 <div className="flex items-end gap-2">
                   <Select value={companyId} onValueChange={setCompanyId}>
