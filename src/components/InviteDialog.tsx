@@ -45,30 +45,20 @@ const InviteDialog = () => {
     setLoading(false);
   };
 
-  const handleWhatsAppInvite = (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanPhone = phone.replace(/[^0-9+]/g, "");
-    if (!cleanPhone) return;
-
+  const handleWhatsAppInvite = () => {
     const message = lang === "de"
       ? `Hallo! Ich nutze BelegManager zur Belegverwaltung und möchte dich einladen. Registriere dich hier: ${REGISTER_URL}`
       : `Hi! I'm using ReceiptManager for expense tracking and would like to invite you. Register here: ${REGISTER_URL}`;
 
-    const whatsappUrl = `https://wa.me/${encodeURIComponent(cleanPhone)}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, "_blank");
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
 
-    // Also save in DB
     if (user) {
       supabase.from("invitations").insert({
         invited_by: user.id,
-        email: `whatsapp:${cleanPhone}`,
+        email: `whatsapp-invite`,
       });
     }
 
-    toast({
-      title: lang === "de" ? "WhatsApp wird geöffnet..." : "Opening WhatsApp...",
-    });
-    setPhone("");
     setOpen(false);
   };
 
@@ -114,23 +104,17 @@ const InviteDialog = () => {
             </form>
           </TabsContent>
           <TabsContent value="whatsapp">
-            <form onSubmit={handleWhatsAppInvite} className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label htmlFor="invite-phone">{lang === "de" ? "Telefonnummer (mit Ländervorwahl)" : "Phone number (with country code)"}</Label>
-                <Input
-                  id="invite-phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+491701234567"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full gap-2" disabled={!phone.trim()}>
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">
+                {lang === "de"
+                  ? "WhatsApp öffnet sich mit einem vorformulierten Einladungstext. Wähle dort den Kontakt aus."
+                  : "WhatsApp will open with a pre-written invitation. Choose your contact there."}
+              </p>
+              <Button onClick={handleWhatsAppInvite} className="w-full gap-2">
                 <MessageCircle className="h-4 w-4" />
-                {lang === "de" ? "Via WhatsApp einladen" : "Invite via WhatsApp"}
+                {lang === "de" ? "Mit WhatsApp teilen" : "Share via WhatsApp"}
               </Button>
-            </form>
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>
