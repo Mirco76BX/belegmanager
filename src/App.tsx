@@ -41,6 +41,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
+              <Route path="/impressum" element={<Impressum />} />
               <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/receipts" element={<Receipts />} />
