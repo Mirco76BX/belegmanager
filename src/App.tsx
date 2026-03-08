@@ -14,6 +14,7 @@ import ExpenseReport from "@/pages/ExpenseReport";
 import AdminUsers from "@/pages/AdminUsers";
 import Pricing from "@/pages/Pricing";
 import Impressum from "@/pages/Impressum";
+import Datenschutz from "@/pages/Datenschutz";
 import Demo from "@/pages/Demo";
 import NotFound from "./pages/NotFound";
 
