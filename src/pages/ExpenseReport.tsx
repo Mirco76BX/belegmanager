@@ -99,7 +99,7 @@ const ExpenseReport = () => {
   ];
 
   const getTableRows = () =>
-    receipts.map((r) => [
+    filteredReceipts.map((r) => [
       new Date(r.date).toLocaleDateString(locale),
       r.amount != null ? `${r.amount.toFixed(2)} €` : "–",
       r.vat_amount != null ? `${r.vat_amount.toFixed(2)} €` : "–",
