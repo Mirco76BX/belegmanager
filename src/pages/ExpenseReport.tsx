@@ -270,14 +270,14 @@ const ExpenseReport = () => {
       <Card>
         <CardHeader><CardTitle className="text-lg">{t("expense.period")}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 overflow-hidden">
             <div className="space-y-2 min-w-0">
               <Label>{t("expense.from")}</Label>
-              <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full" />
+              <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full max-w-full text-sm" />
             </div>
             <div className="space-y-2 min-w-0">
               <Label>{t("expense.to")}</Label>
-              <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full" />
+              <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full max-w-full text-sm" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
