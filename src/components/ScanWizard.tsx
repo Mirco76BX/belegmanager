@@ -294,8 +294,14 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                 <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-11 text-base" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">{tt({de:"Betrag (€)", en:"Amount (€)", tr:"Tutar (€)", ar:"المبلغ (€)", ru:"Сумма (€)"})}</Label>
+                <Label className="text-sm">{tt({de:"Betrag inkl. MwSt. (€)", en:"Amount incl. VAT (€)", tr:"KDV dahil Tutar (€)", ar:"المبلغ شامل الضريبة (€)", ru:"Сумма с НДС (€)"})}</Label>
                 <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className="h-11 text-base" />
+                {scanResult?.tax_amount != null && (
+                  <p className="text-xs text-muted-foreground">
+                    {tt({de:"MwSt.", en:"VAT", tr:"KDV", ar:"ضريبة", ru:"НДС"})}: {scanResult.tax_amount.toFixed(2)} € 
+                    {scanResult.tax_rate != null && ` (${scanResult.tax_rate}%)`}
+                  </p>
+                )}
               </div>
             </div>
 
