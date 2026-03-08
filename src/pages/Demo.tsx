@@ -12,11 +12,7 @@ import {
 } from "lucide-react";
 import receiptScanImg from "@/assets/receipt-scan.jpg";
 import taxAdvisorImg from "@/assets/tax-advisor-hero.jpg";
-import testimonial1Img from "@/assets/testimonial-1.jpg";
-import testimonial2Img from "@/assets/testimonial-2.jpg";
-import testimonial3Img from "@/assets/testimonial-3.jpg";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { Star } from "lucide-react";
 
 const Demo = () => {
   const { lang, setLang, tt } = useLanguage();
