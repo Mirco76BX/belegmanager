@@ -101,8 +101,8 @@ const ExpenseReport = () => {
   const getTableRows = () =>
     filteredReceipts.map((r) => [
       new Date(r.date).toLocaleDateString(locale),
-      r.amount != null ? `${r.amount.toFixed(2)} €` : "–",
-      r.vat_amount != null ? `${r.vat_amount.toFixed(2)} €` : "–",
+      r.amount != null ? `${r.amount.toFixed(2)}\u00A0€` : "–",
+      r.vat_amount != null ? `${r.vat_amount.toFixed(2)}\u00A0€` : "–",
       r.vat_rate != null ? `${r.vat_rate}%` : "–",
       r.description || "–", getCompanyName(r.company_id),
       r.person_met || "–", r.meeting_purpose || "–",
@@ -117,7 +117,7 @@ const ExpenseReport = () => {
     const csvContent = [
       headers.join(";"),
       ...rows.map((row) => row.map((cell) => `"${cell}"`).join(";")),
-      [totalLabel, `${totalAmount.toFixed(2)} €`, `${totalVat.toFixed(2)} €`, "", "", "", "", ""].map((c) => `"${c}"`).join(";"),
+      [totalLabel, `${totalAmount.toFixed(2)}\u00A0€`, `${totalVat.toFixed(2)}\u00A0€`, "", "", "", "", ""].map((c) => `"${c}"`).join(";"),
     ].join("\n");
 
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
@@ -169,12 +169,18 @@ const ExpenseReport = () => {
       yPos += 10;
 
       const rows = getTableRows();
-      rows.push([totalLabel, `${totalAmount.toFixed(2)} €`, `${totalVat.toFixed(2)} €`, "", "", "", "", ""]);
+      rows.push([totalLabel, `${totalAmount.toFixed(2)}\u00A0€`, `${totalVat.toFixed(2)}\u00A0€`, "", "", "", "", ""]);
 
       autoTable(doc, {
         startY: yPos, head: [getTableHeaders()], body: rows,
         styles: { fontSize: 8, cellPadding: 3 },
         headStyles: { fillColor: [41, 74, 112] },
+        columnStyles: {
+          0: { cellWidth: 22 },  // Datum
+          1: { cellWidth: 24, halign: 'right' },  // Betrag
+          2: { cellWidth: 20, halign: 'right' },  // MwSt.
+          3: { cellWidth: 16, halign: 'right' },  // MwSt.-%
+        },
         footStyles: { fontStyle: "bold" }, theme: "grid",
       });
 
