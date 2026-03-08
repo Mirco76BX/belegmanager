@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { FileText, Globe } from "lucide-react";
 import receiptScanImg from "@/assets/receipt-scan.jpg";
+import PricingPlans from "@/components/PricingPlans";
+import ContactSection from "@/components/ContactSection";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -47,7 +49,8 @@ const Auth = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <div className="flex flex-1 items-center justify-center px-4">
+      {/* Hero / Auth Section */}
+      <div className="flex flex-1 items-center justify-center px-4 py-12">
         <div className="flex w-full max-w-4xl animate-fade-in gap-10 items-center">
           <div className="hidden flex-1 md:block">
             <img
@@ -150,6 +153,29 @@ const Auth = () => {
           </div>
         </div>
       </div>
+
+      {/* Pricing Section */}
+      <div className="border-t border-border bg-muted/30 px-4 py-16">
+        <div className="mx-auto max-w-4xl space-y-4 text-center">
+          <h2 className="text-2xl font-bold text-foreground">
+            {lang === "de" ? "Unsere Pläne" : "Our Plans"}
+          </h2>
+          <p className="text-muted-foreground mb-8">
+            {lang === "de"
+              ? "Starten Sie kostenlos und upgraden Sie jederzeit."
+              : "Start for free and upgrade anytime."}
+          </p>
+        </div>
+        <div className="mx-auto max-w-4xl mt-8">
+          <PricingPlans compact />
+        </div>
+      </div>
+
+      {/* Contact Section */}
+      <div className="px-4 py-16">
+        <ContactSection />
+      </div>
+
       <footer className="py-4 text-center">
         <Link to="/impressum" state={{ from: "/auth" }} className="text-xs text-muted-foreground hover:text-foreground hover:underline">
           Impressum
