@@ -154,6 +154,19 @@ const Companies = () => {
               <Input value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
             <div className="space-y-2">
+              <Label>{t("companies.type")}</Label>
+              <Select value={orgType} onValueChange={(v) => setOrgType(v as OrgType)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ORG_TYPES.map((ot) => (
+                    <SelectItem key={ot} value={ot}>
+                      <span className="flex items-center gap-2">{orgTypeIcons[ot]} {t(`companies.type.${ot}` as any)}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label>{t("companies.taxId")}</Label>
               <Input value={taxId} onChange={(e) => setTaxId(e.target.value)} />
             </div>
