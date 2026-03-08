@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { autoCropImage, dataUrlToFile } from "@/lib/autoCropImage";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, TIERS } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
