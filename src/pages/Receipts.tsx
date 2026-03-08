@@ -212,7 +212,7 @@ const Receipts = () => {
       </div>
 
       {receipts.length > 0 && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Select value={filterCompanyId} onValueChange={setFilterCompanyId}>
             <SelectTrigger className="h-9 w-[200px] text-sm">
               <SelectValue placeholder={tt({de:"Alle Organisationen", en:"All organizations", tr:"Tüm kuruluşlar", ar:"جميع المنظمات", ru:"Все организации"})} />
@@ -223,6 +223,19 @@ const Receipts = () => {
               {companies.map((c) => (
                 <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterMonth} onValueChange={setFilterMonth}>
+            <SelectTrigger className="h-9 w-[180px] text-sm">
+              <SelectValue placeholder={tt({de:"Alle Monate", en:"All months", tr:"Tüm aylar", ar:"جميع الأشهر", ru:"Все месяцы"})} />
+            </SelectTrigger>
+            <SelectContent position="popper" sideOffset={4} className="max-h-56">
+              <SelectItem value="all">{tt({de:"Alle Monate", en:"All months", tr:"Tüm aylar", ar:"جميع الأشهر", ru:"Все месяцы"})}</SelectItem>
+              {availableMonths.map((m) => {
+                const [y, mo] = m.split("-");
+                const label = new Date(parseInt(y), parseInt(mo) - 1).toLocaleDateString(locale, { year: "numeric", month: "long" });
+                return <SelectItem key={m} value={m}>{label}</SelectItem>;
+              })}
             </SelectContent>
           </Select>
         </div>
