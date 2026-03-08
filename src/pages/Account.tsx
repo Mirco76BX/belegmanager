@@ -6,17 +6,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { User, CreditCard, ScanLine, Loader2, Ticket } from "lucide-react";
+import { User, CreditCard, ScanLine, Loader2, Ticket, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+
+interface Profile {
+  first_name: string | null;
+  last_name: string | null;
+  display_name: string | null;
+  email: string;
+  is_tax_advisor: boolean;
+  kanzlei: string | null;
+}
 
 const Account = () => {
   const { user, subscription, checkSubscription } = useAuth();
   const { lang, tt } = useLanguage();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<{ display_name: string | null; email: string; is_tax_advisor: boolean; kanzlei: string | null } | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [scanCount, setScanCount] = useState(0);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [saving, setSaving] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -25,11 +36,18 @@ const Account = () => {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("display_name, email, is_tax_advisor, kanzlei").eq("id", user.id).maybeSingle().then(({ data }) => {
-      if (data) { setProfile(data); setDisplayName(data.display_name || ""); }
+    supabase.from("profiles").select("first_name, last_name, display_name, email, is_tax_advisor, kanzlei").eq("id", user.id).maybeSingle().then(({ data }) => {
+      if (data) {
+        setProfile(data as Profile);
+        setFirstName((data as any).first_name || "");
+        setLastName((data as any).last_name || "");
+        setDisplayName(data.display_name || "");
+      }
     });
     supabase.from("receipts").select("id", { count: "exact", head: true }).then(({ count }) => { setScanCount(count ?? 0); });
   }, [user]);
+
+  const profileIncomplete = !firstName.trim() || !lastName.trim();
 
   const tierConfig = TIERS[subscription.tier] || TIERS.free;
   const maxScans = tierConfig.maxScans === Infinity ? null : tierConfig.maxScans;
@@ -37,10 +55,21 @@ const Account = () => {
 
   const handleSaveProfile = async () => {
     if (!user) return;
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error(tt({de:"Vorname und Nachname sind erforderlich.", en:"First and last name are required.", tr:"Ad ve soyad gereklidir.", ar:"الاسم الأول واسم العائلة مطلوبان.", ru:"Имя и фамилия обязательны."}));
+      return;
+    }
     setSaving(true);
-    const { error } = await supabase.from("profiles").update({ display_name: displayName.trim() || null }).eq("id", user.id);
+    const { error } = await supabase.from("profiles").update({
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      display_name: displayName.trim() || null,
+    } as any).eq("id", user.id);
     if (error) toast.error(error.message);
-    else toast.success(tt({de:"Profil gespeichert", en:"Profile saved", tr:"Profil kaydedildi", ar:"تم حفظ الملف", ru:"Профиль сохранён"}));
+    else {
+      toast.success(tt({de:"Profil gespeichert", en:"Profile saved", tr:"Profil kaydedildi", ar:"تم حفظ الملف", ru:"Профиль сохранён"}));
+      setProfile(prev => prev ? { ...prev, first_name: firstName.trim(), last_name: lastName.trim(), display_name: displayName.trim() || null } : prev);
+    }
     setSaving(false);
   };
 
@@ -62,6 +91,22 @@ const Account = () => {
       <h1 className="text-xl md:text-2xl font-bold text-foreground">
         {tt({de:"Mein Konto", en:"My Account", tr:"Hesabım", ar:"حسابي", ru:"Мой аккаунт"})}
       </h1>
+
+      {profileIncomplete && (
+        <div className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3">
+          <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+          <p className="text-sm text-destructive font-medium">
+            {tt({
+              de: "Bitte vervollständige dein Profil: Vorname und Nachname sind erforderlich.",
+              en: "Please complete your profile: first and last name are required.",
+              tr: "Lütfen profilinizi tamamlayın: ad ve soyad gereklidir.",
+              ar: "يرجى إكمال ملفك الشخصي: الاسم الأول واسم العائلة مطلوبان.",
+              ru: "Пожалуйста, заполните профиль: имя и фамилия обязательны.",
+            })}
+          </p>
+        </div>
+      )}
+
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -81,15 +126,28 @@ const Account = () => {
                 <p className="text-sm text-muted-foreground">{profile.kanzlei}</p>
               </div>
             )}
-            <div className="space-y-1.5">
-              <Label className="text-sm">{tt({de:"Anzeigename", en:"Display name", tr:"Görünen ad", ar:"الاسم المعروض", ru:"Отображаемое имя"})}</Label>
-              <div className="flex gap-2">
-                <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder={tt({de:"Ihr Name", en:"Your name", tr:"Adınız", ar:"اسمك", ru:"Ваше имя"})} className="h-9" />
-                <Button size="sm" onClick={handleSaveProfile} disabled={saving}>
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : tt({de:"Speichern", en:"Save", tr:"Kaydet", ar:"حفظ", ru:"Сохранить"})}
-                </Button>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm">
+                  {tt({de:"Vorname", en:"First name", tr:"Ad", ar:"الاسم الأول", ru:"Имя"})} <span className="text-destructive">*</span>
+                </Label>
+                <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder={tt({de:"Max", en:"John", tr:"Ahmet", ar:"أحمد", ru:"Иван"})} className="h-9" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">
+                  {tt({de:"Nachname", en:"Last name", tr:"Soyad", ar:"اسم العائلة", ru:"Фамилия"})} <span className="text-destructive">*</span>
+                </Label>
+                <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder={tt({de:"Mustermann", en:"Doe", tr:"Yılmaz", ar:"محمد", ru:"Иванов"})} className="h-9" />
               </div>
             </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">{tt({de:"Anzeigename (optional)", en:"Display name (optional)", tr:"Görünen ad (isteğe bağlı)", ar:"الاسم المعروض (اختياري)", ru:"Отображаемое имя (необязательно)"})}</Label>
+              <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder={tt({de:"Optional", en:"Optional", tr:"İsteğe bağlı", ar:"اختياري", ru:"Необязательно"})} className="h-9" />
+            </div>
+            <Button size="sm" onClick={handleSaveProfile} disabled={saving} className="w-full sm:w-auto">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {tt({de:"Profil speichern", en:"Save profile", tr:"Profili kaydet", ar:"حفظ الملف", ru:"Сохранить профиль"})}
+            </Button>
           </CardContent>
         </Card>
         <Card>

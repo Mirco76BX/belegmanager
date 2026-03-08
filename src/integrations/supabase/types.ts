@@ -172,30 +172,36 @@ export type Database = {
           default_company_id: string | null
           display_name: string | null
           email: string
+          first_name: string | null
           id: string
           is_blocked: boolean
           is_tax_advisor: boolean
           kanzlei: string | null
+          last_name: string | null
         }
         Insert: {
           created_at?: string
           default_company_id?: string | null
           display_name?: string | null
           email: string
+          first_name?: string | null
           id: string
           is_blocked?: boolean
           is_tax_advisor?: boolean
           kanzlei?: string | null
+          last_name?: string | null
         }
         Update: {
           created_at?: string
           default_company_id?: string | null
           display_name?: string | null
           email?: string
+          first_name?: string | null
           id?: string
           is_blocked?: boolean
           is_tax_advisor?: boolean
           kanzlei?: string | null
+          last_name?: string | null
         }
         Relationships: [
           {

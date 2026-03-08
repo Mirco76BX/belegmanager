@@ -50,7 +50,7 @@ const ExpenseReport = () => {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [filterCompanyId, setFilterCompanyId] = useState<string>("all");
-  const [profile, setProfile] = useState<{ display_name: string | null; email: string } | null>(null);
+  const [profile, setProfile] = useState<{ first_name: string | null; last_name: string | null; display_name: string | null; email: string } | null>(null);
   
 
   const fetchData = async () => {
@@ -59,7 +59,7 @@ const ExpenseReport = () => {
     const [receiptsRes, companiesRes, profileRes] = await Promise.all([
       supabase.from("receipts").select("*").gte("date", fromDate).lte("date", toDate).order("date", { ascending: true }),
       supabase.from("companies").select("id, name"),
-      supabase.from("profiles").select("display_name, email").eq("id", user.id).single(),
+      supabase.from("profiles").select("first_name, last_name, display_name, email").eq("id", user.id).single(),
     ]);
     if (receiptsRes.data) setReceipts(receiptsRes.data);
     if (companiesRes.data) setCompanies(companiesRes.data);
@@ -112,9 +112,20 @@ const ExpenseReport = () => {
 
   const exportCSV = () => {
     if (filteredReceipts.length === 0) return;
+    const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ");
+    const selectedCompany = filterCompanyId !== "all" && filterCompanyId !== "none"
+      ? companies.find(c => c.id === filterCompanyId)?.name : null;
+    const metaLines: string[] = [];
+    if (fullName) metaLines.push(`"${tt({de:"Name", en:"Name", tr:"Ad", ar:"الاسم", ru:"Имя"})}";"${fullName}"`);
+    metaLines.push(`"${tt({de:"E-Mail", en:"Email", tr:"E-posta", ar:"البريد", ru:"Почта"})}";"${profile?.email || user?.email || ""}"`);
+    if (selectedCompany) metaLines.push(`"${tt({de:"Organisation", en:"Organization", tr:"Kuruluş", ar:"المنظمة", ru:"Организация"})}";"${selectedCompany}"`);
+    metaLines.push(`"${t("expense.period")}";"${fromDate} – ${toDate}"`);
+    metaLines.push("");
+
     const headers = getTableHeaders();
     const rows = getTableRows();
     const csvContent = [
+      ...metaLines,
       headers.join(";"),
       ...rows.map((row) => row.map((cell) => `"${cell}"`).join(";")),
       [totalLabel, `${totalAmount.toFixed(2)}\u00A0€`, `${totalVat.toFixed(2)}\u00A0€`, "", "", "", "", ""].map((c) => `"${c}"`).join(";"),
@@ -149,8 +160,9 @@ const ExpenseReport = () => {
 
       // User info
       doc.setFontSize(10);
-      if (profile?.display_name) {
-        doc.text(profile.display_name, pageWidth / 2, yPos, { align: "center" });
+      const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ");
+      if (fullName) {
+        doc.text(fullName, pageWidth / 2, yPos, { align: "center" });
         yPos += 5;
       }
       doc.text(profile?.email || user?.email || "", pageWidth / 2, yPos, { align: "center" });
@@ -240,8 +252,10 @@ const ExpenseReport = () => {
 
       {profile && (
         <div className="text-sm text-muted-foreground">
-          <p>{profile.display_name || profile.email}</p>
-          {profile.display_name && <p>{profile.email}</p>}
+          {(profile.first_name || profile.last_name) && (
+            <p className="font-medium text-foreground">{[profile.first_name, profile.last_name].filter(Boolean).join(" ")}</p>
+          )}
+          <p>{profile.email}</p>
           {filterCompanyId !== "all" && filterCompanyId !== "none" && (
             <p className="font-medium text-foreground">
               {tt({de:"Organisation", en:"Organization", tr:"Kuruluş", ar:"المنظمة", ru:"Организация"})}: {companies.find(c => c.id === filterCompanyId)?.name}
