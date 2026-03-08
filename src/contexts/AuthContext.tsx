@@ -36,7 +36,7 @@ export const TIERS = {
 } as const;
 
 const RELAX_PRODUCT_IDS = [TIERS.relax.yearly.product_id, TIERS.relax.monthly.product_id, "coupon_relax"];
-const MASTER_PRODUCT_IDS = [TIERS.master.yearly.product_id, "coupon_master"];
+const MASTER_PRODUCT_IDS = [TIERS.master.yearly.product_id, TIERS.master.monthly.product_id, "coupon_master"];
 
 interface SubscriptionState {
   subscribed: boolean;
