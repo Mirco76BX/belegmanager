@@ -194,7 +194,8 @@ const Pricing = () => {
               ))}
             </ul>
 
-            {plan.id === "relax" && !isRelax && (
+            {/* Upgrade button for non-current paid plans */}
+            {plan.priceId && !plan.current && !isPaid && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Tag className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -205,21 +206,23 @@ const Pricing = () => {
                     className="h-9 text-sm"
                   />
                 </div>
-                <Button className="w-full" onClick={handleCheckout} disabled={loading}>
+                <Button className="w-full" onClick={() => handleCheckout(plan.priceId!)} disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {lang === "de" ? "Jetzt upgraden" : "Upgrade Now"}
                 </Button>
               </div>
             )}
 
-            {plan.id === "relax" && isRelax && (
+            {/* Manage button for current paid plan */}
+            {plan.current && isPaid && (
               <Button variant="outline" className="w-full" onClick={handleManage} disabled={portalLoading}>
                 {portalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {lang === "de" ? "Abo verwalten" : "Manage Subscription"}
               </Button>
             )}
 
-            {plan.id === "free" && !isRelax && (
+            {/* Current free plan */}
+            {plan.id === "free" && plan.current && (
               <Button variant="outline" className="w-full" disabled>
                 {lang === "de" ? "Aktiver Plan" : "Current Plan"}
               </Button>
