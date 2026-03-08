@@ -16,6 +16,7 @@ const Pricing = () => {
   const [loading, setLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("yearly");
+  const [couponCode, setCouponCode] = useState("");
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
