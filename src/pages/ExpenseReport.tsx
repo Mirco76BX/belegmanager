@@ -47,6 +47,25 @@ const ExpenseReport = () => {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
 
+  const fetchData = async () => {
+    if (!user || subscription.tier === "free") return;
+    setLoading(true);
+    const [receiptsRes, companiesRes] = await Promise.all([
+      supabase
+        .from("receipts")
+        .select("*")
+        .gte("date", fromDate)
+        .lte("date", toDate)
+        .order("date", { ascending: true }),
+      supabase.from("companies").select("id, name"),
+    ]);
+    if (receiptsRes.data) setReceipts(receiptsRes.data);
+    if (companiesRes.data) setCompanies(companiesRes.data);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchData(); }, [user, fromDate, toDate, subscription.tier]);
+
   // FREE tier cannot access expense reports
   if (subscription.tier === "free") {
     return (
@@ -66,25 +85,6 @@ const ExpenseReport = () => {
       </div>
     );
   }
-
-  const fetchData = async () => {
-    if (!user) return;
-    setLoading(true);
-    const [receiptsRes, companiesRes] = await Promise.all([
-      supabase
-        .from("receipts")
-        .select("*")
-        .gte("date", fromDate)
-        .lte("date", toDate)
-        .order("date", { ascending: true }),
-      supabase.from("companies").select("id, name"),
-    ]);
-    if (receiptsRes.data) setReceipts(receiptsRes.data);
-    if (companiesRes.data) setCompanies(companiesRes.data);
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchData(); }, [user, fromDate, toDate]);
 
   const getCompanyName = (id: string | null) =>
     id ? companies.find((c) => c.id === id)?.name || "–" : "–";
