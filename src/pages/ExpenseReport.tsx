@@ -130,7 +130,7 @@ const ExpenseReport = () => {
   };
 
   const generatePDF = async () => {
-    if (receipts.length === 0) {
+    if (filteredReceipts.length === 0) {
       toast({ title: tt({de:"Keine Belege im Zeitraum", en:"No receipts in period", tr:"Dönemde fiş yok", ar:"لا إيصالات في الفترة", ru:"Нет чеков за период"}), variant: "destructive" });
       return;
     }
