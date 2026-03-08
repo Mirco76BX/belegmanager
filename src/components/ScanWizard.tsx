@@ -239,9 +239,37 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
           </DialogTitle>
         </DialogHeader>
 
+        {/* Scan limit reached */}
+        {limitReached && (
+          <div className="flex flex-col items-center gap-4 py-6 text-center">
+            <AlertTriangle className="h-10 w-10 text-destructive" />
+            <h3 className="font-semibold text-foreground">
+              {lang === "de" ? "Scan-Limit erreicht" : "Scan limit reached"}
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              {lang === "de"
+                ? `Du hast ${scanCount} von ${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} Scans verwendet. Upgrade deinen Plan für mehr Scans.`
+                : `You've used ${scanCount} of ${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} scans. Upgrade your plan for more scans.`}
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose}>
+                {lang === "de" ? "Schließen" : "Close"}
+              </Button>
+              <Button onClick={() => { onClose(); navigate("/pricing"); }}>
+                {lang === "de" ? "Jetzt upgraden" : "Upgrade Now"}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Step 1: Upload */}
-        {step === "upload" && (
+        {step === "upload" && !limitReached && (
           <div className="space-y-4">
+            {scanCount !== null && !limitReached && (
+              <p className="text-xs text-muted-foreground text-right">
+                {scanCount} / {subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} Scans
+              </p>
+            )}
             <p className="text-sm text-muted-foreground">
               {lang === "de"
                 ? "Fotografiere deinen Beleg oder lade ein Bild/PDF hoch."
