@@ -205,6 +205,23 @@ const Receipts = () => {
         </Button>
       </div>
 
+      {receipts.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Select value={filterCompanyId} onValueChange={setFilterCompanyId}>
+            <SelectTrigger className="h-9 w-[200px] text-sm">
+              <SelectValue placeholder={tt({de:"Alle Organisationen", en:"All organizations", tr:"Tüm kuruluşlar", ar:"جميع المنظمات", ru:"Все организации"})} />
+            </SelectTrigger>
+            <SelectContent position="popper" sideOffset={4} className="max-h-56">
+              <SelectItem value="all">{tt({de:"Alle Organisationen", en:"All organizations", tr:"Tüm kuruluşlar", ar:"جميع المنظمات", ru:"Все организации"})}</SelectItem>
+              <SelectItem value="none">{tt({de:"Ohne Organisation", en:"No organization", tr:"Kuruluşsuz", ar:"بدون منظمة", ru:"Без организации"})}</SelectItem>
+              {companies.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {receipts.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
