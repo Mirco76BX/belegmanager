@@ -55,7 +55,7 @@ const Companies = () => {
 
   useEffect(() => { fetchCompanies(); }, [user]);
 
-  const resetForm = () => { setName(""); setTaxId(""); setAddress(""); setEditing(null); };
+  const resetForm = () => { setName(""); setTaxId(""); setAddress(""); setOrgType("company"); setEditing(null); };
 
   const openEdit = (c: Company) => {
     setEditing(c);
