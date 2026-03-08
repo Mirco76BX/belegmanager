@@ -42,9 +42,9 @@ const ExpenseReport = () => {
 
   const [fromDate, setFromDate] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 1);
-    return d.toISOString().split("T")[0];
+    return formatLocalDate(d);
   });
-  const [toDate, setToDate] = useState(new Date().toISOString().split("T")[0]);
+  const [toDate, setToDate] = useState(formatLocalDate(new Date()));
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
