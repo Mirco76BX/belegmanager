@@ -51,9 +51,9 @@ const Dashboard = () => {
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
         grouped[key] = 0;
       }
-      chartRes.data?.forEach((r) => {
+      chartRes.data?.forEach((r: any) => {
         const key = r.date?.substring(0, 7);
-        if (key && key in grouped) grouped[key] += (r.amount || 0);
+        if (key && key in grouped) grouped[key] += (r.amount_eur ?? r.amount ?? 0);
       });
       setMonthlyData(
         Object.entries(grouped).map(([key, amount]) => {
