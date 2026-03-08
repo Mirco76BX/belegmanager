@@ -5,7 +5,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, Globe, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InviteDialog from "@/components/InviteDialog";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import type { Language } from "@/i18n/translations";
 
 const AppSidebar = () => {
   const { signOut, subscription } = useAuth();
