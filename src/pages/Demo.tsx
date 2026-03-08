@@ -33,6 +33,7 @@ const Demo = () => {
   const [regLoading, setRegLoading] = useState(false);
   const [regDone, setRegDone] = useState(false);
   const [regError, setRegError] = useState("");
+  const [regConsent, setRegConsent] = useState(false);
 
   const steps = [
     {
