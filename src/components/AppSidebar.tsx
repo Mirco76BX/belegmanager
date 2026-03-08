@@ -8,19 +8,26 @@ import InviteDialog from "@/components/InviteDialog";
 import { useState } from "react";
 
 const AppSidebar = () => {
-  const { signOut } = useAuth();
+  const { signOut, subscription } = useAuth();
   const { t, lang, setLang } = useLanguage();
   const { isAdmin } = useUserRole();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const isTaxAdvisor = subscription.tier === "tax_advisor";
+
   const navItems = [
     { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/" },
     { key: "nav.receipts" as const, icon: Receipt, path: "/receipts" },
     { key: "nav.companies" as const, icon: Building2, path: "/companies" },
     { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report" },
-    { key: "nav.pricing" as const, icon: CreditCard, path: "/pricing" },
+    {
+      key: "nav.pricing" as const,
+      icon: isTaxAdvisor ? UserCircle : CreditCard,
+      path: "/pricing",
+      labelOverride: isTaxAdvisor ? (lang === "de" ? "Empfehlungen" : "Referrals") : undefined,
+    },
   ];
 
   return (
