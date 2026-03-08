@@ -154,9 +154,9 @@ const Demo = () => {
                   : "Recommend a tool to your clients that captures receipts via AI, organizes them, and exports ready-made expense reports – less paper, fewer queries, more efficiency."}
               </p>
               <div className="flex flex-col items-center gap-3 sm:flex-row md:justify-start">
-                <Link to="/auth">
+                <a href="#registrierung">
                   <Button size="lg" className="gap-2 px-8">
-                    {de ? "Kostenlos testen" : "Try for free"}
+                    {de ? "Kostenlos registrieren" : "Register for free"}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
