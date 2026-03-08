@@ -157,7 +157,7 @@ const ExpenseReport = () => {
         footStyles: { fontStyle: "bold" }, theme: "grid",
       });
 
-      const receiptFiles = receipts.filter((r) => r.file_path && !r.file_path.toLowerCase().endsWith(".pdf"));
+      const receiptFiles = filteredReceipts.filter((r) => r.file_path && !r.file_path.toLowerCase().endsWith(".pdf"));
 
       if (receiptFiles.length > 0) {
         const colCount = 2;
