@@ -21,6 +21,7 @@ interface Receipt {
   id: string;
   date: string;
   amount: number | null;
+  currency?: string;
   description: string | null;
   person_met: string | null;
   organization: string | null;
@@ -96,7 +97,11 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
     setSaving(false);
   };
 
-  const formatAmount = (a: number | null) => a != null ? `${a.toFixed(2)} €` : "–";
+  const formatAmount = (a: number | null, currency?: string) => {
+    if (a == null) return "–";
+    const sym = currency && currency !== "EUR" ? ` ${currency}` : " €";
+    return `${a.toFixed(2)}${sym}`;
+  };
   const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "–";
   const isEditing = (id: string) => editingId === id;
   const locale = getLocale(lang);
@@ -129,7 +134,7 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
                   {new Date(r.date).toLocaleDateString(locale)}
                 </TableCell>
                 <TableCell className="font-mono text-sm text-muted-foreground whitespace-nowrap">
-                  {formatAmount(r.amount)}
+                  {formatAmount(r.amount, r.currency)}
                 </TableCell>
                 <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
                   {r.description || "–"}
@@ -217,7 +222,7 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
             ) : (
               <>
                 <TableCell className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(locale)}</TableCell>
-                <TableCell className="font-mono whitespace-nowrap">{formatAmount(r.amount)}</TableCell>
+                <TableCell className="font-mono whitespace-nowrap">{formatAmount(r.amount, r.currency)}</TableCell>
                 <TableCell className="max-w-[200px] truncate">{r.description || "–"}</TableCell>
                 <TableCell>{companyName(r.company_id)}</TableCell>
                 <TableCell className="max-w-[200px] truncate">

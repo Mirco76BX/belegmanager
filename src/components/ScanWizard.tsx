@@ -26,6 +26,7 @@ const PURPOSE_PRESETS = [
 interface ScanResult {
   date: string | null;
   amount: number | null;
+  currency?: string;
   description: string | null;
   vendor: string | null;
   tax_amount: number | null;
@@ -201,6 +202,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         status: skipDetails ? "pending" : "complete",
         vat_amount: scanResult?.tax_amount ?? null,
         vat_rate: scanResult?.tax_rate ?? null,
+        currency: scanResult?.currency || "EUR",
       };
 
       if (isFuelReceipt) {
@@ -306,9 +308,9 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                 {scanResult.vendor && <p className="text-muted-foreground text-xs">📍 {scanResult.vendor}</p>}
                 {scanResult.amount && (
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                    <span className="font-semibold text-foreground">💰 {scanResult.amount.toFixed(2)} € inkl. MwSt.</span>
+                    <span className="font-semibold text-foreground">💰 {scanResult.amount.toFixed(2)} {scanResult.currency || "EUR"} inkl. MwSt.</span>
                     {scanResult.tax_amount != null && (
-                      <span>MwSt: {scanResult.tax_amount.toFixed(2)} €</span>
+                      <span>MwSt: {scanResult.tax_amount.toFixed(2)} {scanResult.currency || "EUR"}</span>
                     )}
                     {scanResult.tax_rate != null && (
                       <span>Satz: {scanResult.tax_rate}%</span>

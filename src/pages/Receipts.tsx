@@ -17,6 +17,7 @@ interface Receipt {
   id: string;
   date: string;
   amount: number | null;
+  currency?: string;
   description: string | null;
   person_met: string | null;
   organization: string | null;
@@ -147,7 +148,11 @@ const Receipts = () => {
     if (!error) { setDetailOpen(false); fetchData(); }
   };
 
-  const formatAmount = (a: number | null) => a != null ? `${a.toFixed(2)} €` : "–";
+  const formatAmount = (a: number | null, currency?: string) => {
+    if (a == null) return "–";
+    const sym = currency && currency !== "EUR" ? ` ${currency}` : " €";
+    return `${a.toFixed(2)}${sym}`;
+  };
   const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "–";
 
   const filteredByCompany = filterCompanyId === "all" ? receipts
@@ -168,7 +173,7 @@ const Receipts = () => {
           <CardContent className="py-3 px-4">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="font-mono text-sm font-semibold whitespace-nowrap">{formatAmount(r.amount)}</span>
+                <span className="font-mono text-sm font-semibold whitespace-nowrap">{formatAmount(r.amount, r.currency)}</span>
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
                   {new Date(r.date).toLocaleDateString(locale)}
                 </span>
@@ -355,13 +360,13 @@ const Receipts = () => {
                 </div>
                  <div className="flex justify-between text-sm">
                    <span className="text-muted-foreground">{t("receipts.amount")}</span>
-                   <span className="font-mono font-semibold">{formatAmount(detailReceipt.amount)}</span>
+                   <span className="font-mono font-semibold">{formatAmount(detailReceipt.amount, detailReceipt.currency)}</span>
                  </div>
                  {(detailReceipt.vat_amount != null || detailReceipt.vat_rate != null) && (
                    <div className="flex justify-between text-sm">
                      <span className="text-muted-foreground">MwSt.</span>
                      <span className="font-mono">
-                       {detailReceipt.vat_amount != null ? `${detailReceipt.vat_amount.toFixed(2)} €` : "–"}
+                       {detailReceipt.vat_amount != null ? `${detailReceipt.vat_amount.toFixed(2)} ${detailReceipt.currency && detailReceipt.currency !== "EUR" ? detailReceipt.currency : "€"}` : "–"}
                        {detailReceipt.vat_rate != null ? ` (${detailReceipt.vat_rate}%)` : ""}
                      </span>
                    </div>

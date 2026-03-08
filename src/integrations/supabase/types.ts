@@ -242,6 +242,7 @@ export type Database = {
           amount: number | null
           company_id: string | null
           created_at: string
+          currency: string
           date: string
           description: string | null
           file_path: string | null
@@ -262,6 +263,7 @@ export type Database = {
           amount?: number | null
           company_id?: string | null
           created_at?: string
+          currency?: string
           date?: string
           description?: string | null
           file_path?: string | null
@@ -282,6 +284,7 @@ export type Database = {
           amount?: number | null
           company_id?: string | null
           created_at?: string
+          currency?: string
           date?: string
           description?: string | null
           file_path?: string | null
