@@ -18,6 +18,7 @@ import Account from "@/pages/Account";
 import Impressum from "@/pages/Impressum";
 import Datenschutz from "@/pages/Datenschutz";
 import Demo from "@/pages/Demo";
+import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
