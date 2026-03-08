@@ -43,11 +43,12 @@ serve(async (req) => {
                 text: `Analyze this receipt image and extract the following information. Return ONLY valid JSON with these fields:
 {
   "date": "YYYY-MM-DD format or null if not found",
-  "amount": number or null (total amount paid),
+  "amount": number or null (total amount paid including VAT),
   "currency": "EUR" or detected currency code,
   "description": "brief description of what was purchased/service",
   "vendor": "name of the store/restaurant/vendor",
-  "tax_amount": number or null (VAT/tax amount if visible),
+  "tax_amount": number or null (VAT/MwSt amount if visible on the receipt),
+  "tax_rate": number or null (VAT/MwSt percentage rate, e.g. 19 or 7, if visible on the receipt),
   "items": ["list of individual items if visible"] or [],
   "is_fuel_receipt": true or false (set to true if this is a gas station / fuel / petrol receipt, e.g. from a Tankstelle, gas station, petrol station, or if fuel items like Diesel, Benzin, Super, etc. are listed)
 }
