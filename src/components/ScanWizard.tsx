@@ -75,6 +75,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const [showCustomPurpose, setShowCustomPurpose] = useState(false);
   const [licensePlate, setLicensePlate] = useState("");
   const [mileage, setMileage] = useState("");
+  const [mileageWarning, setMileageWarning] = useState<string | null>(null);
 
   const [showNewCompany, setShowNewCompany] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState("");
@@ -91,7 +92,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       setPersonMet(""); setOrganization(""); setMeetingPurpose("");
       setShowCustomPurpose(false); setShowNewCompany(false); setNewCompanyName("");
       setLimitReached(false); setIsFuelReceipt(false);
-      setLicensePlate(""); setMileage("");
+      setLicensePlate(""); setMileage(""); setMileageWarning(null);
 
       const maxScans = subscription.tier === "master" ? Infinity
         : subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans;
@@ -150,6 +151,33 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       toast({ title: tt({de:"Organisation erstellt!", en:"Organization created!", tr:"Kuruluş oluşturuldu!", ar:"تم إنشاء المنظمة!", ru:"Организация создана!"}) });
     } catch (err: any) { toast({ title: err.message, variant: "destructive" }); }
     finally { setCreatingCompany(false); }
+  };
+
+  const checkMileage = async (plate: string, km: string) => {
+    setMileageWarning(null);
+    if (!plate.trim() || !km || !user) return;
+    const kmVal = parseFloat(km);
+    if (isNaN(kmVal)) return;
+    const { data } = await supabase
+      .from("receipts")
+      .select("mileage, date")
+      .eq("user_id", user.id)
+      .eq("receipt_type", "fuel")
+      .eq("license_plate", plate.trim())
+      .not("mileage", "is", null)
+      .order("mileage", { ascending: false })
+      .limit(1);
+    if (data && data.length > 0 && data[0].mileage != null && kmVal < data[0].mileage) {
+      setMileageWarning(
+        tt({
+          de: `Achtung: Der km-Stand (${kmVal.toLocaleString()}) ist niedriger als der letzte erfasste Stand (${data[0].mileage.toLocaleString()} km) für ${plate.trim()}.`,
+          en: `Warning: Mileage (${kmVal.toLocaleString()}) is lower than the last recorded value (${data[0].mileage.toLocaleString()} km) for ${plate.trim()}.`,
+          tr: `Uyarı: Kilometre (${kmVal.toLocaleString()}) ${plate.trim()} için son kayıtlı değerden (${data[0].mileage.toLocaleString()} km) düşük.`,
+          ar: `تحذير: المسافة (${kmVal.toLocaleString()}) أقل من آخر قيمة مسجلة (${data[0].mileage.toLocaleString()} كم) لـ ${plate.trim()}.`,
+          ru: `Внимание: Пробег (${kmVal.toLocaleString()}) ниже последнего зафиксированного значения (${data[0].mileage.toLocaleString()} км) для ${plate.trim()}.`,
+        })
+      );
+    }
   };
 
   const handleSave = async (skipDetails = false) => {
@@ -362,12 +390,20 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm">{tt({de:"Kennzeichen", en:"License Plate", tr:"Plaka", ar:"لوحة الترخيص", ru:"Номерной знак"})}</Label>
-                  <Input value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} placeholder={tt({de:"z.B. B-AB 1234", en:"e.g. B-AB 1234", tr:"ör. 34 ABC 123", ar:"مثال: B-AB 1234", ru:"напр. B-AB 1234"})} className="h-11 text-base" />
+                  <Input value={licensePlate} onChange={(e) => { setLicensePlate(e.target.value); if (mileage) checkMileage(e.target.value, mileage); }} placeholder={tt({de:"z.B. B-AB 1234", en:"e.g. B-AB 1234", tr:"ör. 34 ABC 123", ar:"مثال: B-AB 1234", ru:"напр. B-AB 1234"})} className="h-11 text-base" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm">{tt({de:"Kilometerstand", en:"Mileage", tr:"Kilometre", ar:"عداد المسافات", ru:"Пробег"})}</Label>
-                  <Input type="number" value={mileage} onChange={(e) => setMileage(e.target.value)} placeholder={tt({de:"z.B. 45230", en:"e.g. 45230", tr:"ör. 45230", ar:"مثال: 45230", ru:"напр. 45230"})} className="h-11 text-base" />
+                  <Input type="number" value={mileage} onChange={(e) => { setMileage(e.target.value); checkMileage(licensePlate, e.target.value); }} placeholder={tt({de:"z.B. 45230", en:"e.g. 45230", tr:"ör. 45230", ar:"مثال: 45230", ru:"напр. 45230"})} className="h-11 text-base" />
+                  {mileageWarning && (
+                    <div className="flex items-start gap-2 rounded-md bg-destructive/10 border border-destructive/30 p-2.5 mt-1.5">
+                      <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                      <p className="text-xs text-destructive">{mileageWarning}</p>
+                    </div>
+                  )}
                 </div>
+
+
               </>
             ) : (
               <>
