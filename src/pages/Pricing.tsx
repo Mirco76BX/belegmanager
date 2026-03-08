@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Check, Loader2, Tag } from "lucide-react";
 import PricingPlans from "@/components/PricingPlans";
 import ContactSection from "@/components/ContactSection";
+import ReferralManager from "@/pages/ReferralManager";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -27,6 +28,11 @@ const Pricing = () => {
       toast.info(lang === "de" ? "Checkout abgebrochen." : "Checkout canceled.");
     }
   }, [searchParams]);
+
+  // Tax advisors see the referral manager instead of pricing
+  if (subscription.tier === "tax_advisor") {
+    return <ReferralManager />;
+  }
 
   const handleCheckout = async (priceId: string) => {
     setLoading(true);
