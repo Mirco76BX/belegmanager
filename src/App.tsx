@@ -44,6 +44,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <ScrollToTop />
             <Routes>
               <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
               <Route path="/demo" element={<Demo />} />
