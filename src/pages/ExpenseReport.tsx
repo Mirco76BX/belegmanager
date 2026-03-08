@@ -50,7 +50,7 @@ const ExpenseReport = () => {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [filterCompanyId, setFilterCompanyId] = useState<string>("all");
-  const [filterMonth, setFilterMonth] = useState<string>("all");
+  
 
   const fetchData = async () => {
     if (!user || subscription.tier === "free") return;
@@ -83,12 +83,9 @@ const ExpenseReport = () => {
 
   const getCompanyName = (id: string | null) => id ? companies.find((c) => c.id === id)?.name || "–" : "–";
 
-  const filteredByCompany = filterCompanyId === "all" ? receipts
+  const filteredReceipts = filterCompanyId === "all" ? receipts
     : filterCompanyId === "none" ? receipts.filter(r => !r.company_id)
     : receipts.filter(r => r.company_id === filterCompanyId);
-  const filteredReceipts = filterMonth === "all" ? filteredByCompany
-    : filteredByCompany.filter(r => r.date.substring(0, 7) === filterMonth);
-  const availableMonths = Array.from(new Set(receipts.map(r => r.date.substring(0, 7)))).sort().reverse();
 
   const totalAmount = filteredReceipts.reduce((sum, r) => sum + (r.amount || 0), 0);
   const totalVat = filteredReceipts.reduce((sum, r) => sum + (r.vat_amount || 0), 0);
@@ -249,19 +246,6 @@ const ExpenseReport = () => {
               {companies.map((c) => (
                 <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-          <Select value={filterMonth} onValueChange={setFilterMonth}>
-            <SelectTrigger className="h-9 w-[180px] text-sm">
-              <SelectValue placeholder={tt({de:"Alle Monate", en:"All months", tr:"Tüm aylar", ar:"جميع الأشهر", ru:"Все месяцы"})} />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4} className="max-h-56">
-              <SelectItem value="all">{tt({de:"Alle Monate", en:"All months", tr:"Tüm aylar", ar:"جميع الأشهر", ru:"Все месяцы"})}</SelectItem>
-              {availableMonths.map((m) => {
-                const [y, mo] = m.split("-");
-                const label = new Date(parseInt(y), parseInt(mo) - 1).toLocaleDateString(locale, { year: "numeric", month: "long" });
-                return <SelectItem key={m} value={m}>{label}</SelectItem>;
-              })}
             </SelectContent>
           </Select>
         </div>
