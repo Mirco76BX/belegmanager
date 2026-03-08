@@ -71,13 +71,15 @@ const Auth = () => {
     <div className="flex min-h-screen flex-col bg-background">
       {/* Hero / Auth Section */}
       <div className="flex flex-1 items-center justify-center px-4 py-12">
-        <div className="flex w-full max-w-4xl animate-fade-in gap-10 items-center">
-          <div className="hidden flex-1 md:block">
-            <img
-              src={receiptScanImg}
-              alt={tt({de:"Quittung scannen mit dem Smartphone", en:"Scanning a receipt with a smartphone", tr:"Akıllı telefonla fiş tarama", ar:"مسح الإيصال بالهاتف الذكي", ru:"Сканирование чека смартфоном"})}
-              className="w-full rounded-2xl shadow-lg"
-            />
+        <div className="flex w-full max-w-4xl animate-fade-in gap-10 items-stretch">
+          <div className="hidden flex-1 md:flex flex-col">
+            <div className="flex-1 relative rounded-2xl shadow-lg overflow-hidden">
+              <img
+                src={receiptScanImg}
+                alt={tt({de:"Quittung scannen mit dem Smartphone", en:"Scanning a receipt with a smartphone", tr:"Akıllı telefonla fiş tarama", ar:"مسح الإيصال بالهاتف الذكي", ru:"Сканирование чека смартфоном"})}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            </div>
             <p className="mt-4 text-center text-sm text-muted-foreground">
               {tt({de:"Belege einfach scannen und digital verwalten", en:"Simply scan receipts and manage them digitally", tr:"Fişleri kolayca tarayın ve dijital olarak yönetin", ar:"امسح الإيصالات بسهولة وأدرها رقمياً", ru:"Сканируйте чеки и управляйте ими цифрово"})}
             </p>
