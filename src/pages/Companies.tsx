@@ -11,11 +11,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Building2, Plus, Pencil, Trash2, Users, User, HelpCircle } from "lucide-react";
 
+const ORG_TYPES = ["company", "association", "personal", "other"] as const;
+type OrgType = typeof ORG_TYPES[number];
+
+const orgTypeIcons: Record<OrgType, React.ReactNode> = {
+  company: <Building2 className="h-4 w-4" />,
+  association: <Users className="h-4 w-4" />,
+  personal: <User className="h-4 w-4" />,
+  other: <HelpCircle className="h-4 w-4" />,
+};
+
 interface Company {
   id: string;
   name: string;
   tax_id: string | null;
   address: string | null;
+  org_type: string;
   created_at: string;
 }
 
