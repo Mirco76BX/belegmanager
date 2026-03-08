@@ -13,6 +13,8 @@ interface Profile {
   email: string;
   display_name: string | null;
   is_blocked: boolean;
+  is_tax_advisor: boolean;
+  kanzlei: string | null;
   created_at: string;
 }
 
@@ -82,6 +84,9 @@ const AdminUsers = () => {
             <CardContent className="flex items-center justify-between py-4">
               <div className="space-y-1">
                 <p className="font-medium text-foreground">{profile.email}</p>
+                {profile.kanzlei && (
+                  <p className="text-xs text-muted-foreground">{profile.kanzlei}</p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   {new Date(profile.created_at).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}
                 </p>
