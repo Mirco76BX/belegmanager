@@ -170,10 +170,6 @@ const Companies = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>{t("companies.taxId")}</Label>
-              <Input value={taxId} onChange={(e) => setTaxId(e.target.value)} />
-            </div>
-            <div className="space-y-2">
               <Label>{t("companies.address")}</Label>
               <Input value={address} onChange={(e) => setAddress(e.target.value)} />
             </div>
