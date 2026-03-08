@@ -2,10 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserPlus, Mail, MessageCircle } from "lucide-react";
@@ -14,18 +11,10 @@ const REGISTER_URL = window.location.origin + "/auth";
 
 const InviteDialog = () => {
   const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { tt } = useLanguage();
-  const { toast } = useToast();
 
-  const handleEmailInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    setLoading(true);
-
+  const handleEmailInvite = () => {
     const message = tt({
       de: `Hallo! Ich nutze BelegManager zur Belegverwaltung und möchte dich einladen. Registriere dich hier: ${REGISTER_URL}`,
       en: `Hi! I'm using ReceiptManager for expense tracking and would like to invite you. Register here: ${REGISTER_URL}`,
@@ -42,22 +31,16 @@ const InviteDialog = () => {
       ru: "Приглашение в ЧекМенеджер",
     });
 
-    window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`, "_self");
+    window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`, "_self");
 
-    // Save invitation to DB
-    const { error } = await supabase.from("invitations").insert({
-      invited_by: user.id,
-      email,
-    });
-
-    if (error) {
-      toast({ title: error.message, variant: "destructive" });
-    } else {
-      toast({ title: tt({de:`Einladung an ${email} gesendet`, en:`Invitation sent to ${email}`, tr:`${email} için davet gönderildi`, ar:`تم إرسال الدعوة لـ ${email}`, ru:`Приглашение для ${email} отправлено`}) });
-      setEmail("");
-      setOpen(false);
+    if (user) {
+      supabase.from("invitations").insert({
+        invited_by: user.id,
+        email: "email-invite",
+      });
     }
-    setLoading(false);
+
+    setOpen(false);
   };
 
   const handleWhatsAppInvite = () => {
@@ -105,24 +88,15 @@ const InviteDialog = () => {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="email">
-            <form onSubmit={handleEmailInvite} className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label htmlFor="invite-email">{tt({de:"E-Mail-Adresse", en:"Email address", tr:"E-posta adresi", ar:"عنوان البريد الإلكتروني", ru:"Электронная почта"})}</Label>
-                <Input
-                  id="invite-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="kollege@firma.de"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading
-                  ? tt({de:"Senden...", en:"Sending...", tr:"Gönderiliyor...", ar:"جارٍ الإرسال...", ru:"Отправка..."})
-                  : tt({de:"Einladung senden", en:"Send invitation", tr:"Davet gönder", ar:"إرسال الدعوة", ru:"Отправить приглашение"})}
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">
+                {tt({de:"Dein E-Mail-Programm öffnet sich mit einem vorformulierten Einladungstext. Wähle dort den Empfänger aus.", en:"Your email client will open with a pre-written invitation. Choose the recipient there.", tr:"E-posta istemciniz önceden yazılmış bir davetle açılacak. Alıcıyı orada seçin.", ar:"سيفتح برنامج البريد بدعوة مكتوبة مسبقاً. اختر المستلم هناك.", ru:"Почтовый клиент откроется с готовым текстом. Выберите получателя."})}
+              </p>
+              <Button onClick={handleEmailInvite} className="w-full gap-2">
+                <Mail className="h-4 w-4" />
+                {tt({de:"Per E-Mail einladen", en:"Invite via email", tr:"E-posta ile davet et", ar:"دعوة عبر البريد", ru:"Пригласить по почте"})}
               </Button>
-            </form>
+            </div>
           </TabsContent>
           <TabsContent value="whatsapp">
             <div className="space-y-4 pt-2">
