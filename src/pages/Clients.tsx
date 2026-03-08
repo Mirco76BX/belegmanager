@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage, getLocale } from "@/i18n/LanguageContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, Plus, Trash2, Eye, ArrowLeft } from "lucide-react";
+import { Users, Plus, Trash2, Eye, ArrowLeft, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ClientProfile {
@@ -28,6 +29,13 @@ interface ClientReceipt {
   receipt_type: string;
 }
 
+interface Invitation {
+  id: string;
+  client_email: string;
+  status: string;
+  created_at: string;
+}
+
 const Clients = () => {
   const { tt, lang } = useLanguage();
   const { user, subscription } = useAuth();
@@ -35,12 +43,12 @@ const Clients = () => {
   const locale = getLocale(lang);
 
   const [clients, setClients] = useState<(ClientProfile & { advisor_client_id: string })[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [adding, setAdding] = useState(false);
 
-  // View client receipts
   const [viewingClient, setViewingClient] = useState<ClientProfile | null>(null);
   const [clientReceipts, setClientReceipts] = useState<ClientReceipt[]>([]);
   const [receiptsLoading, setReceiptsLoading] = useState(false);
@@ -49,11 +57,14 @@ const Clients = () => {
 
   const fetchClients = async () => {
     if (!user) return;
-    const { data: links } = await supabase
-      .from("advisor_clients")
-      .select("id, client_id")
-      .eq("advisor_id", user.id);
+    const [linksRes, invRes] = await Promise.all([
+      supabase.from("advisor_clients").select("id, client_id").eq("advisor_id", user.id),
+      supabase.from("advisor_invitations").select("id, client_email, status, created_at").eq("advisor_id", user.id).order("created_at", { ascending: false }),
+    ]);
 
+    setInvitations((invRes.data || []) as Invitation[]);
+
+    const links = linksRes.data;
     if (!links || links.length === 0) {
       setClients([]);
       setLoading(false);
@@ -77,55 +88,58 @@ const Clients = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchClients();
-  }, [user]);
+  useEffect(() => { fetchClients(); }, [user]);
 
-  const handleAdd = async (e: React.FormEvent) => {
+  const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     setAdding(true);
 
-    // Find user by email
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id, email, first_name, last_name, display_name")
-      .eq("email", email.toLowerCase().trim())
-      .maybeSingle();
+    const trimmedEmail = email.toLowerCase().trim();
 
-    if (!profile) {
-      toast({
-        title: tt({ de: "Benutzer nicht gefunden", en: "User not found", tr: "Kullanıcı bulunamadı", ar: "المستخدم غير موجود", ru: "Пользователь не найден" }),
-        description: tt({ de: "Diese E-Mail-Adresse ist nicht registriert.", en: "This email is not registered.", tr: "Bu e-posta kayıtlı değil.", ar: "هذا البريد غير مسجل.", ru: "Этот email не зарегистрирован." }),
-        variant: "destructive",
-      });
-      setAdding(false);
-      return;
-    }
-
-    if (profile.id === user.id) {
+    if (trimmedEmail === user.email) {
       toast({
         title: tt({ de: "Nicht möglich", en: "Not allowed", tr: "İzin verilmiyor", ar: "غير مسموح", ru: "Не допускается" }),
-        description: tt({ de: "Sie können sich nicht selbst als Mandant hinzufügen.", en: "You cannot add yourself as a client.", tr: "Kendinizi müşteri olarak ekleyemezsiniz.", ar: "لا يمكنك إضافة نفسك كعميل.", ru: "Вы не можете добавить себя как клиента." }),
+        description: tt({ de: "Sie können sich nicht selbst einladen.", en: "You cannot invite yourself.", tr: "Kendinizi davet edemezsiniz.", ar: "لا يمكنك دعوة نفسك.", ru: "Вы не можете пригласить себя." }),
         variant: "destructive",
       });
       setAdding(false);
       return;
     }
 
-    const { error } = await supabase
-      .from("advisor_clients")
-      .insert({ advisor_id: user.id, client_id: profile.id });
-
-    if (error) {
+    // Check if already linked or pending
+    const existing = invitations.find(i => i.client_email === trimmedEmail && i.status === "pending");
+    if (existing) {
       toast({
-        title: error.code === "23505"
-          ? tt({ de: "Bereits hinzugefügt", en: "Already added", tr: "Zaten eklendi", ar: "تمت الإضافة بالفعل", ru: "Уже добавлен" })
-          : error.message,
+        title: tt({ de: "Bereits eingeladen", en: "Already invited", tr: "Zaten davet edildi", ar: "تمت الدعوة بالفعل", ru: "Уже приглашён" }),
         variant: "destructive",
       });
+      setAdding(false);
+      return;
+    }
+
+    // Optionally resolve client_id if user exists
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", trimmedEmail)
+      .maybeSingle();
+
+    const { error } = await supabase
+      .from("advisor_invitations")
+      .insert({
+        advisor_id: user.id,
+        client_email: trimmedEmail,
+        client_id: profile?.id || null,
+      } as any);
+
+    if (error) {
+      toast({ title: error.message, variant: "destructive" });
     } else {
-      toast({ title: tt({ de: "Mandant hinzugefügt", en: "Client added", tr: "Müşteri eklendi", ar: "تم إضافة العميل", ru: "Клиент добавлен" }) });
+      toast({
+        title: tt({ de: "Einladung gesendet!", en: "Invitation sent!", tr: "Davet gönderildi!", ar: "تم إرسال الدعوة!", ru: "Приглашение отправлено!" }),
+        description: tt({ de: "Der Mandant muss die Einladung in seinem Konto annehmen.", en: "The client must accept the invitation in their account.", tr: "Müşteri, davetiyeyi hesabında kabul etmelidir.", ar: "يجب على العميل قبول الدعوة في حسابه.", ru: "Клиент должен принять приглашение в своём аккаунте." }),
+      });
       setEmail("");
       setAddOpen(false);
       fetchClients();
@@ -137,6 +151,11 @@ const Clients = () => {
     await supabase.from("advisor_clients").delete().eq("id", linkId);
     fetchClients();
     if (viewingClient) setViewingClient(null);
+  };
+
+  const handleCancelInvitation = async (invId: string) => {
+    await supabase.from("advisor_invitations").delete().eq("id", invId);
+    fetchClients();
   };
 
   const viewReceipts = async (client: ClientProfile) => {
@@ -167,7 +186,6 @@ const Clients = () => {
   const clientName = (c: ClientProfile) =>
     [c.first_name, c.last_name].filter(Boolean).join(" ") || c.display_name || c.email;
 
-  // Viewing a specific client's receipts
   if (viewingClient) {
     return (
       <div className="animate-fade-in space-y-4">
@@ -178,15 +196,10 @@ const Clients = () => {
         <h1 className="text-xl md:text-2xl font-bold">
           {tt({ de: "Belege von", en: "Receipts from", tr: "Fişler:", ar: "إيصالات من", ru: "Чеки от" })} {clientName(viewingClient)}
         </h1>
-
         {receiptsLoading ? (
           <p className="text-muted-foreground">{tt({ de: "Laden...", en: "Loading...", tr: "Yükleniyor...", ar: "جارٍ التحميل...", ru: "Загрузка..." })}</p>
         ) : clientReceipts.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              {tt({ de: "Keine Belege vorhanden", en: "No receipts found", tr: "Fiş bulunamadı", ar: "لم يتم العثور على إيصالات", ru: "Чеков не найдено" })}
-            </CardContent>
-          </Card>
+          <Card><CardContent className="py-12 text-center text-muted-foreground">{tt({ de: "Keine Belege vorhanden", en: "No receipts found", tr: "Fiş bulunamadı", ar: "لم يتم العثور على إيصالات", ru: "Чеков не найдено" })}</CardContent></Card>
         ) : (
           <Card>
             <CardContent className="p-0 overflow-x-auto">
@@ -219,19 +232,47 @@ const Clients = () => {
     );
   }
 
+  const pendingInvitations = invitations.filter(i => i.status === "pending");
+
   return (
     <div className="animate-fade-in space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl md:text-2xl font-bold">{tt({ de: "Mandanten", en: "Clients", tr: "Müşteriler", ar: "العملاء", ru: "Клиенты" })}</h1>
         <Button className="gap-2 w-full sm:w-auto" onClick={() => setAddOpen(true)}>
           <Plus className="h-4 w-4" />
-          {tt({ de: "Mandant hinzufügen", en: "Add Client", tr: "Müşteri Ekle", ar: "إضافة عميل", ru: "Добавить клиента" })}
+          {tt({ de: "Mandant einladen", en: "Invite Client", tr: "Müşteri Davet Et", ar: "دعوة عميل", ru: "Пригласить клиента" })}
         </Button>
       </div>
 
+      {/* Pending invitations */}
+      {pendingInvitations.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-medium text-muted-foreground">
+            {tt({ de: "Offene Einladungen", en: "Pending Invitations", tr: "Bekleyen Davetler", ar: "الدعوات المعلقة", ru: "Ожидающие приглашения" })}
+          </h2>
+          {pendingInvitations.map((inv) => (
+            <Card key={inv.id} className="border-warning/30 bg-warning/5">
+              <CardContent className="flex items-center justify-between gap-2 py-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Clock className="h-4 w-4 text-warning shrink-0" />
+                  <span className="text-sm truncate">{inv.client_email}</span>
+                  <Badge variant="outline" className="text-[10px] border-warning/50 text-warning">
+                    {tt({ de: "Ausstehend", en: "Pending", tr: "Beklemede", ar: "معلق", ru: "Ожидает" })}
+                  </Badge>
+                </div>
+                <Button variant="ghost" size="sm" className="text-destructive shrink-0" onClick={() => handleCancelInvitation(inv.id)}>
+                  <XCircle className="h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Active clients */}
       {loading ? (
         <p className="text-muted-foreground">{tt({ de: "Laden...", en: "Loading...", tr: "Yükleniyor...", ar: "جارٍ التحميل...", ru: "Загрузка..." })}</p>
-      ) : clients.length === 0 ? (
+      ) : clients.length === 0 && pendingInvitations.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Users className="mb-4 h-12 w-12 text-muted-foreground/40" />
@@ -246,7 +287,10 @@ const Clients = () => {
             <Card key={c.id}>
               <CardContent className="flex items-center justify-between gap-2 py-4">
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium truncate">{clientName(c)}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium truncate">{clientName(c)}</p>
+                    <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
+                  </div>
                   <p className="text-xs text-muted-foreground">{c.email}</p>
                 </div>
                 <div className="flex gap-1 shrink-0">
@@ -266,9 +310,9 @@ const Clients = () => {
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{tt({ de: "Mandant hinzufügen", en: "Add Client", tr: "Müşteri Ekle", ar: "إضافة عميل", ru: "Добавить клиента" })}</DialogTitle>
+            <DialogTitle>{tt({ de: "Mandant einladen", en: "Invite Client", tr: "Müşteri Davet Et", ar: "دعوة عميل", ru: "Пригласить клиента" })}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleAdd} className="space-y-4">
+          <form onSubmit={handleInvite} className="space-y-4">
             <div className="space-y-2">
               <Label>{tt({ de: "E-Mail des Mandanten", en: "Client's Email", tr: "Müşteri E-postası", ar: "بريد العميل", ru: "Email клиента" })}</Label>
               <Input
@@ -279,11 +323,11 @@ const Clients = () => {
                 required
               />
               <p className="text-xs text-muted-foreground">
-                {tt({ de: "Der Mandant muss bereits ein BelegManager-Konto haben.", en: "The client must already have a BelegManager account.", tr: "Müşterinin zaten bir BelegManager hesabı olmalıdır.", ar: "يجب أن يكون لدى العميل حساب BelegManager بالفعل.", ru: "У клиента уже должен быть аккаунт BelegManager." })}
+                {tt({ de: "Der Mandant erhält eine Einladung in seinem Konto und muss diese annehmen, um Ihnen Zugriff zu gewähren.", en: "The client will receive an invitation in their account and must accept it to grant you access.", tr: "Müşteri hesabında bir davet alacak ve size erişim vermek için kabul etmelidir.", ar: "سيتلقى العميل دعوة في حسابه ويجب عليه قبولها لمنحك حق الوصول.", ru: "Клиент получит приглашение в своём аккаунте и должен принять его, чтобы предоставить вам доступ." })}
               </p>
             </div>
             <Button type="submit" className="w-full" disabled={adding}>
-              {adding ? tt({ de: "Wird hinzugefügt...", en: "Adding...", tr: "Ekleniyor...", ar: "جارٍ الإضافة...", ru: "Добавление..." }) : tt({ de: "Hinzufügen", en: "Add", tr: "Ekle", ar: "إضافة", ru: "Добавить" })}
+              {adding ? tt({ de: "Wird gesendet...", en: "Sending...", tr: "Gönderiliyor...", ar: "جارٍ الإرسال...", ru: "Отправка..." }) : tt({ de: "Einladung senden", en: "Send Invitation", tr: "Davet Gönder", ar: "إرسال الدعوة", ru: "Отправить приглашение" })}
             </Button>
           </form>
         </DialogContent>
