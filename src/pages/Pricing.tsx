@@ -58,6 +58,8 @@ const Pricing = () => {
   };
 
   const isRelax = subscription.tier === "relax";
+  const isMaster = subscription.tier === "master";
+  const isPaid = isRelax || isMaster;
 
   const relaxPrice = billingCycle === "yearly"
     ? { amount: "12 €", period: lang === "de" ? "/ Jahr" : "/ year", hint: lang === "de" ? "1 €/Monat" : "1 €/month" }
