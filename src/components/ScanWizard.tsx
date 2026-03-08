@@ -202,6 +202,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         status: skipDetails ? "pending" : "complete",
         vat_amount: scanResult?.tax_amount ?? null,
         vat_rate: scanResult?.tax_rate ?? null,
+        currency: scanResult?.currency || "EUR",
       };
 
       if (isFuelReceipt) {
