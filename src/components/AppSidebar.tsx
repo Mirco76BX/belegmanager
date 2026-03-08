@@ -34,7 +34,7 @@ const AppSidebar = () => {
     <>
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex h-screen w-64 flex-col bg-sidebar text-sidebar-foreground">
-        <div className="flex items-center gap-3 border-b border-sidebar-border px-5 py-5">
+        <button onClick={() => navigate("/")} className="flex items-center gap-3 border-b border-sidebar-border px-5 py-5 w-full text-left hover:bg-sidebar-accent/30 transition-colors">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary">
             <FileText className="h-5 w-5 text-sidebar-primary-foreground" />
           </div>
@@ -42,7 +42,7 @@ const AppSidebar = () => {
             <h2 className="text-sm font-semibold text-sidebar-foreground">{t("app.name")}</h2>
             <p className="text-xs text-sidebar-foreground/60">{t("app.tagline")}</p>
           </div>
-        </div>
+        </button>
 
         <nav className="flex-1 space-y-1 px-3 py-4">
           {navItems.map((item) => {
