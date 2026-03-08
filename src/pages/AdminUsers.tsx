@@ -84,6 +84,9 @@ const AdminUsers = () => {
             <CardContent className="flex items-center justify-between py-4">
               <div className="space-y-1">
                 <p className="font-medium text-foreground">{profile.email}</p>
+                {profile.kanzlei && (
+                  <p className="text-xs text-muted-foreground">{profile.kanzlei}</p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   {new Date(profile.created_at).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}
                 </p>
