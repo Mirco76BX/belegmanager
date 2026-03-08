@@ -62,6 +62,7 @@ const Companies = () => {
     setName(c.name);
     setTaxId(c.tax_id || "");
     setAddress(c.address || "");
+    setOrgType((c.org_type as OrgType) || "company");
     setDialogOpen(true);
   };
 
