@@ -155,6 +155,7 @@ const AppSidebar = () => {
           </button>
           <InviteDialog />
           <LanguageSwitcher showLabel onSelect={() => setMobileMenuOpen(false)} className="w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground" />
+          <ThemeToggle showLabel onSelect={() => setMobileMenuOpen(false)} className="w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground" />
           <Button
             variant="ghost"
             size="sm"
