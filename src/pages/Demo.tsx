@@ -369,7 +369,26 @@ const Demo = () => {
                 <Input required type="password" minLength={6} value={regForm.confirmPassword} onChange={(e) => setRegForm(f => ({ ...f, confirmPassword: e.target.value }))} />
               </div>
               {regError && <p className="text-sm text-destructive">{regError}</p>}
-              <Button type="submit" className="w-full gap-2" disabled={regLoading}>
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="reg-consent"
+                  checked={regConsent}
+                  onChange={(e) => setRegConsent(e.target.checked)}
+                  required
+                  className="mt-1 h-4 w-4 rounded border-input accent-primary"
+                />
+                <label htmlFor="reg-consent" className="text-xs text-muted-foreground leading-relaxed">
+                  {de ? (
+                    <>Ich stimme der Verarbeitung meiner Daten gemäß der{" "}
+                      <Link to="/datenschutz" className="text-primary hover:underline">Datenschutzerklärung</Link> zu. *</>
+                  ) : (
+                    <>I agree to the processing of my data according to the{" "}
+                      <Link to="/datenschutz" className="text-primary hover:underline">Privacy Policy</Link>. *</>
+                  )}
+                </label>
+              </div>
+              <Button type="submit" className="w-full gap-2" disabled={regLoading || !regConsent}>
                 {regLoading ? (de ? "Registrierung..." : "Registering...") : (de ? "Kostenlos registrieren" : "Register for free")}
                 {!regLoading && <ArrowRight className="h-4 w-4" />}
               </Button>
