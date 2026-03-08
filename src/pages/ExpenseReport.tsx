@@ -23,6 +23,8 @@ interface Receipt {
   meeting_purpose: string | null;
   file_path: string | null;
   company_id: string | null;
+  vat_amount: number | null;
+  vat_rate: number | null;
 }
 
 interface Company {
