@@ -97,7 +97,11 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
     setSaving(false);
   };
 
-  const formatAmount = (a: number | null) => a != null ? `${a.toFixed(2)} €` : "–";
+  const formatAmount = (a: number | null, currency?: string) => {
+    if (a == null) return "–";
+    const sym = currency && currency !== "EUR" ? ` ${currency}` : " €";
+    return `${a.toFixed(2)}${sym}`;
+  };
   const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "–";
   const isEditing = (id: string) => editingId === id;
   const locale = getLocale(lang);

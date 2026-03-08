@@ -366,7 +366,7 @@ const Receipts = () => {
                    <div className="flex justify-between text-sm">
                      <span className="text-muted-foreground">MwSt.</span>
                      <span className="font-mono">
-                       {detailReceipt.vat_amount != null ? `${detailReceipt.vat_amount.toFixed(2)} €` : "–"}
+                       {detailReceipt.vat_amount != null ? `${detailReceipt.vat_amount.toFixed(2)} ${detailReceipt.currency && detailReceipt.currency !== "EUR" ? detailReceipt.currency : "€"}` : "–"}
                        {detailReceipt.vat_rate != null ? ` (${detailReceipt.vat_rate}%)` : ""}
                      </span>
                    </div>
