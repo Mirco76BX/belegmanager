@@ -107,7 +107,7 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
       <TableHeader>
         <TableRow>
           <TableHead>{tt({de:"Datum", en:"Date", tr:"Tarih", ar:"التاريخ", ru:"Дата"})}</TableHead>
-          <TableHead>{tt({de:"Betrag", en:"Amount", tr:"Tutar", ar:"المبلغ", ru:"Сумма"})}</TableHead>
+          <TableHead>{tt({de:"Betrag (inkl. MwSt.)", en:"Amount (incl. VAT)", tr:"Tutar (KDV dahil)", ar:"المبلغ (شامل الضريبة)", ru:"Сумма (с НДС)"})}</TableHead>
           <TableHead>{tt({de:"Beschreibung", en:"Description", tr:"Açıklama", ar:"الوصف", ru:"Описание"})}</TableHead>
           <TableHead>{tt({de:"Organisation", en:"Company", tr:"Kuruluş", ar:"المنظمة", ru:"Организация"})}</TableHead>
           <TableHead>{tt({de:"Details", en:"Details", tr:"Detaylar", ar:"التفاصيل", ru:"Детали"})}</TableHead>
