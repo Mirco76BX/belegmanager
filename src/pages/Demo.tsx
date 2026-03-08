@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import ContactSection from "@/components/ContactSection";
 import {
   FileText,
   ScanLine,
@@ -401,10 +400,6 @@ const Demo = () => {
         </div>
       </section>
 
-      {/* Contact */}
-      <section className="border-t border-border bg-muted/30 px-4 py-20">
-        <ContactSection />
-      </section>
 
       {/* Footer */}
       <footer className="border-t border-border px-4 py-6 text-center">
