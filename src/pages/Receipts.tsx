@@ -64,6 +64,21 @@ const Receipts = () => {
   const [editLicensePlate, setEditLicensePlate] = useState("");
   const [editMileage, setEditMileage] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+  const [reprocessing, setReprocessing] = useState(false);
+
+  const handleReprocess = async () => {
+    setReprocessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("reprocess-receipts");
+      if (error) throw error;
+      toast({ title: tt({de:`${data.processed} Belege aktualisiert`, en:`${data.processed} receipts updated`, tr:`${data.processed} fiş güncellendi`, ar:`تم تحديث ${data.processed} إيصالات`, ru:`${data.processed} чеков обновлено`}) });
+      fetchData();
+    } catch (e: any) {
+      toast({ title: e.message || "Error", variant: "destructive" });
+    } finally {
+      setReprocessing(false);
+    }
+  };
 
   const fetchData = async () => {
     if (!user) return;
