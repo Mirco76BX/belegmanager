@@ -324,7 +324,7 @@ const Account = () => {
                 <p className="text-sm text-muted-foreground">{profile.kanzlei}</p>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 items-end">
               <div className="space-y-1.5">
                 <Label className="text-sm">
                   {tt({ de: "Vorname", en: "First name", tr: "Ad", ar: "الاسم الأول", ru: "Имя" })} <span className="text-destructive">*</span>
