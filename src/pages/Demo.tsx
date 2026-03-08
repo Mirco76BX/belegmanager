@@ -25,7 +25,14 @@ import receiptScanImg from "@/assets/receipt-scan.jpg";
 
 const Demo = () => {
   const { lang, setLang } = useLanguage();
+  const { signUp } = useAuth();
+  const navigate = useNavigate();
   const de = lang === "de";
+
+  const [regForm, setRegForm] = useState({ name: "", kanzlei: "", email: "", password: "", confirmPassword: "" });
+  const [regLoading, setRegLoading] = useState(false);
+  const [regDone, setRegDone] = useState(false);
+  const [regError, setRegError] = useState("");
 
   const steps = [
     {
