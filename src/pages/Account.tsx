@@ -12,7 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const Account = () => {
-  const { user, subscription } = useAuth();
+  const { user, subscription, checkSubscription } = useAuth();
   const { lang, tt } = useLanguage();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<{ display_name: string | null; email: string; is_tax_advisor: boolean; kanzlei: string | null } | null>(null);
@@ -20,6 +20,8 @@ const Account = () => {
   const [displayName, setDisplayName] = useState("");
   const [saving, setSaving] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
 
   useEffect(() => {
     if (!user) return;
