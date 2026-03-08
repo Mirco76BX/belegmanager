@@ -17,6 +17,7 @@ import AdminUsers from "@/pages/AdminUsers";
 import Pricing from "@/pages/Pricing";
 import Account from "@/pages/Account";
 import Impressum from "@/pages/Impressum";
+import Clients from "@/pages/Clients";
 import Datenschutz from "@/pages/Datenschutz";
 import Demo from "@/pages/Demo";
 import ResetPassword from "@/pages/ResetPassword";
