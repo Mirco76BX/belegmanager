@@ -96,7 +96,7 @@ const ExpenseReport = () => {
     : filterCompanyId === "none" ? receipts.filter(r => !r.company_id)
     : receipts.filter(r => r.company_id === filterCompanyId);
 
-  const totalAmount = filteredReceipts.reduce((sum, r) => sum + (r.amount || 0), 0);
+  const totalAmount = filteredReceipts.reduce((sum, r) => sum + (r.amount_eur ?? r.amount ?? 0), 0);
   const totalVat = filteredReceipts.reduce((sum, r) => sum + (r.vat_amount || 0), 0);
 
   const getTableHeaders = () => [
