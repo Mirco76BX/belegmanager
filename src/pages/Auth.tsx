@@ -193,7 +193,7 @@ const Auth = () => {
                   <span className="text-muted-foreground">
                     {isLogin ? t("auth.noAccount") : t("auth.hasAccount")}{" "}
                   </span>
-                  <button onClick={() => setIsLogin(!isLogin)} className="font-medium text-primary hover:underline">
+                  <button onClick={() => setMode(isLogin ? "register" : "login")} className="font-medium text-primary hover:underline">
                     {isLogin ? t("auth.register") : t("auth.login")}
                   </button>
                 </div>
