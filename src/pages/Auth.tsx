@@ -15,7 +15,9 @@ import PricingPlans from "@/components/PricingPlans";
 import ContactSection from "@/components/ContactSection";
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<"login" | "register" | "forgot">("login");
+  const isLogin = mode === "login";
+  const isForgot = mode === "forgot";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
