@@ -149,8 +149,9 @@ const ExpenseReport = () => {
 
       // User info
       doc.setFontSize(10);
-      if (profile?.display_name) {
-        doc.text(profile.display_name, pageWidth / 2, yPos, { align: "center" });
+      const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ");
+      if (fullName) {
+        doc.text(fullName, pageWidth / 2, yPos, { align: "center" });
         yPos += 5;
       }
       doc.text(profile?.email || user?.email || "", pageWidth / 2, yPos, { align: "center" });
