@@ -7,14 +7,26 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Building2, Plus, Pencil, Trash2 } from "lucide-react";
+import { Building2, Plus, Pencil, Trash2, Users, User, HelpCircle } from "lucide-react";
+
+const ORG_TYPES = ["company", "association", "personal", "other"] as const;
+type OrgType = typeof ORG_TYPES[number];
+
+const orgTypeIcons: Record<OrgType, React.ReactNode> = {
+  company: <Building2 className="h-4 w-4" />,
+  association: <Users className="h-4 w-4" />,
+  personal: <User className="h-4 w-4" />,
+  other: <HelpCircle className="h-4 w-4" />,
+};
 
 interface Company {
   id: string;
   name: string;
   tax_id: string | null;
   address: string | null;
+  org_type: string;
   created_at: string;
 }
 
@@ -32,6 +44,7 @@ const Companies = () => {
   const [taxId, setTaxId] = useState("");
   const [address, setAddress] = useState("");
   const [saving, setSaving] = useState(false);
+  const [orgType, setOrgType] = useState<OrgType>("company");
 
   const fetchCompanies = async () => {
     if (!user) return;
@@ -42,13 +55,14 @@ const Companies = () => {
 
   useEffect(() => { fetchCompanies(); }, [user]);
 
-  const resetForm = () => { setName(""); setTaxId(""); setAddress(""); setEditing(null); };
+  const resetForm = () => { setName(""); setTaxId(""); setAddress(""); setOrgType("company"); setEditing(null); };
 
   const openEdit = (c: Company) => {
     setEditing(c);
     setName(c.name);
     setTaxId(c.tax_id || "");
     setAddress(c.address || "");
+    setOrgType((c.org_type as OrgType) || "company");
     setDialogOpen(true);
   };
 
@@ -57,7 +71,7 @@ const Companies = () => {
     if (!user) return;
     setSaving(true);
 
-    const data = { name, tax_id: taxId || null, address: address || null };
+    const data = { name, tax_id: taxId || null, address: address || null, org_type: orgType };
     let error;
     if (editing) {
       ({ error } = await supabase.from("companies").update(data).eq("id", editing.id));
@@ -104,8 +118,14 @@ const Companies = () => {
             <Card key={c.id}>
               <CardContent className="flex items-center justify-between py-4">
                 <div>
-                  <p className="font-medium text-foreground">{c.name}</p>
-                  <div className="flex gap-4 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">{orgTypeIcons[(c.org_type as OrgType) || "company"]}</span>
+                    <p className="font-medium text-foreground">{c.name}</p>
+                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                      {t(`companies.type.${(c.org_type as OrgType) || "company"}` as any)}
+                    </span>
+                  </div>
+                  <div className="flex gap-4 text-xs text-muted-foreground mt-0.5">
                     {c.tax_id && <span>{t("companies.taxId")}: {c.tax_id}</span>}
                     {c.address && <span>{c.address}</span>}
                   </div>
@@ -133,6 +153,19 @@ const Companies = () => {
             <div className="space-y-2">
               <Label>{t("companies.name")}</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("companies.type")}</Label>
+              <Select value={orgType} onValueChange={(v) => setOrgType(v as OrgType)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ORG_TYPES.map((ot) => (
+                    <SelectItem key={ot} value={ot}>
+                      <span className="flex items-center gap-2">{orgTypeIcons[ot]} {t(`companies.type.${ot}` as any)}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>{t("companies.taxId")}</Label>
