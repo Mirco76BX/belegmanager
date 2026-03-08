@@ -29,10 +29,7 @@ const Pricing = () => {
     }
   }, [searchParams]);
 
-  const handleCheckout = async () => {
-    const priceId = billingCycle === "yearly"
-      ? TIERS.relax.yearly.price_id
-      : TIERS.relax.monthly.price_id;
+  const handleCheckout = async (priceId: string) => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
