@@ -21,11 +21,7 @@ const InviteDialog = () => {
   const { tt } = useLanguage();
   const { toast } = useToast();
 
-  const handleEmailInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    setLoading(true);
-
+  const handleEmailInvite = () => {
     const message = tt({
       de: `Hallo! Ich nutze BelegManager zur Belegverwaltung und möchte dich einladen. Registriere dich hier: ${REGISTER_URL}`,
       en: `Hi! I'm using ReceiptManager for expense tracking and would like to invite you. Register here: ${REGISTER_URL}`,
@@ -42,22 +38,16 @@ const InviteDialog = () => {
       ru: "Приглашение в ЧекМенеджер",
     });
 
-    window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`, "_self");
+    window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`, "_self");
 
-    // Save invitation to DB
-    const { error } = await supabase.from("invitations").insert({
-      invited_by: user.id,
-      email,
-    });
-
-    if (error) {
-      toast({ title: error.message, variant: "destructive" });
-    } else {
-      toast({ title: tt({de:`Einladung an ${email} gesendet`, en:`Invitation sent to ${email}`, tr:`${email} için davet gönderildi`, ar:`تم إرسال الدعوة لـ ${email}`, ru:`Приглашение для ${email} отправлено`}) });
-      setEmail("");
-      setOpen(false);
+    if (user) {
+      supabase.from("invitations").insert({
+        invited_by: user.id,
+        email: "email-invite",
+      });
     }
-    setLoading(false);
+
+    setOpen(false);
   };
 
   const handleWhatsAppInvite = () => {
