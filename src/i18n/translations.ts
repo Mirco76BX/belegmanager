@@ -17,6 +17,7 @@ const translations = {
   "nav.receipts": { de: "Belege", en: "Receipts", tr: "Fişler", ar: "الإيصالات", ru: "Чеки" },
   "nav.companies": { de: "Orga", en: "Orgs", tr: "Kuruluşlar", ar: "المنظمات", ru: "Орг." },
   "nav.expenseReport": { de: "Report", en: "Report", tr: "Rapor", ar: "تقرير", ru: "Отчёт" },
+  "nav.clients": { de: "Mandanten", en: "Clients", tr: "Müşteriler", ar: "العملاء", ru: "Клиенты" },
   "nav.pricing": { de: "Preise", en: "Pricing", tr: "Fiyatlar", ar: "الأسعار", ru: "Тарифы" },
   "nav.settings": { de: "Einstellungen", en: "Settings", tr: "Ayarlar", ar: "الإعدادات", ru: "Настройки" },
 
