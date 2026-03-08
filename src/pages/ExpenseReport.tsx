@@ -225,11 +225,11 @@ const ExpenseReport = () => {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Button className="gap-2" onClick={generatePDF} disabled={generating || receipts.length === 0}>
+            <Button className="gap-2" onClick={generatePDF} disabled={generating || filteredReceipts.length === 0}>
               <Download className="h-4 w-4" />
               {generating ? t("general.loading") : "PDF"}
             </Button>
-            <Button variant="outline" className="gap-2" onClick={exportCSV} disabled={receipts.length === 0}>
+            <Button variant="outline" className="gap-2" onClick={exportCSV} disabled={filteredReceipts.length === 0}>
               <FileSpreadsheet className="h-4 w-4" />
               CSV
             </Button>
@@ -237,7 +237,37 @@ const ExpenseReport = () => {
         </CardContent>
       </Card>
 
-      {receipts.length > 0 ? (
+      {receipts.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={filterCompanyId} onValueChange={setFilterCompanyId}>
+            <SelectTrigger className="h-9 w-[200px] text-sm">
+              <SelectValue placeholder={tt({de:"Alle Organisationen", en:"All organizations", tr:"Tüm kuruluşlar", ar:"جميع المنظمات", ru:"Все организации"})} />
+            </SelectTrigger>
+            <SelectContent position="popper" sideOffset={4} className="max-h-56">
+              <SelectItem value="all">{tt({de:"Alle Organisationen", en:"All organizations", tr:"Tüm kuruluşlar", ar:"جميع المنظمات", ru:"Все организации"})}</SelectItem>
+              <SelectItem value="none">{tt({de:"Ohne Organisation", en:"No organization", tr:"Kuruluşsuz", ar:"بدون منظمة", ru:"Без организации"})}</SelectItem>
+              {companies.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterMonth} onValueChange={setFilterMonth}>
+            <SelectTrigger className="h-9 w-[180px] text-sm">
+              <SelectValue placeholder={tt({de:"Alle Monate", en:"All months", tr:"Tüm aylar", ar:"جميع الأشهر", ru:"Все месяцы"})} />
+            </SelectTrigger>
+            <SelectContent position="popper" sideOffset={4} className="max-h-56">
+              <SelectItem value="all">{tt({de:"Alle Monate", en:"All months", tr:"Tüm aylar", ar:"جميع الأشهر", ru:"Все месяцы"})}</SelectItem>
+              {availableMonths.map((m) => {
+                const [y, mo] = m.split("-");
+                const label = new Date(parseInt(y), parseInt(mo) - 1).toLocaleDateString(locale, { year: "numeric", month: "long" });
+                return <SelectItem key={m} value={m}>{label}</SelectItem>;
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {filteredReceipts.length > 0 ? (
         <Card className="overflow-hidden">
           <CardContent className="p-0">
             <div className="hidden md:block">
