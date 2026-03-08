@@ -8,6 +8,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trash2, Check, X, Eye } from "lucide-react";
 
+const PURPOSE_PRESETS = [
+  { value: "Geschäftsessen", de: "🍽️ Geschäftsessen", en: "🍽️ Business meal" },
+  { value: "Akquise", de: "🤝 Akquise", en: "🤝 Acquisition" },
+  { value: "Büromaterial", de: "📎 Büromaterial", en: "📎 Office supplies" },
+  { value: "Reisekosten", de: "✈️ Reisekosten", en: "✈️ Travel expenses" },
+  { value: "Fortbildung", de: "📚 Fortbildung", en: "📚 Training" },
+  { value: "Bewirtung", de: "🥂 Bewirtung", en: "🥂 Hospitality" },
+  { value: "Telefon/Internet", de: "📱 Telefon/Internet", en: "📱 Phone/Internet" },
+];
 interface Receipt {
   id: string;
   date: string;
