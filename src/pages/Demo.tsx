@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   FileText, ScanLine, FolderOpen, FileSpreadsheet, ShieldCheck, Users,
-  Globe, ArrowRight, CheckCircle2, Smartphone, Cloud, Lock,
+  ArrowRight, CheckCircle2, Smartphone, Cloud, Lock,
 } from "lucide-react";
 import receiptScanImg from "@/assets/receipt-scan.jpg";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const Demo = () => {
   const { lang, setLang, tt } = useLanguage();
@@ -61,13 +62,7 @@ const Demo = () => {
             <span className="text-lg font-bold text-foreground">BelegManager</span>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => {
-              const langs: Array<"de"|"en"|"tr"|"ar"|"ru"> = ["de","en","tr","ar","ru"];
-              setLang(langs[(langs.indexOf(lang) + 1) % langs.length]);
-            }} className="gap-1.5 text-xs text-muted-foreground">
-              <Globe className="h-3.5 w-3.5" />
-              {lang.toUpperCase()}
-            </Button>
+            <LanguageSwitcher className="text-xs text-muted-foreground" />
             <Link to="/auth">
               <Button size="sm">
                 {tt({de:"Jetzt starten", en:"Get Started", tr:"Hemen başla", ar:"ابدأ الآن", ru:"Начать"})}

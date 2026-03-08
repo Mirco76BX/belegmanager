@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { FileText, Globe, MailCheck } from "lucide-react";
+import { FileText, MailCheck } from "lucide-react";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import receiptScanImg from "@/assets/receipt-scan.jpg";
 import PricingPlans from "@/components/PricingPlans";
 import ContactSection from "@/components/ContactSection";
@@ -137,18 +138,7 @@ const Auth = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>{isForgot ? t("auth.forgotPassword") : isLogin ? t("auth.login") : t("auth.register")}</CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      const langs: Array<"de"|"en"|"tr"|"ar"|"ru"> = ["de","en","tr","ar","ru"];
-                      setLang(langs[(langs.indexOf(lang) + 1) % langs.length]);
-                    }}
-                    className="gap-1.5 text-xs text-muted-foreground"
-                  >
-                    <Globe className="h-3.5 w-3.5" />
-                    {lang.toUpperCase()}
-                  </Button>
+                  <LanguageSwitcher className="text-xs text-muted-foreground" />
                 </div>
                 <CardDescription>
                   {isForgot

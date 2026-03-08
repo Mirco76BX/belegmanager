@@ -2,11 +2,11 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, Globe, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard, UserCircle } from "lucide-react";
+import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InviteDialog from "@/components/InviteDialog";
-import { useState, useMemo } from "react";
-import type { Language } from "@/i18n/translations";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useState } from "react";
 
 const AppSidebar = () => {
   const { signOut, subscription } = useAuth();
@@ -16,12 +16,6 @@ const AppSidebar = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const langOrder: Language[] = ["de", "en", "tr", "ar", "ru"];
-  const langLabels: Record<Language, string> = { de: "DE", en: "EN", tr: "TR", ar: "AR", ru: "RU" };
-  const nextLang = () => {
-    const idx = langOrder.indexOf(lang);
-    setLang(langOrder[(idx + 1) % langOrder.length]);
-  };
 
   const isTaxAdvisor = subscription.tier === "tax_advisor";
 
@@ -113,15 +107,7 @@ const AppSidebar = () => {
             {lang === "de" ? "Mein Konto" : "My Account"}
           </button>
           <InviteDialog />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={nextLang}
-            className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-          >
-            <Globe className="h-4 w-4" />
-            {langLabels[lang]} → {langLabels[langOrder[(langOrder.indexOf(lang) + 1) % langOrder.length]]}
-          </Button>
+          <LanguageSwitcher showLabel className="w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground" />
           <Button
             variant="ghost"
             size="sm"
@@ -172,15 +158,7 @@ const AppSidebar = () => {
             {lang === "de" ? "Mein Konto" : "My Account"}
           </button>
           <InviteDialog />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => { nextLang(); setMobileMenuOpen(false); }}
-            className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-          >
-            <Globe className="h-4 w-4" />
-            {langLabels[lang]} → {langLabels[langOrder[(langOrder.indexOf(lang) + 1) % langOrder.length]]}
-          </Button>
+          <LanguageSwitcher showLabel onSelect={() => setMobileMenuOpen(false)} className="w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground" />
           <Button
             variant="ghost"
             size="sm"
