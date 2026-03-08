@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage, getLocale } from "@/i18n/LanguageContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Ban, Trash2, UserCheck } from "lucide-react";
@@ -19,7 +19,7 @@ interface Profile {
 }
 
 const AdminUsers = () => {
-  const { t, lang } = useLanguage();
+  const { t, tt, lang } = useLanguage();
   const { isAdmin, loading: roleLoading } = useUserRole();
   const { toast } = useToast();
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -31,69 +31,55 @@ const AdminUsers = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    if (isAdmin) fetchProfiles();
-  }, [isAdmin]);
+  useEffect(() => { if (isAdmin) fetchProfiles(); }, [isAdmin]);
 
   const toggleBlock = async (profile: Profile) => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_blocked: !profile.is_blocked })
-      .eq("id", profile.id);
+    const { error } = await supabase.from("profiles").update({ is_blocked: !profile.is_blocked }).eq("id", profile.id);
     if (error) {
       toast({ title: error.message, variant: "destructive" });
     } else {
       toast({ title: profile.is_blocked
-        ? (lang === "de" ? "Nutzer entsperrt" : "User unblocked")
-        : (lang === "de" ? "Nutzer gesperrt" : "User blocked") });
+        ? tt({de:"Nutzer entsperrt", en:"User unblocked", tr:"Kullanıcı engeli kaldırıldı", ar:"تم إلغاء حظر المستخدم", ru:"Пользователь разблокирован"})
+        : tt({de:"Nutzer gesperrt", en:"User blocked", tr:"Kullanıcı engellendi", ar:"تم حظر المستخدم", ru:"Пользователь заблокирован"}) });
       fetchProfiles();
     }
   };
 
   const deleteUser = async (profile: Profile) => {
-    // We can only delete the profile; auth.users deletion requires admin API
     const { error } = await supabase.from("profiles").delete().eq("id", profile.id);
     if (error) {
       toast({ title: error.message, variant: "destructive" });
     } else {
-      toast({ title: lang === "de" ? "Profil gelöscht" : "Profile deleted" });
+      toast({ title: tt({de:"Profil gelöscht", en:"Profile deleted", tr:"Profil silindi", ar:"تم حذف الملف", ru:"Профиль удалён"}) });
       fetchProfiles();
     }
   };
 
-  if (roleLoading) {
-    return <div className="text-muted-foreground">{t("general.loading")}</div>;
-  }
-
-  if (!isAdmin) {
-    return <div className="text-destructive">{lang === "de" ? "Kein Zugriff" : "Access denied"}</div>;
-  }
+  if (roleLoading) return <div className="text-muted-foreground">{t("general.loading")}</div>;
+  if (!isAdmin) return <div className="text-destructive">{tt({de:"Kein Zugriff", en:"Access denied", tr:"Erişim reddedildi", ar:"تم رفض الوصول", ru:"Доступ запрещён"})}</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Shield className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold text-foreground">
-          {lang === "de" ? "Benutzerverwaltung" : "User Management"}
+          {tt({de:"Benutzerverwaltung", en:"User Management", tr:"Kullanıcı Yönetimi", ar:"إدارة المستخدمين", ru:"Управление пользователями"})}
         </h1>
       </div>
-
       <div className="grid gap-3">
         {profiles.map((profile) => (
           <Card key={profile.id}>
             <CardContent className="flex items-center justify-between py-4">
               <div className="space-y-1">
                 <p className="font-medium text-foreground">{profile.email}</p>
-                {profile.kanzlei && (
-                  <p className="text-xs text-muted-foreground">{profile.kanzlei}</p>
-                )}
+                {profile.kanzlei && <p className="text-xs text-muted-foreground">{profile.kanzlei}</p>}
                 <p className="text-xs text-muted-foreground">
-                  {new Date(profile.created_at).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}
+                  {new Date(profile.created_at).toLocaleDateString(getLocale(lang))}
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 {profile.is_blocked && (
-                  <Badge variant="destructive">{lang === "de" ? "Gesperrt" : "Blocked"}</Badge>
+                  <Badge variant="destructive">{tt({de:"Gesperrt", en:"Blocked", tr:"Engelli", ar:"محظور", ru:"Заблокирован"})}</Badge>
                 )}
                 <Button variant="outline" size="sm" onClick={() => toggleBlock(profile)}>
                   {profile.is_blocked ? <UserCheck className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
