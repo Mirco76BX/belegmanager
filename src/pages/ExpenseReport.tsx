@@ -105,14 +105,22 @@ const ExpenseReport = () => {
   ];
 
   const getTableRows = () =>
-    filteredReceipts.map((r) => [
-      new Date(r.date).toLocaleDateString(locale),
-      r.amount != null ? `${r.amount.toFixed(2)}\u00A0€` : "–",
-      r.vat_amount != null ? `${r.vat_amount.toFixed(2)}\u00A0€` : "–",
-      r.vat_rate != null ? `${r.vat_rate}%` : "–",
-      r.description || "–", getCompanyName(r.company_id),
-      r.person_met || "–", r.meeting_purpose || "–",
-    ]);
+    filteredReceipts.map((r) => {
+      const isForex = r.currency && r.currency !== "EUR";
+      const amountStr = r.amount != null
+        ? isForex
+          ? `${r.amount.toFixed(2)}\u00A0${r.currency}${r.amount_eur != null ? ` (${r.amount_eur.toFixed(2)}\u00A0€)` : ""}`
+          : `${r.amount.toFixed(2)}\u00A0€`
+        : "–";
+      return [
+        new Date(r.date).toLocaleDateString(locale),
+        amountStr,
+        r.vat_amount != null ? `${r.vat_amount.toFixed(2)}\u00A0€` : "–",
+        r.vat_rate != null ? `${r.vat_rate}%` : "–",
+        r.description || "–", getCompanyName(r.company_id),
+        r.person_met || "–", r.meeting_purpose || "–",
+      ];
+    });
 
   const totalLabel = tt({de:"Gesamt", en:"Total", tr:"Toplam", ar:"الإجمالي", ru:"Итого"});
 
