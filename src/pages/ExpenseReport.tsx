@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,7 +32,8 @@ interface Company {
 
 const ExpenseReport = () => {
   const { t, lang } = useLanguage();
-  const { user } = useAuth();
+  const { user, subscription } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   const [fromDate, setFromDate] = useState(() => {
@@ -46,7 +48,7 @@ const ExpenseReport = () => {
   const [generating, setGenerating] = useState(false);
 
   const fetchData = async () => {
-    if (!user) return;
+    if (!user || subscription.tier === "free") return;
     setLoading(true);
     const [receiptsRes, companiesRes] = await Promise.all([
       supabase
@@ -62,7 +64,27 @@ const ExpenseReport = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, [user, fromDate, toDate]);
+  useEffect(() => { fetchData(); }, [user, fromDate, toDate, subscription.tier]);
+
+  // FREE tier cannot access expense reports
+  if (subscription.tier === "free") {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+        <FileSpreadsheet className="h-12 w-12 text-muted-foreground" />
+        <h2 className="text-xl font-semibold text-foreground">
+          {lang === "de" ? "Reisekostenabrechnung" : "Travel Expense Report"}
+        </h2>
+        <p className="text-muted-foreground max-w-sm">
+          {lang === "de"
+            ? "Diese Funktion ist ab dem RELAX-Plan verfügbar. Upgrade jetzt, um Reisekostenabrechnungen zu erstellen."
+            : "This feature is available from the RELAX plan. Upgrade now to create travel expense reports."}
+        </p>
+        <Button onClick={() => navigate("/pricing")} className="gap-2">
+          {lang === "de" ? "Jetzt upgraden" : "Upgrade Now"}
+        </Button>
+      </div>
+    );
+  }
 
   const getCompanyName = (id: string | null) =>
     id ? companies.find((c) => c.id === id)?.name || "–" : "–";

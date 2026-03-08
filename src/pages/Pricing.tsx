@@ -74,8 +74,8 @@ const Pricing = () => {
       period: lang === "de" ? "/ für immer" : "/ forever",
       hint: null,
       features: lang === "de"
-        ? ["10 Scans", "Belegverwaltung", "Reisekostenabrechnung"]
-        : ["10 Scans", "Receipt management", "Travel expense reports"],
+        ? ["10 Scans", "Belegverwaltung"]
+        : ["10 Scans", "Receipt management"],
       current: subscription.tier === "free",
       priceId: null,
     },
@@ -87,8 +87,8 @@ const Pricing = () => {
       period: relaxPrice.period,
       hint: relaxPrice.hint,
       features: lang === "de"
-        ? ["150 Scans / Jahr", "Belegverwaltung", "Reisekostenabrechnung", "Prioritäts-Support"]
-        : ["150 Scans / year", "Receipt management", "Travel expense reports", "Priority support"],
+        ? ["150 Scans / Jahr", "Belegverwaltung", "Reisekostenabrechnung"]
+        : ["150 Scans / year", "Receipt management", "Travel expense reports"],
       current: isRelax,
       priceId: billingCycle === "yearly" ? TIERS.relax.yearly.price_id : TIERS.relax.monthly.price_id,
     },
