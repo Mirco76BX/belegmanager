@@ -103,7 +103,7 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
         {receipts.map((r) => (
           <TableRow
             key={r.id}
-            className={isEditing(r.id) ? "bg-muted/30" : "cursor-pointer hover:bg-muted/50"}
+            className={isEditing(r.id) ? "bg-primary/5 border-l-2 border-l-primary" : "cursor-pointer hover:bg-muted/50"}
             onClick={() => !isEditing(r.id) && startEdit(r)}
           >
             {isEditing(r.id) ? (
@@ -123,7 +123,7 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
                       value={editValues.company_id || ""}
                       onValueChange={(val) => setEditValues(v => ({ ...v, company_id: val }))}
                     >
-                      <SelectTrigger className="h-8 text-sm w-[140px]">
+                      <SelectTrigger className="h-9 text-sm w-[150px] bg-background border-input shadow-sm focus:ring-2 focus:ring-ring">
                         <SelectValue placeholder="–" />
                       </SelectTrigger>
                       <SelectContent position="popper" sideOffset={4} className="max-h-48">
@@ -138,7 +138,8 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
                   <Input
                     value={editValues.person_met || ""}
                     onChange={(e) => setEditValues(v => ({ ...v, person_met: e.target.value }))}
-                    className="h-8 text-sm w-[120px]"
+                    className="h-9 text-sm w-[130px] bg-background shadow-sm focus-visible:ring-2 focus-visible:ring-ring"
+                    placeholder={lang === "de" ? "Person…" : "Person…"}
                     onClick={(e) => e.stopPropagation()}
                   />
                 </TableCell>
@@ -146,20 +147,29 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
                   <Input
                     value={editValues.meeting_purpose || ""}
                     onChange={(e) => setEditValues(v => ({ ...v, meeting_purpose: e.target.value }))}
-                    className="h-8 text-sm"
+                    className="h-9 text-sm w-[160px] bg-background shadow-sm focus-visible:ring-2 focus-visible:ring-ring"
+                    placeholder={lang === "de" ? "Zweck…" : "Purpose…"}
                     onClick={(e) => e.stopPropagation()}
                   />
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center justify-end gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => saveEdit(r.id)} disabled={saving}>
-                      <Check className="h-4 w-4 text-primary" />
+                  <div className="flex items-center justify-end gap-0.5">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-primary hover:bg-primary/10"
+                      onClick={() => saveEdit(r.id)}
+                      disabled={saving}
+                    >
+                      <Check className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={cancelEdit}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:bg-muted"
+                      onClick={cancelEdit}
+                    >
                       <X className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => onDelete(r.id, r.file_path)}>
-                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>
