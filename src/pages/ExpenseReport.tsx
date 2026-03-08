@@ -232,6 +232,17 @@ const ExpenseReport = () => {
     <div className="animate-fade-in space-y-6">
       <h1 className="text-xl md:text-2xl font-bold">{t("expense.title")}</h1>
 
+      {profile && (
+        <div className="text-sm text-muted-foreground">
+          <p>{profile.display_name || profile.email}</p>
+          {profile.display_name && <p>{profile.email}</p>}
+          {filterCompanyId !== "all" && filterCompanyId !== "none" && (
+            <p className="font-medium text-foreground">
+              {tt({de:"Organisation", en:"Organization", tr:"Kuruluş", ar:"المنظمة", ru:"Организация"})}: {companies.find(c => c.id === filterCompanyId)?.name}
+            </p>
+          )}
+        </div>
+      )}
       <Card>
         <CardHeader><CardTitle className="text-lg">{t("expense.period")}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
