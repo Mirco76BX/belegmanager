@@ -285,7 +285,7 @@ const Demo = () => {
                     <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
                   ))}
                 </div>
-                <p className="mb-4 text-sm leading-relaxed text-muted-foreground italic">„{t.text}"</p>
+                <p className="mb-4 text-sm leading-relaxed text-muted-foreground italic">{"\u201E"}{t.text}{"\u201C"}</p>
                 <p className="font-semibold text-foreground">{t.name}</p>
                 <p className="text-xs text-muted-foreground">{t.role}</p>
               </div>
