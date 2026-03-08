@@ -65,6 +65,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const [personMet, setPersonMet] = useState("");
   const [organization, setOrganization] = useState("");
   const [meetingPurpose, setMeetingPurpose] = useState("");
+  const [showCustomPurpose, setShowCustomPurpose] = useState(false);
 
   // Inline new company
   const [showNewCompany, setShowNewCompany] = useState(false);
