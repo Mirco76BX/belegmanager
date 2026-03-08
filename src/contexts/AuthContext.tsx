@@ -18,9 +18,19 @@ export const TIERS = {
       price: 3,
     },
   },
+  master: {
+    name: "MASTER",
+    maxScans: Infinity,
+    yearly: {
+      price_id: "price_1T8dgW2OSLlEeYaUifi4Z36n",
+      product_id: "prod_U6rPZtvWVoYlGl",
+      price: 49,
+    },
+  },
 } as const;
 
 const RELAX_PRODUCT_IDS = [TIERS.relax.yearly.product_id, TIERS.relax.monthly.product_id];
+const MASTER_PRODUCT_IDS = [TIERS.master.yearly.product_id];
 
 interface SubscriptionState {
   subscribed: boolean;
