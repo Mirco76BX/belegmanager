@@ -159,7 +159,7 @@ const Demo = () => {
                     {de ? "Kostenlos registrieren" : "Register for free"}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
-                </Link>
+                </a>
                 <a href="#so-funktionierts">
                   <Button variant="outline" size="lg">
                     {de ? "So funktioniert's" : "How it works"}
