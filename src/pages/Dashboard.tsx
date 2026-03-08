@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage, getLocale } from "@/i18n/LanguageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Receipt, Building2, FileSpreadsheet, TrendingUp } from "lucide-react";
 
 const Dashboard = () => {
-  const { t, lang } = useLanguage();
+  const { t, tt, lang } = useLanguage();
   const { user } = useAuth();
   const [totalReceipts, setTotalReceipts] = useState(0);
   const [monthReceipts, setMonthReceipts] = useState(0);
@@ -70,9 +70,9 @@ const Dashboard = () => {
               {recentReceipts.map((r) => (
                 <div key={r.id} className="flex items-center justify-between border-b border-border pb-2 last:border-0">
                   <div>
-                    <p className="text-sm font-medium">{r.description || (lang === "de" ? "Ohne Beschreibung" : "No description")}</p>
+                    <p className="text-sm font-medium">{r.description || tt({de:"Ohne Beschreibung", en:"No description", tr:"Açıklama yok", ar:"بدون وصف", ru:"Без описания"})}</p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}
+                      {new Date(r.date).toLocaleDateString(getLocale(lang))}
                     </p>
                   </div>
                   <span className="font-mono text-sm font-medium">
