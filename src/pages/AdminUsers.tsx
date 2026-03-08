@@ -13,6 +13,8 @@ interface Profile {
   email: string;
   display_name: string | null;
   is_blocked: boolean;
+  is_tax_advisor: boolean;
+  kanzlei: string | null;
   created_at: string;
 }
 
