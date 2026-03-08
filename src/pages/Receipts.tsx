@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage, getLocale } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,9 +34,10 @@ interface Company {
 }
 
 const Receipts = () => {
-  const { t, lang } = useLanguage();
+  const { t, lang, tt } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
+  const locale = getLocale(lang);
 
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -118,7 +119,7 @@ const Receipts = () => {
     if (error) {
       toast({ title: error.message, variant: "destructive" });
     } else {
-      toast({ title: lang === "de" ? "Gespeichert" : "Saved" });
+      toast({ title: tt({de:"Gespeichert", en:"Saved", tr:"Kaydedildi", ar:"تم الحفظ", ru:"Сохранено"}) });
       setDetailOpen(false);
       fetchData();
     }
@@ -152,13 +153,12 @@ const Receipts = () => {
             <p className="mt-1 text-sm text-muted-foreground/60">{t("receipts.scanHint")}</p>
             <Button className="mt-4 gap-2" onClick={() => setScanOpen(true)}>
               <Camera className="h-4 w-4" />
-              {lang === "de" ? "Ersten Beleg scannen" : "Scan first receipt"}
+              {tt({de:"Ersten Beleg scannen", en:"Scan first receipt", tr:"İlk fişi tara", ar:"مسح أول إيصال", ru:"Сканировать первый чек"})}
             </Button>
           </CardContent>
         </Card>
       ) : (
         <>
-          {/* Desktop Table – inline editable */}
           <Card className="hidden md:block">
             <CardContent className="p-0">
               <ReceiptsInlineTable
@@ -171,7 +171,6 @@ const Receipts = () => {
             </CardContent>
           </Card>
 
-          {/* Mobile Cards */}
           <div className="md:hidden space-y-2">
             {receipts.map((r) => (
               <Card key={r.id} className={`cursor-pointer active:bg-muted/50 transition-colors ${r.status === "pending" ? "border-warning/50" : ""}`} onClick={() => openDetail(r)}>
@@ -180,11 +179,11 @@ const Receipts = () => {
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="font-mono text-sm font-semibold whitespace-nowrap">{formatAmount(r.amount)}</span>
                       <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}
+                        {new Date(r.date).toLocaleDateString(locale)}
                       </span>
                       {r.status === "pending" && (
                         <span className="text-[10px] bg-warning/20 text-warning px-1.5 py-0.5 rounded whitespace-nowrap">
-                          {lang === "de" ? "Offen" : "Pending"}
+                          {tt({de:"Offen", en:"Pending", tr:"Beklemede", ar:"معلق", ru:"Ожидает"})}
                         </span>
                       )}
                     </div>
@@ -203,7 +202,6 @@ const Receipts = () => {
         </>
       )}
 
-      {/* Scan Wizard */}
       <ScanWizard
         open={scanOpen}
         onClose={() => setScanOpen(false)}
@@ -213,14 +211,13 @@ const Receipts = () => {
         onCompaniesChanged={fetchData}
       />
 
-      {/* Detail / Edit Dialog */}
       <Dialog open={detailOpen} onOpenChange={(o) => { if (!o) { setDetailOpen(false); setIsEditing(false); } }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {isEditing
-                ? (lang === "de" ? "Beleg bearbeiten" : "Edit Receipt")
-                : (lang === "de" ? "Beleg-Details" : "Receipt Details")}
+                ? tt({de:"Beleg bearbeiten", en:"Edit Receipt", tr:"Fişi düzenle", ar:"تعديل الإيصال", ru:"Редактировать чек"})
+                : tt({de:"Beleg-Details", en:"Receipt Details", tr:"Fiş detayları", ar:"تفاصيل الإيصال", ru:"Детали чека"})}
             </DialogTitle>
           </DialogHeader>
 
@@ -232,45 +229,47 @@ const Receipts = () => {
 
               <div className="space-y-2.5">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{lang === "de" ? "Datum" : "Date"}</span>
-                  <span className="font-medium">{new Date(detailReceipt.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}</span>
+                  <span className="text-muted-foreground">{t("receipts.date")}</span>
+                  <span className="font-medium">{new Date(detailReceipt.date).toLocaleDateString(locale)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{lang === "de" ? "Betrag" : "Amount"}</span>
+                  <span className="text-muted-foreground">{t("receipts.amount")}</span>
                   <span className="font-mono font-semibold">{formatAmount(detailReceipt.amount)}</span>
                 </div>
                 {detailReceipt.description && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{lang === "de" ? "Beschreibung" : "Description"}</span>
+                    <span className="text-muted-foreground">{t("receipts.description")}</span>
                     <span className="text-right max-w-[60%]">{detailReceipt.description}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{lang === "de" ? "Organisation" : "Organization"}</span>
+                  <span className="text-muted-foreground">{t("receipts.company")}</span>
                   <span>{companyName(detailReceipt.company_id)}</span>
                 </div>
                 {detailReceipt.person_met && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{lang === "de" ? "Person" : "Person Met"}</span>
+                    <span className="text-muted-foreground">{t("receipts.person")}</span>
                     <span>{detailReceipt.person_met}</span>
                   </div>
                 )}
                 {detailReceipt.organization && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{lang === "de" ? "Organisation" : "Organization"}</span>
+                    <span className="text-muted-foreground">{t("receipts.organization")}</span>
                     <span>{detailReceipt.organization}</span>
                   </div>
                 )}
                 {detailReceipt.meeting_purpose && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{lang === "de" ? "Zweck" : "Purpose"}</span>
+                    <span className="text-muted-foreground">{t("receipts.meetingPurpose")}</span>
                     <span className="text-right max-w-[60%]">{detailReceipt.meeting_purpose}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Status</span>
                   <span className={detailReceipt.status === "pending" ? "text-warning" : "text-green-600"}>
-                    {detailReceipt.status === "pending" ? (lang === "de" ? "Offen" : "Pending") : (lang === "de" ? "Vollständig" : "Complete")}
+                    {detailReceipt.status === "pending"
+                      ? tt({de:"Offen", en:"Pending", tr:"Beklemede", ar:"معلق", ru:"Ожидает"})
+                      : tt({de:"Vollständig", en:"Complete", tr:"Tamamlandı", ar:"مكتمل", ru:"Завершено"})}
                   </span>
                 </div>
               </div>
@@ -278,11 +277,11 @@ const Receipts = () => {
               <div className="flex gap-2 pt-2">
                 <Button variant="outline" className="flex-1 gap-2" onClick={startEditing}>
                   <Pencil className="h-4 w-4" />
-                  {lang === "de" ? "Bearbeiten" : "Edit"}
+                  {t("general.edit")}
                 </Button>
                 <Button variant="outline" className="gap-2 text-destructive hover:text-destructive" onClick={() => handleDelete(detailReceipt.id, detailReceipt.file_path)}>
                   <Trash2 className="h-4 w-4" />
-                  {lang === "de" ? "Löschen" : "Delete"}
+                  {t("general.delete")}
                 </Button>
               </div>
             </div>
@@ -290,13 +289,12 @@ const Receipts = () => {
 
           {isEditing && detailReceipt && (
             <form onSubmit={handleEditSave} className="space-y-3">
-              {/* KI-Felder: nach Speichern nur lesbar */}
               <div className="rounded-md bg-muted/50 p-3 space-y-1.5">
-                <p className="text-xs text-muted-foreground font-medium">{lang === "de" ? "KI-erkannte Daten (nicht änderbar)" : "AI-detected data (read-only)"}</p>
+                <p className="text-xs text-muted-foreground font-medium">{tt({de:"KI-erkannte Daten (nicht änderbar)", en:"AI-detected data (read-only)", tr:"Yapay zeka ile algılanan veriler (salt okunur)", ar:"بيانات تم اكتشافها بالذكاء الاصطناعي (للقراءة فقط)", ru:"Данные ИИ (только чтение)"})}</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">{t("receipts.date")}</Label>
-                    <p className="text-sm font-medium">{new Date(detailReceipt.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}</p>
+                    <p className="text-sm font-medium">{new Date(detailReceipt.date).toLocaleDateString(locale)}</p>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">{t("receipts.amount")}</Label>
@@ -331,10 +329,10 @@ const Receipts = () => {
               </div>
               <div className="flex gap-2 pt-1">
                 <Button type="button" variant="outline" className="flex-1" onClick={() => setIsEditing(false)}>
-                  {lang === "de" ? "Abbrechen" : "Cancel"}
+                  {t("general.cancel")}
                 </Button>
                 <Button type="submit" className="flex-1" disabled={editSaving}>
-                  {editSaving ? (lang === "de" ? "Speichern..." : "Saving...") : (lang === "de" ? "Speichern" : "Save")}
+                  {editSaving ? t("general.loading") : t("general.save")}
                 </Button>
               </div>
             </form>
@@ -342,11 +340,10 @@ const Receipts = () => {
         </DialogContent>
       </Dialog>
 
-      {/* File Preview */}
       <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
         <DialogContent className="max-w-3xl max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>{lang === "de" ? "Beleg-Vorschau" : "Receipt Preview"}</DialogTitle>
+            <DialogTitle>{tt({de:"Beleg-Vorschau", en:"Receipt Preview", tr:"Fiş önizleme", ar:"معاينة الإيصال", ru:"Предпросмотр чека"})}</DialogTitle>
           </DialogHeader>
           {previewUrl && (
             previewUrl.includes(".pdf") ? (

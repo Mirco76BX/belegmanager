@@ -12,14 +12,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Camera, Upload, Loader2, Check, SkipForward, ArrowRight, Plus, AlertTriangle } from "lucide-react";
 
 const PURPOSE_PRESETS = [
-  { value: "Geschäftsessen", labelDe: "🍽️ Geschäftsessen", labelEn: "🍽️ Business meal" },
-  { value: "Tanken", labelDe: "⛽ Tanken", labelEn: "⛽ Fuel" },
-  { value: "Akquise", labelDe: "🤝 Akquise", labelEn: "🤝 Acquisition" },
-  { value: "Büromaterial", labelDe: "📎 Büromaterial", labelEn: "📎 Office supplies" },
-  { value: "Reisekosten", labelDe: "✈️ Reisekosten", labelEn: "✈️ Travel expenses" },
-  { value: "Fortbildung", labelDe: "📚 Fortbildung", labelEn: "📚 Training" },
-  { value: "Bewirtung", labelDe: "🥂 Bewirtung", labelEn: "🥂 Hospitality" },
-  { value: "Telefon/Internet", labelDe: "📱 Telefon/Internet", labelEn: "📱 Phone/Internet" },
+  { value: "Geschäftsessen", de: "🍽️ Geschäftsessen", en: "🍽️ Business meal", tr: "🍽️ İş yemeği", ar: "🍽️ وجبة عمل", ru: "🍽️ Деловой обед" },
+  { value: "Tanken", de: "⛽ Tanken", en: "⛽ Fuel", tr: "⛽ Yakıt", ar: "⛽ وقود", ru: "⛽ Топливо" },
+  { value: "Akquise", de: "🤝 Akquise", en: "🤝 Acquisition", tr: "🤝 Müşteri edinme", ar: "🤝 استحواذ", ru: "🤝 Привлечение" },
+  { value: "Büromaterial", de: "📎 Büromaterial", en: "📎 Office supplies", tr: "📎 Ofis malzemeleri", ar: "📎 لوازم مكتبية", ru: "📎 Канцтовары" },
+  { value: "Reisekosten", de: "✈️ Reisekosten", en: "✈️ Travel expenses", tr: "✈️ Seyahat masrafları", ar: "✈️ مصاريف السفر", ru: "✈️ Командировочные" },
+  { value: "Fortbildung", de: "📚 Fortbildung", en: "📚 Training", tr: "📚 Eğitim", ar: "📚 تدريب", ru: "📚 Обучение" },
+  { value: "Bewirtung", de: "🥂 Bewirtung", en: "🥂 Hospitality", tr: "🥂 Ağırlama", ar: "🥂 ضيافة", ru: "🥂 Представительские" },
+  { value: "Telefon/Internet", de: "📱 Telefon/Internet", en: "📱 Phone/Internet", tr: "📱 Telefon/İnternet", ar: "📱 هاتف/إنترنت", ru: "📱 Телефон/Интернет" },
 ];
 
 interface ScanResult {
@@ -47,7 +47,7 @@ interface ScanWizardProps {
 
 const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCompaniesChanged }: ScanWizardProps) => {
   const { user, subscription } = useAuth();
-  const { lang } = useLanguage();
+  const { lang, tt } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -62,7 +62,6 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Form fields
   const [date, setDate] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
@@ -72,66 +71,37 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const [meetingPurpose, setMeetingPurpose] = useState("");
   const [showCustomPurpose, setShowCustomPurpose] = useState(false);
 
-  // Inline new company
   const [showNewCompany, setShowNewCompany] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState("");
   const [creatingCompany, setCreatingCompany] = useState(false);
   const [localCompanies, setLocalCompanies] = useState<Company[]>(companies);
 
-  // Sync companies prop
-  useEffect(() => {
-    setLocalCompanies(companies);
-  }, [companies]);
+  useEffect(() => { setLocalCompanies(companies); }, [companies]);
 
-  // Check scan limit and reset on open
   useEffect(() => {
     if (open && user) {
-      setStep("upload");
-      setFile(null);
-      setPreview(null);
-      setScanResult(null);
-      setDate("");
-      setAmount("");
-      setDescription("");
+      setStep("upload"); setFile(null); setPreview(null); setScanResult(null);
+      setDate(""); setAmount(""); setDescription("");
       setCompanyId(defaultCompanyId || "");
-      setPersonMet("");
-      setOrganization("");
-      setMeetingPurpose("");
-      setShowCustomPurpose(false);
-      setShowNewCompany(false);
-      setNewCompanyName("");
+      setPersonMet(""); setOrganization(""); setMeetingPurpose("");
+      setShowCustomPurpose(false); setShowNewCompany(false); setNewCompanyName("");
       setLimitReached(false);
 
-      // Check scan count
-      const maxScans = subscription.tier === "master"
-        ? Infinity
-        : subscription.tier === "relax"
-          ? TIERS.relax.maxScans
-          : TIERS.free.maxScans;
+      const maxScans = subscription.tier === "master" ? Infinity
+        : subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans;
 
       if (maxScans !== Infinity) {
-        supabase
-          .from("receipts")
-          .select("id", { count: "exact", head: true })
-          .then(({ count }) => {
-            const c = count ?? 0;
-            setScanCount(c);
-            if (c >= maxScans) setLimitReached(true);
-          });
-      } else {
-        setScanCount(null);
-        setLimitReached(false);
-      }
+        supabase.from("receipts").select("id", { count: "exact", head: true })
+          .then(({ count }) => { const c = count ?? 0; setScanCount(c); if (c >= maxScans) setLimitReached(true); });
+      } else { setScanCount(null); setLimitReached(false); }
     }
   }, [open, defaultCompanyId, user, subscription.tier]);
 
   const handleFileSelected = async (selectedFile: File) => {
     setFile(selectedFile);
-
     const reader = new FileReader();
     reader.onloadend = () => setPreview(reader.result as string);
     reader.readAsDataURL(selectedFile);
-
     setStep("scanning");
 
     try {
@@ -141,26 +111,17 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         r.readAsDataURL(selectedFile);
       });
 
-      const { data, error } = await supabase.functions.invoke("scan-receipt", {
-        body: { imageBase64: base64 },
-      });
-
+      const { data, error } = await supabase.functions.invoke("scan-receipt", { body: { imageBase64: base64 } });
       if (error) throw error;
 
       setScanResult(data);
       if (data.date) setDate(data.date);
       if (data.amount) setAmount(String(data.amount));
-      if (data.description || data.vendor) {
-        setDescription([data.vendor, data.description].filter(Boolean).join(" – "));
-      }
-
+      if (data.description || data.vendor) setDescription([data.vendor, data.description].filter(Boolean).join(" – "));
       setStep("company");
     } catch (err: any) {
       console.error("Scan error:", err);
-      toast({
-        title: lang === "de" ? "Scan fehlgeschlagen. Daten manuell eingeben." : "Scan failed. Enter data manually.",
-        variant: "destructive",
-      });
+      toast({ title: tt({de:"Scan fehlgeschlagen. Daten manuell eingeben.", en:"Scan failed. Enter data manually.", tr:"Tarama başarısız. Verileri manuel girin.", ar:"فشل المسح. أدخل البيانات يدوياً.", ru:"Сканирование не удалось. Введите данные вручную."}), variant: "destructive" });
       setDate(new Date().toISOString().split("T")[0]);
       setStep("company");
     }
@@ -170,32 +131,20 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
     if (!user || !newCompanyName.trim()) return;
     setCreatingCompany(true);
     try {
-      const { data, error } = await supabase
-        .from("companies")
-        .insert({ name: newCompanyName.trim(), user_id: user.id })
-        .select("id, name")
-        .single();
-
+      const { data, error } = await supabase.from("companies").insert({ name: newCompanyName.trim(), user_id: user.id }).select("id, name").single();
       if (error) throw error;
-
       setLocalCompanies((prev) => [...prev, data]);
       setCompanyId(data.id);
-      setShowNewCompany(false);
-      setNewCompanyName("");
+      setShowNewCompany(false); setNewCompanyName("");
       onCompaniesChanged?.();
-
-      toast({ title: lang === "de" ? "Organisation erstellt!" : "Organization created!" });
-    } catch (err: any) {
-      toast({ title: err.message, variant: "destructive" });
-    } finally {
-      setCreatingCompany(false);
-    }
+      toast({ title: tt({de:"Organisation erstellt!", en:"Organization created!", tr:"Kuruluş oluşturuldu!", ar:"تم إنشاء المنظمة!", ru:"Организация создана!"}) });
+    } catch (err: any) { toast({ title: err.message, variant: "destructive" }); }
+    finally { setCreatingCompany(false); }
   };
 
   const handleSave = async (skipDetails = false) => {
     if (!user || !file) return;
     setSaving(true);
-
     try {
       const ext = file.name.split(".").pop() || "jpg";
       const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
@@ -203,28 +152,19 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       if (uploadError) throw uploadError;
 
       const { error } = await supabase.from("receipts").insert({
-        user_id: user.id,
-        date: date || new Date().toISOString().split("T")[0],
-        amount: amount ? parseFloat(amount) : null,
-        description: description || null,
-        company_id: companyId || null,
-        person_met: skipDetails ? null : personMet || null,
+        user_id: user.id, date: date || new Date().toISOString().split("T")[0],
+        amount: amount ? parseFloat(amount) : null, description: description || null,
+        company_id: companyId || null, person_met: skipDetails ? null : personMet || null,
         organization: skipDetails ? null : organization || null,
         meeting_purpose: skipDetails ? null : meetingPurpose || null,
-        file_path: path,
-        status: skipDetails ? "pending" : "complete",
+        file_path: path, status: skipDetails ? "pending" : "complete",
       });
-
       if (error) throw error;
 
-      toast({ title: lang === "de" ? "Beleg gespeichert!" : "Receipt saved!" });
-      onSaved();
-      onClose();
-    } catch (err: any) {
-      toast({ title: err.message, variant: "destructive" });
-    } finally {
-      setSaving(false);
-    }
+      toast({ title: tt({de:"Beleg gespeichert!", en:"Receipt saved!", tr:"Fiş kaydedildi!", ar:"تم حفظ الإيصال!", ru:"Чек сохранён!"}) });
+      onSaved(); onClose();
+    } catch (err: any) { toast({ title: err.message, variant: "destructive" }); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -232,37 +172,39 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {step === "upload" && (lang === "de" ? "Beleg scannen" : "Scan Receipt")}
-            {step === "scanning" && (lang === "de" ? "Wird gescannt..." : "Scanning...")}
-            {step === "company" && (lang === "de" ? "Zuordnung" : "Assignment")}
-            {step === "details" && (lang === "de" ? "Weitere Details" : "Additional Details")}
+            {step === "upload" && tt({de:"Beleg scannen", en:"Scan Receipt", tr:"Fiş Tara", ar:"مسح الإيصال", ru:"Сканировать чек"})}
+            {step === "scanning" && tt({de:"Wird gescannt...", en:"Scanning...", tr:"Taranıyor...", ar:"جارٍ المسح...", ru:"Сканирование..."})}
+            {step === "company" && tt({de:"Zuordnung", en:"Assignment", tr:"Atama", ar:"التعيين", ru:"Назначение"})}
+            {step === "details" && tt({de:"Weitere Details", en:"Additional Details", tr:"Ek Detaylar", ar:"تفاصيل إضافية", ru:"Дополнительные данные"})}
           </DialogTitle>
         </DialogHeader>
 
-        {/* Scan limit reached */}
         {limitReached && (
           <div className="flex flex-col items-center gap-4 py-6 text-center">
             <AlertTriangle className="h-10 w-10 text-destructive" />
             <h3 className="font-semibold text-foreground">
-              {lang === "de" ? "Scan-Limit erreicht" : "Scan limit reached"}
+              {tt({de:"Scan-Limit erreicht", en:"Scan limit reached", tr:"Tarama limiti doldu", ar:"تم الوصول لحد المسح", ru:"Лимит сканирований достигнут"})}
             </h3>
             <p className="text-sm text-muted-foreground max-w-xs">
-              {lang === "de"
-                ? `Du hast ${scanCount} von ${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} Scans verwendet. Upgrade deinen Plan für mehr Scans.`
-                : `You've used ${scanCount} of ${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} scans. Upgrade your plan for more scans.`}
+              {tt({
+                de:`Du hast ${scanCount} von ${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} Scans verwendet. Upgrade deinen Plan für mehr Scans.`,
+                en:`You've used ${scanCount} of ${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} scans. Upgrade your plan for more scans.`,
+                tr:`${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} taramadan ${scanCount} tanesini kullandınız. Daha fazlası için planınızı yükseltin.`,
+                ar:`لقد استخدمت ${scanCount} من ${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} عملية مسح. قم بترقية خطتك للمزيد.`,
+                ru:`Вы использовали ${scanCount} из ${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} сканирований. Обновите план для большего.`,
+              })}
             </p>
             <div className="flex gap-2">
               <Button variant="outline" onClick={onClose}>
-                {lang === "de" ? "Schließen" : "Close"}
+                {tt({de:"Schließen", en:"Close", tr:"Kapat", ar:"إغلاق", ru:"Закрыть"})}
               </Button>
               <Button onClick={() => { onClose(); navigate("/pricing"); }}>
-                {lang === "de" ? "Jetzt upgraden" : "Upgrade Now"}
+                {tt({de:"Jetzt upgraden", en:"Upgrade Now", tr:"Şimdi Yükselt", ar:"ترقية الآن", ru:"Обновить сейчас"})}
               </Button>
             </div>
           </div>
         )}
 
-        {/* Step 1: Upload */}
         {step === "upload" && !limitReached && (
           <div className="space-y-4">
             {scanCount !== null && !limitReached && (
@@ -271,76 +213,40 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
               </p>
             )}
             <p className="text-sm text-muted-foreground">
-              {lang === "de"
-                ? "Fotografiere deinen Beleg oder lade ein Bild/PDF hoch."
-                : "Take a photo of your receipt or upload an image/PDF."}
+              {tt({de:"Fotografiere deinen Beleg oder lade ein Bild/PDF hoch.", en:"Take a photo of your receipt or upload an image/PDF.", tr:"Fişinizin fotoğrafını çekin veya bir görüntü/PDF yükleyin.", ar:"التقط صورة لإيصالك أو ارفع صورة/ملف PDF.", ru:"Сфотографируйте чек или загрузите изображение/PDF."})}
             </p>
             <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant="outline"
-                className="h-28 flex-col gap-2"
-                onClick={() => cameraInputRef.current?.click()}
-              >
+              <Button variant="outline" className="h-28 flex-col gap-2" onClick={() => cameraInputRef.current?.click()}>
                 <Camera className="h-8 w-8 text-primary" />
-                <span className="text-sm">{lang === "de" ? "Kamera" : "Camera"}</span>
+                <span className="text-sm">{tt({de:"Kamera", en:"Camera", tr:"Kamera", ar:"الكاميرا", ru:"Камера"})}</span>
               </Button>
-              <Button
-                variant="outline"
-                className="h-28 flex-col gap-2"
-                onClick={() => fileInputRef.current?.click()}
-              >
+              <Button variant="outline" className="h-28 flex-col gap-2" onClick={() => fileInputRef.current?.click()}>
                 <Upload className="h-8 w-8 text-primary" />
-                <span className="text-sm">{lang === "de" ? "Datei wählen" : "Choose File"}</span>
+                <span className="text-sm">{tt({de:"Datei wählen", en:"Choose File", tr:"Dosya seç", ar:"اختر ملف", ru:"Выбрать файл"})}</span>
               </Button>
             </div>
-            <input
-              ref={cameraInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleFileSelected(f);
-              }}
-            />
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,.pdf"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleFileSelected(f);
-              }}
-            />
+            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelected(f); }} />
+            <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelected(f); }} />
           </div>
         )}
 
-        {/* Step 2: Scanning */}
         {step === "scanning" && (
           <div className="flex flex-col items-center gap-4 py-8">
-            {preview && (
-              <img src={preview} alt="Receipt" className="max-h-40 rounded-lg border object-contain" />
-            )}
+            {preview && <img src={preview} alt="Receipt" className="max-h-40 rounded-lg border object-contain" />}
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">
-              {lang === "de" ? "KI liest Beleg aus..." : "AI reading receipt..."}
+              {tt({de:"KI liest Beleg aus...", en:"AI reading receipt...", tr:"Yapay zeka fişi okuyor...", ar:"الذكاء الاصطناعي يقرأ الإيصال...", ru:"ИИ считывает чек..."})}
             </p>
           </div>
         )}
 
-        {/* Step 3: Company + Core Data */}
         {step === "company" && (
           <div className="space-y-3">
-            {preview && (
-              <img src={preview} alt="Receipt" className="max-h-24 w-full rounded-lg border object-contain" />
-            )}
-
+            {preview && <img src={preview} alt="Receipt" className="max-h-24 w-full rounded-lg border object-contain" />}
             {scanResult && (
               <div className="rounded-md bg-muted/50 p-2.5 text-sm space-y-0.5">
                 <p className="font-medium text-foreground text-xs">
-                  {lang === "de" ? "Erkannte Daten:" : "Detected data:"}
+                  {tt({de:"Erkannte Daten:", en:"Detected data:", tr:"Algılanan veriler:", ar:"البيانات المكتشفة:", ru:"Обнаруженные данные:"})}
                 </p>
                 {scanResult.vendor && <p className="text-muted-foreground text-xs">📍 {scanResult.vendor}</p>}
                 {scanResult.amount && <p className="text-muted-foreground text-xs">💰 {scanResult.amount.toFixed(2)} €</p>}
@@ -350,161 +256,111 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-sm">{lang === "de" ? "Datum" : "Date"}</Label>
+                <Label className="text-sm">{tt({de:"Datum", en:"Date", tr:"Tarih", ar:"التاريخ", ru:"Дата"})}</Label>
                 <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-11 text-base" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">{lang === "de" ? "Betrag (€)" : "Amount (€)"}</Label>
+                <Label className="text-sm">{tt({de:"Betrag (€)", en:"Amount (€)", tr:"Tutar (€)", ar:"المبلغ (€)", ru:"Сумма (€)"})}</Label>
                 <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className="h-11 text-base" />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-sm">{lang === "de" ? "Beschreibung" : "Description"}</Label>
+              <Label className="text-sm">{tt({de:"Beschreibung", en:"Description", tr:"Açıklama", ar:"الوصف", ru:"Описание"})}</Label>
               <Input value={description} onChange={(e) => setDescription(e.target.value)} className="h-11 text-base" />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-sm">{lang === "de" ? "Organisation zuordnen" : "Assign Organization"}</Label>
+              <Label className="text-sm">{tt({de:"Organisation zuordnen", en:"Assign Organization", tr:"Kuruluş Ata", ar:"تعيين المنظمة", ru:"Назначить организацию"})}</Label>
               {!showNewCompany ? (
                 <div className="flex items-end gap-2">
                   <Select value={companyId} onValueChange={setCompanyId}>
                     <SelectTrigger className="h-11 flex-1 text-base">
-                      <SelectValue placeholder={lang === "de" ? "Organisation wählen..." : "Select organization..."} />
+                      <SelectValue placeholder={tt({de:"Organisation wählen...", en:"Select organization...", tr:"Kuruluş seçin...", ar:"اختر المنظمة...", ru:"Выберите организацию..."})} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="max-h-48">
-                      {localCompanies.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                      ))}
+                      {localCompanies.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
                     </SelectContent>
                   </Select>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-11 w-11 shrink-0"
-                    onClick={() => setShowNewCompany(true)}
-                    title={lang === "de" ? "Neue Organisation" : "New organization"}
-                  >
+                  <Button type="button" variant="outline" size="icon" className="h-11 w-11 shrink-0" onClick={() => setShowNewCompany(true)}
+                    title={tt({de:"Neue Organisation", en:"New organization", tr:"Yeni kuruluş", ar:"منظمة جديدة", ru:"Новая организация"})}>
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
               ) : (
                 <div className="flex items-end gap-2">
-                  <Input
-                    value={newCompanyName}
-                    onChange={(e) => setNewCompanyName(e.target.value)}
-                    placeholder={lang === "de" ? "Name der Organisation..." : "Organization name..."}
-                    className="h-11 flex-1 text-base"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleCreateCompany();
-                      }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    size="icon"
-                    className="h-11 w-11 shrink-0"
-                    onClick={handleCreateCompany}
-                    disabled={creatingCompany || !newCompanyName.trim()}
-                  >
+                  <Input value={newCompanyName} onChange={(e) => setNewCompanyName(e.target.value)}
+                    placeholder={tt({de:"Name der Organisation...", en:"Organization name...", tr:"Kuruluş adı...", ar:"اسم المنظمة...", ru:"Название организации..."})}
+                    className="h-11 flex-1 text-base" autoFocus
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreateCompany(); } }} />
+                  <Button type="button" size="icon" className="h-11 w-11 shrink-0" onClick={handleCreateCompany} disabled={creatingCompany || !newCompanyName.trim()}>
                     {creatingCompany ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                   </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-11 px-3 text-sm text-muted-foreground"
-                    onClick={() => { setShowNewCompany(false); setNewCompanyName(""); }}
-                  >
-                    {lang === "de" ? "Abbrechen" : "Cancel"}
+                  <Button type="button" variant="ghost" className="h-11 px-3 text-sm text-muted-foreground" onClick={() => { setShowNewCompany(false); setNewCompanyName(""); }}>
+                    {tt({de:"Abbrechen", en:"Cancel", tr:"İptal", ar:"إلغاء", ru:"Отмена"})}
                   </Button>
                 </div>
               )}
             </div>
 
             <div className="flex gap-2 pt-1">
-              <Button
-                variant="outline"
-                className="flex-1 gap-2 h-11"
-                onClick={() => handleSave(true)}
-                disabled={saving}
-              >
+              <Button variant="outline" className="flex-1 gap-2 h-11" onClick={() => handleSave(true)} disabled={saving}>
                 <SkipForward className="h-4 w-4" />
-                {lang === "de" ? "Speichern & Skip" : "Save & Skip"}
+                {tt({de:"Speichern & Skip", en:"Save & Skip", tr:"Kaydet & Atla", ar:"حفظ وتخطي", ru:"Сохранить и пропустить"})}
               </Button>
-              <Button
-                className="flex-1 gap-2 h-11"
-                onClick={() => setStep("details")}
-              >
+              <Button className="flex-1 gap-2 h-11" onClick={() => setStep("details")}>
                 <ArrowRight className="h-4 w-4" />
-                {lang === "de" ? "Weiter" : "Next"}
+                {tt({de:"Weiter", en:"Next", tr:"İleri", ar:"التالي", ru:"Далее"})}
               </Button>
             </div>
           </div>
         )}
 
-        {/* Step 4: Additional Details */}
         {step === "details" && (
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-sm">{lang === "de" ? "Getroffene Person" : "Person Met"}</Label>
+              <Label className="text-sm">{tt({de:"Getroffene Person", en:"Person Met", tr:"Görüşülen Kişi", ar:"الشخص الملتقى", ru:"Встреча с"})}</Label>
               <Input value={personMet} onChange={(e) => setPersonMet(e.target.value)} className="h-11 text-base" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">{lang === "de" ? "Unternehmung/Organisation" : "Organization"}</Label>
+              <Label className="text-sm">{tt({de:"Unternehmung/Organisation", en:"Organization", tr:"İşletme/Kuruluş", ar:"المؤسسة/المنظمة", ru:"Предприятие/Организация"})}</Label>
               <Input value={organization} onChange={(e) => setOrganization(e.target.value)} className="h-11 text-base" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">{lang === "de" ? "Zweck" : "Purpose"}</Label>
+              <Label className="text-sm">{tt({de:"Zweck", en:"Purpose", tr:"Amaç", ar:"الغرض", ru:"Цель"})}</Label>
               <Select
                 value={PURPOSE_PRESETS.some(p => p.value === meetingPurpose) ? meetingPurpose : (meetingPurpose ? "custom" : "")}
                 onValueChange={(val) => {
-                  if (val === "custom") {
-                    setMeetingPurpose("");
-                    setShowCustomPurpose(true);
-                  } else {
-                    setMeetingPurpose(val);
-                    setShowCustomPurpose(false);
-                  }
+                  if (val === "custom") { setMeetingPurpose(""); setShowCustomPurpose(true); }
+                  else { setMeetingPurpose(val); setShowCustomPurpose(false); }
                 }}
               >
                 <SelectTrigger className="h-11 text-base">
-                  <SelectValue placeholder={lang === "de" ? "Zweck wählen..." : "Select purpose..."} />
+                  <SelectValue placeholder={tt({de:"Zweck wählen...", en:"Select purpose...", tr:"Amaç seçin...", ar:"اختر الغرض...", ru:"Выберите цель..."})} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4} className="max-h-56">
                   {PURPOSE_PRESETS.map((p) => (
                     <SelectItem key={p.value} value={p.value}>
-                      {lang === "de" ? p.labelDe : p.labelEn}
+                      {tt({de: p.de, en: p.en, tr: p.tr, ar: p.ar, ru: p.ru})}
                     </SelectItem>
                   ))}
                   <SelectItem value="custom">
-                    {lang === "de" ? "✏️ Eigener Zweck..." : "✏️ Custom purpose..."}
+                    {tt({de:"✏️ Eigener Zweck...", en:"✏️ Custom purpose...", tr:"✏️ Özel amaç...", ar:"✏️ غرض مخصص...", ru:"✏️ Своя цель..."})}
                   </SelectItem>
                 </SelectContent>
               </Select>
               {(showCustomPurpose || (!PURPOSE_PRESETS.some(p => p.value === meetingPurpose) && meetingPurpose !== "")) && (
-                <Input
-                  value={meetingPurpose}
-                  onChange={(e) => setMeetingPurpose(e.target.value)}
-                  placeholder={lang === "de" ? "Zweck eingeben..." : "Enter purpose..."}
-                  className="h-11 text-base mt-2"
-                  autoFocus
-                />
+                <Input value={meetingPurpose} onChange={(e) => setMeetingPurpose(e.target.value)}
+                  placeholder={tt({de:"Zweck eingeben...", en:"Enter purpose...", tr:"Amaç girin...", ar:"أدخل الغرض...", ru:"Введите цель..."})}
+                  className="h-11 text-base mt-2" autoFocus />
               )}
             </div>
 
-            <Button
-              className="w-full gap-2"
-              onClick={() => handleSave(false)}
-              disabled={saving}
-            >
+            <Button className="w-full gap-2" onClick={() => handleSave(false)} disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               {saving
-                ? (lang === "de" ? "Speichern..." : "Saving...")
-                : (lang === "de" ? "Beleg speichern" : "Save Receipt")}
+                ? tt({de:"Speichern...", en:"Saving...", tr:"Kaydediliyor...", ar:"جارٍ الحفظ...", ru:"Сохранение..."})
+                : tt({de:"Beleg speichern", en:"Save Receipt", tr:"Fişi kaydet", ar:"حفظ الإيصال", ru:"Сохранить чек"})}
             </Button>
           </div>
         )}

@@ -25,7 +25,7 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const { signIn, signUp } = useAuth();
-  const { t, lang, setLang } = useLanguage();
+  const { t, lang, setLang, tt } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -48,7 +48,7 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isLogin && password !== confirmPassword) {
-      toast({ title: lang === "de" ? "Passwörter stimmen nicht überein" : "Passwords don't match", variant: "destructive" });
+      toast({ title: tt({de:"Passwörter stimmen nicht überein", en:"Passwords don't match", tr:"Şifreler eşleşmiyor", ar:"كلمات المرور غير متطابقة", ru:"Пароли не совпадают"}), variant: "destructive" });
       return;
     }
     setIsLoading(true);
@@ -75,11 +75,11 @@ const Auth = () => {
           <div className="hidden flex-1 md:block">
             <img
               src={receiptScanImg}
-              alt={lang === "de" ? "Quittung scannen mit dem Smartphone" : "Scanning a receipt with a smartphone"}
+              alt={tt({de:"Quittung scannen mit dem Smartphone", en:"Scanning a receipt with a smartphone", tr:"Akıllı telefonla fiş tarama", ar:"مسح الإيصال بالهاتف الذكي", ru:"Сканирование чека смартфоном"})}
               className="w-full rounded-2xl shadow-lg"
             />
             <p className="mt-4 text-center text-sm text-muted-foreground">
-              {lang === "de" ? "Belege einfach scannen und digital verwalten" : "Simply scan receipts and manage them digitally"}
+              {tt({de:"Belege einfach scannen und digital verwalten", en:"Simply scan receipts and manage them digitally", tr:"Fişleri kolayca tarayın ve dijital olarak yönetin", ar:"امسح الإيصالات بسهولة وأدرها رقمياً", ru:"Сканируйте чеки и управляйте ими цифрово"})}
             </p>
           </div>
           <div className="w-full max-w-md">
@@ -88,7 +88,7 @@ const Auth = () => {
               <div className="mx-auto h-36 w-48 overflow-hidden rounded-xl shadow-md">
                 <img
                   src={receiptScanImg}
-                  alt={lang === "de" ? "Quittung scannen mit dem Smartphone" : "Scanning a receipt with a smartphone"}
+                  alt={tt({de:"Quittung scannen mit dem Smartphone", en:"Scanning a receipt with a smartphone", tr:"Akıllı telefonla fiş tarama", ar:"مسح الإيصال بالهاتف الذكي", ru:"Сканирование чека смартфоном"})}
                   className="h-full w-full object-cover object-center scale-150"
                 />
               </div>
@@ -109,30 +109,24 @@ const Auth = () => {
                   </div>
                   <h2 className="text-lg font-semibold text-foreground">
                     {isForgot
-                      ? (lang === "de" ? "Link zum Zurücksetzen gesendet" : "Reset link sent")
-                      : (lang === "de" ? "Bestätigungs-E-Mail gesendet" : "Confirmation email sent")}
+                      ? tt({de:"Link zum Zurücksetzen gesendet", en:"Reset link sent", tr:"Sıfırlama bağlantısı gönderildi", ar:"تم إرسال رابط إعادة التعيين", ru:"Ссылка для сброса отправлена"})
+                      : tt({de:"Bestätigungs-E-Mail gesendet", en:"Confirmation email sent", tr:"Onay e-postası gönderildi", ar:"تم إرسال بريد التأكيد", ru:"Письмо подтверждения отправлено"})}
                   </h2>
                   <p className="text-sm text-muted-foreground max-w-xs mx-auto">
                     {isForgot
-                      ? (lang === "de"
-                          ? `Wir haben einen Link zum Zurücksetzen an ${email} gesendet. Klicken Sie auf den Link in der E-Mail.`
-                          : `We've sent a reset link to ${email}. Click the link in the email.`)
-                      : (lang === "de"
-                          ? `Wir haben eine Bestätigungs-E-Mail an ${email} gesendet. Bitte klicken Sie auf den Link in der E-Mail, um Ihr Konto zu aktivieren.`
-                          : `We've sent a confirmation email to ${email}. Please click the link in the email to activate your account.`)
+                      ? tt({de:`Wir haben einen Link zum Zurücksetzen an ${email} gesendet. Klicken Sie auf den Link in der E-Mail.`, en:`We've sent a reset link to ${email}. Click the link in the email.`, tr:`${email} adresine sıfırlama bağlantısı gönderdik. E-postadaki bağlantıya tıklayın.`, ar:`لقد أرسلنا رابط إعادة التعيين إلى ${email}. انقر على الرابط في البريد الإلكتروني.`, ru:`Мы отправили ссылку для сброса на ${email}. Нажмите на ссылку в письме.`})
+                      : tt({de:`Wir haben eine Bestätigungs-E-Mail an ${email} gesendet. Bitte klicken Sie auf den Link in der E-Mail, um Ihr Konto zu aktivieren.`, en:`We've sent a confirmation email to ${email}. Please click the link in the email to activate your account.`, tr:`${email} adresine bir onay e-postası gönderdik. Hesabınızı etkinleştirmek için e-postadaki bağlantıya tıklayın.`, ar:`لقد أرسلنا بريد تأكيد إلى ${email}. يرجى النقر على الرابط في البريد الإلكتروني لتفعيل حسابك.`, ru:`Мы отправили письмо подтверждения на ${email}. Нажмите на ссылку в письме, чтобы активировать аккаунт.`})
                     }
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {lang === "de"
-                      ? "Prüfen Sie auch Ihren Spam-Ordner."
-                      : "Please also check your spam folder."}
+                    {tt({de:"Prüfen Sie auch Ihren Spam-Ordner.", en:"Please also check your spam folder.", tr:"Spam klasörünüzü de kontrol edin.", ar:"يرجى التحقق من مجلد البريد العشوائي أيضاً.", ru:"Проверьте также папку спам."})}
                   </p>
                   <Button
                     variant="outline"
                     onClick={() => { setEmailSent(false); setMode("login"); }}
                     className="mt-2"
                   >
-                    {lang === "de" ? "Zurück zum Login" : "Back to login"}
+                    {tt({de:"Zurück zum Login", en:"Back to login", tr:"Girişe dön", ar:"العودة لتسجيل الدخول", ru:"Назад к входу"})}
                   </Button>
                 </CardContent>
               </Card>
@@ -156,10 +150,10 @@ const Auth = () => {
                 </div>
                 <CardDescription>
                   {isForgot
-                    ? (lang === "de" ? "Geben Sie Ihre E-Mail ein, um einen Link zum Zurücksetzen zu erhalten" : "Enter your email to receive a reset link")
+                    ? tt({de:"Geben Sie Ihre E-Mail ein, um einen Link zum Zurücksetzen zu erhalten", en:"Enter your email to receive a reset link", tr:"Sıfırlama bağlantısı almak için e-postanızı girin", ar:"أدخل بريدك الإلكتروني لتلقي رابط إعادة التعيين", ru:"Введите email для получения ссылки сброса"})
                     : isLogin
-                    ? (lang === "de" ? "Melden Sie sich mit Ihrem Konto an" : "Sign in to your account")
-                    : (lang === "de" ? "Erstellen Sie ein neues Konto" : "Create a new account")}
+                    ? tt({de:"Melden Sie sich mit Ihrem Konto an", en:"Sign in to your account", tr:"Hesabınıza giriş yapın", ar:"قم بتسجيل الدخول إلى حسابك", ru:"Войдите в свой аккаунт"})
+                    : tt({de:"Erstellen Sie ein neues Konto", en:"Create a new account", tr:"Yeni bir hesap oluşturun", ar:"أنشئ حساباً جديداً", ru:"Создайте новый аккаунт"})}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -170,11 +164,11 @@ const Auth = () => {
                       <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? t("general.loading") : (lang === "de" ? "Link senden" : "Send link")}
+                      {isLoading ? t("general.loading") : tt({de:"Link senden", en:"Send link", tr:"Bağlantı gönder", ar:"إرسال الرابط", ru:"Отправить ссылку"})}
                     </Button>
                     <div className="text-center">
                       <button type="button" onClick={() => setMode("login")} className="text-sm font-medium text-primary hover:underline">
-                        {lang === "de" ? "Zurück zum Login" : "Back to login"}
+                        {tt({de:"Zurück zum Login", en:"Back to login", tr:"Girişe dön", ar:"العودة لتسجيل الدخول", ru:"Назад к входу"})}
                       </button>
                     </div>
                   </form>
@@ -211,7 +205,7 @@ const Auth = () => {
                 <div className="relative my-4">
                   <Separator />
                   <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
-                    {lang === "de" ? "oder" : "or"}
+                    {tt({de:"oder", en:"or", tr:"veya", ar:"أو", ru:"или"})}
                   </span>
                 </div>
                 <Button
@@ -225,7 +219,7 @@ const Auth = () => {
                   }}
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                  {lang === "de" ? "Mit Google anmelden" : "Sign in with Google"}
+                  {tt({de:"Mit Google anmelden", en:"Sign in with Google", tr:"Google ile giriş yap", ar:"تسجيل الدخول بـ Google", ru:"Войти через Google"})}
                 </Button>
                 <div className="mt-4 text-center text-sm">
                   <span className="text-muted-foreground">
@@ -248,12 +242,10 @@ const Auth = () => {
       <div className="border-t border-border bg-muted/30 px-4 py-16">
         <div className="mx-auto max-w-4xl space-y-4 text-center">
           <h2 className="text-2xl font-bold text-foreground">
-            {lang === "de" ? "Unsere Pläne" : "Our Plans"}
+            {tt({de:"Unsere Pläne", en:"Our Plans", tr:"Planlarımız", ar:"خططنا", ru:"Наши тарифы"})}
           </h2>
           <p className="text-muted-foreground mb-8">
-            {lang === "de"
-              ? "Starten Sie kostenlos und upgraden Sie jederzeit."
-              : "Start for free and upgrade anytime."}
+            {tt({de:"Starten Sie kostenlos und upgraden Sie jederzeit.", en:"Start for free and upgrade anytime.", tr:"Ücretsiz başlayın, istediğiniz zaman yükseltin.", ar:"ابدأ مجاناً وقم بالترقية في أي وقت.", ru:"Начните бесплатно и обновите в любое время."})}
           </p>
         </div>
         <div className="mx-auto max-w-4xl mt-8">
@@ -268,13 +260,13 @@ const Auth = () => {
 
       <footer className="py-4 text-center space-x-4">
         <Link to="/demo" className="text-xs text-muted-foreground hover:text-foreground hover:underline">
-          {lang === "de" ? "Für Steuerberater" : "For Tax Advisors"}
+          {tt({de:"Für Steuerberater", en:"For Tax Advisors", tr:"Vergi danışmanları için", ar:"للمستشارين الضريبيين", ru:"Для налоговых консультантов"})}
         </Link>
         <Link to="/impressum" state={{ from: "/auth" }} className="text-xs text-muted-foreground hover:text-foreground hover:underline">
           Impressum
         </Link>
         <Link to="/datenschutz" state={{ from: "/auth" }} className="text-xs text-muted-foreground hover:text-foreground hover:underline">
-          {lang === "de" ? "Datenschutz" : "Privacy"}
+          {tt({de:"Datenschutz", en:"Privacy", tr:"Gizlilik", ar:"الخصوصية", ru:"Конфиденциальность"})}
         </Link>
       </footer>
     </div>

@@ -18,7 +18,7 @@ const InviteDialog = () => {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
-  const { lang } = useLanguage();
+  const { tt } = useLanguage();
   const { toast } = useToast();
 
   const handleEmailInvite = async (e: React.FormEvent) => {
@@ -34,11 +34,7 @@ const InviteDialog = () => {
     if (error) {
       toast({ title: error.message, variant: "destructive" });
     } else {
-      toast({
-        title: lang === "de"
-          ? `Einladung an ${email} gespeichert`
-          : `Invitation saved for ${email}`,
-      });
+      toast({ title: tt({de:`Einladung an ${email} gespeichert`, en:`Invitation saved for ${email}`, tr:`${email} için davet kaydedildi`, ar:`تم حفظ الدعوة لـ ${email}`, ru:`Приглашение для ${email} сохранено`}) });
       setEmail("");
       setOpen(false);
     }
@@ -46,9 +42,13 @@ const InviteDialog = () => {
   };
 
   const handleWhatsAppInvite = () => {
-    const message = lang === "de"
-      ? `Hallo! Ich nutze BelegManager zur Belegverwaltung und möchte dich einladen. Registriere dich hier: ${REGISTER_URL}`
-      : `Hi! I'm using ReceiptManager for expense tracking and would like to invite you. Register here: ${REGISTER_URL}`;
+    const message = tt({
+      de: `Hallo! Ich nutze BelegManager zur Belegverwaltung und möchte dich einladen. Registriere dich hier: ${REGISTER_URL}`,
+      en: `Hi! I'm using ReceiptManager for expense tracking and would like to invite you. Register here: ${REGISTER_URL}`,
+      tr: `Merhaba! Masraf takibi için BelegManager kullanıyorum ve sizi davet etmek istiyorum. Buradan kayıt olun: ${REGISTER_URL}`,
+      ar: `مرحباً! أنا أستخدم مدير الإيصالات لتتبع المصاريف وأود دعوتك. سجل هنا: ${REGISTER_URL}`,
+      ru: `Привет! Я использую ЧекМенеджер для учёта расходов и хочу пригласить тебя. Зарегистрируйся здесь: ${REGISTER_URL}`,
+    });
 
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
 
@@ -67,12 +67,12 @@ const InviteDialog = () => {
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm" className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground">
           <UserPlus className="h-4 w-4" />
-          {lang === "de" ? "Einladen" : "Invite"}
+          {tt({de:"Einladen", en:"Invite", tr:"Davet et", ar:"دعوة", ru:"Пригласить"})}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{lang === "de" ? "Kollegen einladen" : "Invite a colleague"}</DialogTitle>
+          <DialogTitle>{tt({de:"Kollegen einladen", en:"Invite a colleague", tr:"Meslektaş davet et", ar:"دعوة زميل", ru:"Пригласить коллегу"})}</DialogTitle>
         </DialogHeader>
         <Tabs defaultValue="email" className="w-full">
           <TabsList className="w-full">
@@ -88,7 +88,7 @@ const InviteDialog = () => {
           <TabsContent value="email">
             <form onSubmit={handleEmailInvite} className="space-y-4 pt-2">
               <div className="space-y-2">
-                <Label htmlFor="invite-email">{lang === "de" ? "E-Mail-Adresse" : "Email address"}</Label>
+                <Label htmlFor="invite-email">{tt({de:"E-Mail-Adresse", en:"Email address", tr:"E-posta adresi", ar:"عنوان البريد الإلكتروني", ru:"Электронная почта"})}</Label>
                 <Input
                   id="invite-email"
                   type="email"
@@ -99,20 +99,20 @@ const InviteDialog = () => {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (lang === "de" ? "Senden..." : "Sending...") : (lang === "de" ? "Einladung senden" : "Send invitation")}
+                {loading
+                  ? tt({de:"Senden...", en:"Sending...", tr:"Gönderiliyor...", ar:"جارٍ الإرسال...", ru:"Отправка..."})
+                  : tt({de:"Einladung senden", en:"Send invitation", tr:"Davet gönder", ar:"إرسال الدعوة", ru:"Отправить приглашение"})}
               </Button>
             </form>
           </TabsContent>
           <TabsContent value="whatsapp">
             <div className="space-y-4 pt-2">
               <p className="text-sm text-muted-foreground">
-                {lang === "de"
-                  ? "WhatsApp öffnet sich mit einem vorformulierten Einladungstext. Wähle dort den Kontakt aus."
-                  : "WhatsApp will open with a pre-written invitation. Choose your contact there."}
+                {tt({de:"WhatsApp öffnet sich mit einem vorformulierten Einladungstext. Wähle dort den Kontakt aus.", en:"WhatsApp will open with a pre-written invitation. Choose your contact there.", tr:"WhatsApp önceden yazılmış bir davetle açılacak. Oradan kişinizi seçin.", ar:"سيفتح واتساب بدعوة مكتوبة مسبقاً. اختر جهة الاتصال هناك.", ru:"WhatsApp откроется с готовым текстом приглашения. Выберите контакт."})}
               </p>
               <Button onClick={handleWhatsAppInvite} className="w-full gap-2">
                 <MessageCircle className="h-4 w-4" />
-                {lang === "de" ? "Mit WhatsApp teilen" : "Share via WhatsApp"}
+                {tt({de:"Mit WhatsApp teilen", en:"Share via WhatsApp", tr:"WhatsApp ile paylaş", ar:"مشاركة عبر واتساب", ru:"Поделиться через WhatsApp"})}
               </Button>
             </div>
           </TabsContent>
