@@ -173,9 +173,18 @@ const Receipts = () => {
               </button>
             </div>
             {r.description && <p className="text-sm text-foreground truncate mt-0.5">{r.description}</p>}
-            {r.receipt_type === "fuel" && r.license_plate && (
-              <p className="text-xs text-muted-foreground mt-0.5">🚗 {r.license_plate}{r.mileage != null ? ` · ${r.mileage.toLocaleString()} km` : ""}</p>
-            )}
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              {r.company_id && (
+                <span className="text-[10px] bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded whitespace-nowrap">
+                  🏢 {companyName(r.company_id)}
+                </span>
+              )}
+              {r.receipt_type === "fuel" && r.license_plate && (
+                <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded whitespace-nowrap">
+                  🚗 {r.license_plate}{r.mileage != null ? ` · ${r.mileage.toLocaleString()} km` : ""}
+                </span>
+              )}
+            </div>
           </CardContent>
         </Card>
       ))}
