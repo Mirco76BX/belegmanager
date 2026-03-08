@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Camera, Receipt as ReceiptIcon, Trash2, Eye, Pencil, ScanLine } from "lucide-react";
 import ScanWizard from "@/components/ScanWizard";
+import ReceiptsInlineTable from "@/components/ReceiptsInlineTable";
 
 interface Receipt {
   id: string;
