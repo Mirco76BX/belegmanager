@@ -82,8 +82,16 @@ const ExpenseReport = () => {
   }
 
   const getCompanyName = (id: string | null) => id ? companies.find((c) => c.id === id)?.name || "–" : "–";
-  const totalAmount = receipts.reduce((sum, r) => sum + (r.amount || 0), 0);
-  const totalVat = receipts.reduce((sum, r) => sum + (r.vat_amount || 0), 0);
+
+  const filteredByCompany = filterCompanyId === "all" ? receipts
+    : filterCompanyId === "none" ? receipts.filter(r => !r.company_id)
+    : receipts.filter(r => r.company_id === filterCompanyId);
+  const filteredReceipts = filterMonth === "all" ? filteredByCompany
+    : filteredByCompany.filter(r => r.date.substring(0, 7) === filterMonth);
+  const availableMonths = Array.from(new Set(receipts.map(r => r.date.substring(0, 7)))).sort().reverse();
+
+  const totalAmount = filteredReceipts.reduce((sum, r) => sum + (r.amount || 0), 0);
+  const totalVat = filteredReceipts.reduce((sum, r) => sum + (r.vat_amount || 0), 0);
 
   const getTableHeaders = () => [
     t("receipts.date"), t("receipts.amount"), "MwSt.", "MwSt.-%", t("receipts.description"),
