@@ -147,7 +147,7 @@ const Pricing = () => {
         </button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 max-w-2xl mx-auto">
+      <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
         {plans.map((plan) => (
           <div
             key={plan.id}
