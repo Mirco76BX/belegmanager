@@ -280,6 +280,36 @@ const ExpenseReport = () => {
       <Card>
         <CardHeader><CardTitle className="text-lg">{t("expense.period")}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              onClick={() => {
+                const now = new Date();
+                const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                const end = new Date(now.getFullYear(), now.getMonth(), 0);
+                setFromDate(formatLocalDate(start));
+                setToDate(formatLocalDate(end));
+              }}
+            >
+              {tt({ de: "Letzter Monat", en: "Last month", tr: "Geçen ay", ar: "الشهر الماضي", ru: "Прошлый месяц" })}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              onClick={() => {
+                const now = new Date();
+                const start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+                const end = new Date(now.getFullYear(), now.getMonth() - 1, 0);
+                setFromDate(formatLocalDate(start));
+                setToDate(formatLocalDate(end));
+              }}
+            >
+              {tt({ de: "Vorletzter Monat", en: "Month before last", tr: "Önceki ay", ar: "الشهر قبل الماضي", ru: "Позапрошлый месяц" })}
+            </Button>
+          </div>
           <div className="grid grid-cols-2 gap-3 overflow-hidden">
             <div className="space-y-2 min-w-0">
               <Label>{t("expense.from")}</Label>
