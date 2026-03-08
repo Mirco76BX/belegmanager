@@ -50,17 +50,20 @@ const ExpenseReport = () => {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [filterCompanyId, setFilterCompanyId] = useState<string>("all");
+  const [profile, setProfile] = useState<{ display_name: string | null; email: string } | null>(null);
   
 
   const fetchData = async () => {
     if (!user || subscription.tier === "free") return;
     setLoading(true);
-    const [receiptsRes, companiesRes] = await Promise.all([
+    const [receiptsRes, companiesRes, profileRes] = await Promise.all([
       supabase.from("receipts").select("*").gte("date", fromDate).lte("date", toDate).order("date", { ascending: true }),
       supabase.from("companies").select("id, name"),
+      supabase.from("profiles").select("display_name, email").eq("id", user.id).single(),
     ]);
     if (receiptsRes.data) setReceipts(receiptsRes.data);
     if (companiesRes.data) setCompanies(companiesRes.data);
+    if (profileRes.data) setProfile(profileRes.data);
     setLoading(false);
   };
 
@@ -138,17 +141,38 @@ const ExpenseReport = () => {
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 14;
+      let yPos = 20;
 
       doc.setFontSize(18);
-      doc.text(t("expense.title"), pageWidth / 2, 20, { align: "center" });
+      doc.text(t("expense.title"), pageWidth / 2, yPos, { align: "center" });
+      yPos += 12;
+
+      // User info
+      doc.setFontSize(10);
+      if (profile?.display_name) {
+        doc.text(profile.display_name, pageWidth / 2, yPos, { align: "center" });
+        yPos += 5;
+      }
+      doc.text(profile?.email || user?.email || "", pageWidth / 2, yPos, { align: "center" });
+      yPos += 7;
+
+      // Selected organization
+      const selectedCompanyName = filterCompanyId !== "all" && filterCompanyId !== "none"
+        ? companies.find(c => c.id === filterCompanyId)?.name : null;
+      if (selectedCompanyName) {
+        doc.text(`${tt({de:"Organisation", en:"Organization", tr:"Kuruluş", ar:"المنظمة", ru:"Организация"})}: ${selectedCompanyName}`, pageWidth / 2, yPos, { align: "center" });
+        yPos += 7;
+      }
+
       doc.setFontSize(11);
-      doc.text(`${t("expense.period")}: ${fromDate} – ${toDate}`, pageWidth / 2, 30, { align: "center" });
+      doc.text(`${t("expense.period")}: ${fromDate} – ${toDate}`, pageWidth / 2, yPos, { align: "center" });
+      yPos += 10;
 
       const rows = getTableRows();
       rows.push([totalLabel, `${totalAmount.toFixed(2)} €`, `${totalVat.toFixed(2)} €`, "", "", "", "", ""]);
 
       autoTable(doc, {
-        startY: 40, head: [getTableHeaders()], body: rows,
+        startY: yPos, head: [getTableHeaders()], body: rows,
         styles: { fontSize: 8, cellPadding: 3 },
         headStyles: { fillColor: [41, 74, 112] },
         footStyles: { fontStyle: "bold" }, theme: "grid",
@@ -208,6 +232,17 @@ const ExpenseReport = () => {
     <div className="animate-fade-in space-y-6">
       <h1 className="text-xl md:text-2xl font-bold">{t("expense.title")}</h1>
 
+      {profile && (
+        <div className="text-sm text-muted-foreground">
+          <p>{profile.display_name || profile.email}</p>
+          {profile.display_name && <p>{profile.email}</p>}
+          {filterCompanyId !== "all" && filterCompanyId !== "none" && (
+            <p className="font-medium text-foreground">
+              {tt({de:"Organisation", en:"Organization", tr:"Kuruluş", ar:"المنظمة", ru:"Организация"})}: {companies.find(c => c.id === filterCompanyId)?.name}
+            </p>
+          )}
+        </div>
+      )}
       <Card>
         <CardHeader><CardTitle className="text-lg">{t("expense.period")}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
