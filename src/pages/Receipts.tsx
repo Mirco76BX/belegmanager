@@ -148,7 +148,11 @@ const Receipts = () => {
     if (!error) { setDetailOpen(false); fetchData(); }
   };
 
-  const formatAmount = (a: number | null) => a != null ? `${a.toFixed(2)} €` : "–";
+  const formatAmount = (a: number | null, currency?: string) => {
+    if (a == null) return "–";
+    const sym = currency && currency !== "EUR" ? ` ${currency}` : " €";
+    return `${a.toFixed(2)}${sym}`;
+  };
   const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "–";
 
   const filteredByCompany = filterCompanyId === "all" ? receipts
