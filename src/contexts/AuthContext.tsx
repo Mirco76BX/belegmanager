@@ -7,11 +7,20 @@ export const TIERS = {
   relax: {
     name: "RELAX",
     maxScans: 150,
-    price_id: "price_1T8dZK2OSLlEeYaUvGn20UPk",
-    product_id: "prod_U6rHCwqL7uWXeh",
-    priceYearly: 12,
+    yearly: {
+      price_id: "price_1T8dZK2OSLlEeYaUvGn20UPk",
+      product_id: "prod_U6rHCwqL7uWXeh",
+      price: 12,
+    },
+    monthly: {
+      price_id: "price_1T8dd52OSLlEeYaUnkzNTDZd",
+      product_id: "prod_U6rLEE9hn7z3AX",
+      price: 3,
+    },
   },
 } as const;
+
+const RELAX_PRODUCT_IDS = [TIERS.relax.yearly.product_id, TIERS.relax.monthly.product_id];
 
 interface SubscriptionState {
   subscribed: boolean;
@@ -50,7 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase.functions.invoke("check-subscription");
       if (error) throw error;
-      const tier = data?.product_id === TIERS.relax.product_id ? "relax" : "free";
+      const tier = RELAX_PRODUCT_IDS.includes(data?.product_id) ? "relax" : "free";
       setSubscription({
         subscribed: data?.subscribed ?? false,
         productId: data?.product_id ?? null,
