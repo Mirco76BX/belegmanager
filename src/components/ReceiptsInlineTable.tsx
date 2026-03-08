@@ -20,6 +20,9 @@ interface Receipt {
   status: string;
   company_id: string | null;
   created_at: string;
+  receipt_type?: string;
+  license_plate?: string | null;
+  mileage?: number | null;
 }
 
 interface Company {
@@ -48,6 +51,7 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
       date: r.date, amount: r.amount, description: r.description,
       person_met: r.person_met, organization: r.organization,
       meeting_purpose: r.meeting_purpose, company_id: r.company_id,
+      receipt_type: r.receipt_type, license_plate: r.license_plate, mileage: r.mileage,
     });
   };
 
@@ -55,13 +59,21 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
 
   const saveEdit = async (id: string) => {
     setSaving(true);
-    const { error } = await supabase.from("receipts").update({
-      person_met: editValues.person_met || null,
-      organization: editValues.organization || null,
-      meeting_purpose: editValues.meeting_purpose || null,
+    const isFuel = editValues.receipt_type === "fuel";
+    const updateData: any = {
       company_id: editValues.company_id || null,
       status: "complete",
-    }).eq("id", id);
+    };
+    if (isFuel) {
+      updateData.license_plate = editValues.license_plate || null;
+      updateData.mileage = editValues.mileage ?? null;
+    } else {
+      updateData.person_met = editValues.person_met || null;
+      updateData.organization = editValues.organization || null;
+      updateData.meeting_purpose = editValues.meeting_purpose || null;
+    }
+
+    const { error } = await supabase.from("receipts").update(updateData).eq("id", id);
 
     if (error) {
       toast({ title: error.message, variant: "destructive" });
@@ -87,13 +99,14 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
           <TableHead>{tt({de:"Betrag", en:"Amount", tr:"Tutar", ar:"المبلغ", ru:"Сумма"})}</TableHead>
           <TableHead>{tt({de:"Beschreibung", en:"Description", tr:"Açıklama", ar:"الوصف", ru:"Описание"})}</TableHead>
           <TableHead>{tt({de:"Organisation", en:"Company", tr:"Kuruluş", ar:"المنظمة", ru:"Организация"})}</TableHead>
-          <TableHead>{tt({de:"Person", en:"Person", tr:"Kişi", ar:"الشخص", ru:"Человек"})}</TableHead>
-          <TableHead>{tt({de:"Zweck", en:"Purpose", tr:"Amaç", ar:"الغرض", ru:"Цель"})}</TableHead>
+          <TableHead>{tt({de:"Details", en:"Details", tr:"Detaylar", ar:"التفاصيل", ru:"Детали"})}</TableHead>
           <TableHead className="text-right">{tt({de:"Aktionen", en:"Actions", tr:"İşlemler", ar:"الإجراءات", ru:"Действия"})}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {receipts.map((r) => (
+        {receipts.map((r) => {
+          const isFuel = r.receipt_type === "fuel";
+          return (
           <TableRow
             key={r.id}
             className={isEditing(r.id) ? "bg-primary/5 border-l-2 border-l-primary" : "cursor-pointer hover:bg-muted/50"}
@@ -128,22 +141,38 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Input
-                    value={editValues.person_met || ""}
-                    onChange={(e) => setEditValues(v => ({ ...v, person_met: e.target.value }))}
-                    className="h-9 text-sm w-[130px] bg-background shadow-sm focus-visible:ring-2 focus-visible:ring-ring"
-                    placeholder={tt({de:"Person…", en:"Person…", tr:"Kişi…", ar:"شخص…", ru:"Человек…"})}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    value={editValues.meeting_purpose || ""}
-                    onChange={(e) => setEditValues(v => ({ ...v, meeting_purpose: e.target.value }))}
-                    className="h-9 text-sm w-[160px] bg-background shadow-sm focus-visible:ring-2 focus-visible:ring-ring"
-                    placeholder={tt({de:"Zweck…", en:"Purpose…", tr:"Amaç…", ar:"الغرض…", ru:"Цель…"})}
-                    onClick={(e) => e.stopPropagation()}
-                  />
+                  {isFuel ? (
+                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                      <Input
+                        value={editValues.license_plate || ""}
+                        onChange={(e) => setEditValues(v => ({ ...v, license_plate: e.target.value }))}
+                        className="h-9 text-sm w-[110px] bg-background shadow-sm"
+                        placeholder={tt({de:"Kennzeichen", en:"Plate", tr:"Plaka", ar:"لوحة", ru:"Номер"})}
+                      />
+                      <Input
+                        type="number"
+                        value={editValues.mileage ?? ""}
+                        onChange={(e) => setEditValues(v => ({ ...v, mileage: e.target.value ? parseFloat(e.target.value) : null }))}
+                        className="h-9 text-sm w-[100px] bg-background shadow-sm"
+                        placeholder="km"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                      <Input
+                        value={editValues.person_met || ""}
+                        onChange={(e) => setEditValues(v => ({ ...v, person_met: e.target.value }))}
+                        className="h-9 text-sm w-[130px] bg-background shadow-sm"
+                        placeholder={tt({de:"Person…", en:"Person…", tr:"Kişi…", ar:"شخص…", ru:"Человек…"})}
+                      />
+                      <Input
+                        value={editValues.meeting_purpose || ""}
+                        onChange={(e) => setEditValues(v => ({ ...v, meeting_purpose: e.target.value }))}
+                        className="h-9 text-sm w-[130px] bg-background shadow-sm"
+                        placeholder={tt({de:"Zweck…", en:"Purpose…", tr:"Amaç…", ar:"الغرض…", ru:"Цель…"})}
+                      />
+                    </div>
+                  )}
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-0.5">
@@ -162,8 +191,21 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
                 <TableCell className="font-mono whitespace-nowrap">{formatAmount(r.amount)}</TableCell>
                 <TableCell className="max-w-[200px] truncate">{r.description || "–"}</TableCell>
                 <TableCell>{companyName(r.company_id)}</TableCell>
-                <TableCell className="max-w-[120px] truncate">{r.person_met || "–"}</TableCell>
-                <TableCell className="max-w-[160px] truncate">{r.meeting_purpose || "–"}</TableCell>
+                <TableCell className="max-w-[200px] truncate">
+                  {isFuel ? (
+                    <span className="text-sm">
+                      {r.license_plate && <span>🚗 {r.license_plate}</span>}
+                      {r.license_plate && r.mileage != null && <span className="mx-1">·</span>}
+                      {r.mileage != null && <span>{r.mileage.toLocaleString()} km</span>}
+                      {!r.license_plate && r.mileage == null && "–"}
+                    </span>
+                  ) : (
+                    <span className="text-sm">
+                      {r.person_met || r.meeting_purpose || "–"}
+                      {r.person_met && r.meeting_purpose && ` · ${r.meeting_purpose}`}
+                    </span>
+                  )}
+                </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
                     <Button variant="ghost" size="sm" onClick={() => onOpenDetail(r)}>
@@ -177,7 +219,8 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
               </>
             )}
           </TableRow>
-        ))}
+          );
+        })}
       </TableBody>
     </Table>
     </div>

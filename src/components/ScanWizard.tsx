@@ -29,6 +29,7 @@ interface ScanResult {
   vendor: string | null;
   tax_amount: number | null;
   items: string[];
+  is_fuel_receipt?: boolean;
 }
 
 interface Company {
@@ -61,6 +62,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const [preview, setPreview] = useState<string | null>(null);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isFuelReceipt, setIsFuelReceipt] = useState(false);
 
   const [date, setDate] = useState("");
   const [amount, setAmount] = useState("");
@@ -70,6 +72,8 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const [organization, setOrganization] = useState("");
   const [meetingPurpose, setMeetingPurpose] = useState("");
   const [showCustomPurpose, setShowCustomPurpose] = useState(false);
+  const [licensePlate, setLicensePlate] = useState("");
+  const [mileage, setMileage] = useState("");
 
   const [showNewCompany, setShowNewCompany] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState("");
@@ -85,7 +89,8 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       setCompanyId(defaultCompanyId || "");
       setPersonMet(""); setOrganization(""); setMeetingPurpose("");
       setShowCustomPurpose(false); setShowNewCompany(false); setNewCompanyName("");
-      setLimitReached(false);
+      setLimitReached(false); setIsFuelReceipt(false);
+      setLicensePlate(""); setMileage("");
 
       const maxScans = subscription.tier === "master" ? Infinity
         : subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans;
@@ -118,6 +123,10 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       if (data.date) setDate(data.date);
       if (data.amount) setAmount(String(data.amount));
       if (data.description || data.vendor) setDescription([data.vendor, data.description].filter(Boolean).join(" – "));
+      if (data.is_fuel_receipt) {
+        setIsFuelReceipt(true);
+        setMeetingPurpose("Tanken");
+      }
       setStep("company");
     } catch (err: any) {
       console.error("Scan error:", err);
@@ -151,14 +160,25 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const { error: uploadError } = await supabase.storage.from("receipts").upload(path, file);
       if (uploadError) throw uploadError;
 
-      const { error } = await supabase.from("receipts").insert({
+      const insertData: any = {
         user_id: user.id, date: date || new Date().toISOString().split("T")[0],
         amount: amount ? parseFloat(amount) : null, description: description || null,
-        company_id: companyId || null, person_met: skipDetails ? null : personMet || null,
-        organization: skipDetails ? null : organization || null,
-        meeting_purpose: skipDetails ? null : meetingPurpose || null,
-        file_path: path, status: skipDetails ? "pending" : "complete",
-      });
+        company_id: companyId || null, file_path: path,
+        receipt_type: isFuelReceipt ? "fuel" : "general",
+        status: skipDetails ? "pending" : "complete",
+      };
+
+      if (isFuelReceipt) {
+        insertData.license_plate = skipDetails ? null : licensePlate || null;
+        insertData.mileage = skipDetails ? null : (mileage ? parseFloat(mileage) : null);
+        insertData.meeting_purpose = "Tanken";
+      } else {
+        insertData.person_met = skipDetails ? null : personMet || null;
+        insertData.organization = skipDetails ? null : organization || null;
+        insertData.meeting_purpose = skipDetails ? null : meetingPurpose || null;
+      }
+
+      const { error } = await supabase.from("receipts").insert(insertData);
       if (error) throw error;
 
       toast({ title: tt({de:"Beleg gespeichert!", en:"Receipt saved!", tr:"Fiş kaydedildi!", ar:"تم حفظ الإيصال!", ru:"Чек сохранён!"}) });
@@ -251,6 +271,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                 {scanResult.vendor && <p className="text-muted-foreground text-xs">📍 {scanResult.vendor}</p>}
                 {scanResult.amount && <p className="text-muted-foreground text-xs">💰 {scanResult.amount.toFixed(2)} €</p>}
                 {scanResult.date && <p className="text-muted-foreground text-xs">📅 {scanResult.date}</p>}
+                {isFuelReceipt && <p className="text-muted-foreground text-xs">⛽ {tt({de:"Tankquittung erkannt", en:"Fuel receipt detected", tr:"Yakıt fişi algılandı", ar:"تم اكتشاف إيصال وقود", ru:"Обнаружен чек на топливо"})}</p>}
               </div>
             )}
 
@@ -318,43 +339,58 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
 
         {step === "details" && (
           <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-sm">{tt({de:"Getroffene Person", en:"Person Met", tr:"Görüşülen Kişi", ar:"الشخص الملتقى", ru:"Встреча с"})}</Label>
-              <Input value={personMet} onChange={(e) => setPersonMet(e.target.value)} className="h-11 text-base" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm">{tt({de:"Unternehmung/Organisation", en:"Organization", tr:"İşletme/Kuruluş", ar:"المؤسسة/المنظمة", ru:"Предприятие/Организация"})}</Label>
-              <Input value={organization} onChange={(e) => setOrganization(e.target.value)} className="h-11 text-base" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm">{tt({de:"Zweck", en:"Purpose", tr:"Amaç", ar:"الغرض", ru:"Цель"})}</Label>
-              <Select
-                value={PURPOSE_PRESETS.some(p => p.value === meetingPurpose) ? meetingPurpose : (meetingPurpose ? "custom" : "")}
-                onValueChange={(val) => {
-                  if (val === "custom") { setMeetingPurpose(""); setShowCustomPurpose(true); }
-                  else { setMeetingPurpose(val); setShowCustomPurpose(false); }
-                }}
-              >
-                <SelectTrigger className="h-11 text-base">
-                  <SelectValue placeholder={tt({de:"Zweck wählen...", en:"Select purpose...", tr:"Amaç seçin...", ar:"اختر الغرض...", ru:"Выберите цель..."})} />
-                </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4} className="max-h-56">
-                  {PURPOSE_PRESETS.map((p) => (
-                    <SelectItem key={p.value} value={p.value}>
-                      {tt({de: p.de, en: p.en, tr: p.tr, ar: p.ar, ru: p.ru})}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="custom">
-                    {tt({de:"✏️ Eigener Zweck...", en:"✏️ Custom purpose...", tr:"✏️ Özel amaç...", ar:"✏️ غرض مخصص...", ru:"✏️ Своя цель..."})}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              {(showCustomPurpose || (!PURPOSE_PRESETS.some(p => p.value === meetingPurpose) && meetingPurpose !== "")) && (
-                <Input value={meetingPurpose} onChange={(e) => setMeetingPurpose(e.target.value)}
-                  placeholder={tt({de:"Zweck eingeben...", en:"Enter purpose...", tr:"Amaç girin...", ar:"أدخل الغرض...", ru:"Введите цель..."})}
-                  className="h-11 text-base mt-2" autoFocus />
-              )}
-            </div>
+            {isFuelReceipt ? (
+              <>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">{tt({de:"Kennzeichen", en:"License Plate", tr:"Plaka", ar:"لوحة الترخيص", ru:"Номерной знак"})}</Label>
+                  <Input value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} placeholder={tt({de:"z.B. B-AB 1234", en:"e.g. B-AB 1234", tr:"ör. 34 ABC 123", ar:"مثال: B-AB 1234", ru:"напр. B-AB 1234"})} className="h-11 text-base" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">{tt({de:"Kilometerstand", en:"Mileage", tr:"Kilometre", ar:"عداد المسافات", ru:"Пробег"})}</Label>
+                  <Input type="number" value={mileage} onChange={(e) => setMileage(e.target.value)} placeholder={tt({de:"z.B. 45230", en:"e.g. 45230", tr:"ör. 45230", ar:"مثال: 45230", ru:"напр. 45230"})} className="h-11 text-base" />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">{tt({de:"Getroffene Person", en:"Person Met", tr:"Görüşülen Kişi", ar:"الشخص الملتقى", ru:"Встреча с"})}</Label>
+                  <Input value={personMet} onChange={(e) => setPersonMet(e.target.value)} className="h-11 text-base" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">{tt({de:"Unternehmung/Organisation", en:"Organization", tr:"İşletme/Kuruluş", ar:"المؤسسة/المنظمة", ru:"Предприятие/Организация"})}</Label>
+                  <Input value={organization} onChange={(e) => setOrganization(e.target.value)} className="h-11 text-base" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">{tt({de:"Zweck", en:"Purpose", tr:"Amaç", ar:"الغرض", ru:"Цель"})}</Label>
+                  <Select
+                    value={PURPOSE_PRESETS.some(p => p.value === meetingPurpose) ? meetingPurpose : (meetingPurpose ? "custom" : "")}
+                    onValueChange={(val) => {
+                      if (val === "custom") { setMeetingPurpose(""); setShowCustomPurpose(true); }
+                      else { setMeetingPurpose(val); setShowCustomPurpose(false); }
+                    }}
+                  >
+                    <SelectTrigger className="h-11 text-base">
+                      <SelectValue placeholder={tt({de:"Zweck wählen...", en:"Select purpose...", tr:"Amaç seçin...", ar:"اختر الغرض...", ru:"Выберите цель..."})} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" sideOffset={4} className="max-h-56">
+                      {PURPOSE_PRESETS.map((p) => (
+                        <SelectItem key={p.value} value={p.value}>
+                          {tt({de: p.de, en: p.en, tr: p.tr, ar: p.ar, ru: p.ru})}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="custom">
+                        {tt({de:"✏️ Eigener Zweck...", en:"✏️ Custom purpose...", tr:"✏️ Özel amaç...", ar:"✏️ غرض مخصص...", ru:"✏️ Своя цель..."})}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(showCustomPurpose || (!PURPOSE_PRESETS.some(p => p.value === meetingPurpose) && meetingPurpose !== "")) && (
+                    <Input value={meetingPurpose} onChange={(e) => setMeetingPurpose(e.target.value)}
+                      placeholder={tt({de:"Zweck eingeben...", en:"Enter purpose...", tr:"Amaç girin...", ar:"أدخل الغرض...", ru:"Введите цель..."})}
+                      className="h-11 text-base mt-2" autoFocus />
+                  )}
+                </div>
+              </>
+            )}
 
             <Button className="w-full gap-2" onClick={() => handleSave(false)} disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
