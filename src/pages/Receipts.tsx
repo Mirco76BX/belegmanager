@@ -293,19 +293,23 @@ const Receipts = () => {
 
           {isEditing && detailReceipt && (
             <form onSubmit={handleEditSave} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-sm">{t("receipts.date")}</Label>
-                  <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="h-10" />
+              {/* KI-Felder: nach Speichern nur lesbar */}
+              <div className="rounded-md bg-muted/50 p-3 space-y-1.5">
+                <p className="text-xs text-muted-foreground font-medium">{lang === "de" ? "KI-erkannte Daten (nicht änderbar)" : "AI-detected data (read-only)"}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">{t("receipts.date")}</Label>
+                    <p className="text-sm font-medium">{new Date(detailReceipt.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">{t("receipts.amount")}</Label>
+                    <p className="text-sm font-mono font-semibold">{detailReceipt.amount != null ? `${detailReceipt.amount.toFixed(2)} €` : "–"}</p>
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm">{t("receipts.amount")}</Label>
-                  <Input type="number" step="0.01" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} className="h-10" />
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">{t("receipts.description")}</Label>
+                  <p className="text-sm">{detailReceipt.description || "–"}</p>
                 </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm">{t("receipts.description")}</Label>
-                <Input value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className="h-10" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm">{t("receipts.assignCompany")}</Label>
