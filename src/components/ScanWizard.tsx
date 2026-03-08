@@ -106,18 +106,21 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   }, [open, defaultCompanyId, user, subscription.tier]);
 
   const handleFileSelected = async (selectedFile: File) => {
-    setFile(selectedFile);
-    const reader = new FileReader();
-    reader.onloadend = () => setPreview(reader.result as string);
-    reader.readAsDataURL(selectedFile);
     setStep("scanning");
 
     try {
+      // Read file as data URL
       const base64 = await new Promise<string>((resolve) => {
         const r = new FileReader();
         r.onloadend = () => resolve(r.result as string);
         r.readAsDataURL(selectedFile);
       });
+
+      // Auto-crop background around the document
+      const croppedBase64 = await autoCropImage(base64);
+      const croppedFile = dataUrlToFile(croppedBase64, selectedFile.name);
+      setFile(croppedFile);
+      setPreview(croppedBase64);
 
       const { data, error } = await supabase.functions.invoke("scan-receipt", { body: { imageBase64: base64 } });
       if (error) throw error;
