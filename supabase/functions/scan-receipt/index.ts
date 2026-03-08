@@ -101,6 +101,7 @@ Do not include any other text, just the JSON object.`,
         description: content.slice(0, 200),
         vendor: null,
         tax_amount: null,
+        tax_rate: null,
         items: [],
         is_fuel_receipt: false,
       };
