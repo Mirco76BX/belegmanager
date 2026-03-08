@@ -9,8 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Camera, Receipt as ReceiptIcon, Trash2, Eye, Pencil, ScanLine } from "lucide-react";
+import { Camera, Receipt as ReceiptIcon, Trash2, Pencil, ScanLine } from "lucide-react";
 import ScanWizard from "@/components/ScanWizard";
 import ReceiptsInlineTable from "@/components/ReceiptsInlineTable";
 
@@ -26,6 +25,9 @@ interface Receipt {
   status: string;
   company_id: string | null;
   created_at: string;
+  receipt_type?: string;
+  license_plate?: string | null;
+  mileage?: number | null;
 }
 
 interface Company {
@@ -46,19 +48,17 @@ const Receipts = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [defaultCompanyId, setDefaultCompanyId] = useState<string | null>(null);
 
-  // Detail/Edit dialog
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailReceipt, setDetailReceipt] = useState<Receipt | null>(null);
   const [detailImageUrl, setDetailImageUrl] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  const [editDate, setEditDate] = useState("");
-  const [editAmount, setEditAmount] = useState("");
-  const [editDescription, setEditDescription] = useState("");
   const [editPersonMet, setEditPersonMet] = useState("");
   const [editOrganization, setEditOrganization] = useState("");
   const [editMeetingPurpose, setEditMeetingPurpose] = useState("");
   const [editCompanyId, setEditCompanyId] = useState("");
+  const [editLicensePlate, setEditLicensePlate] = useState("");
+  const [editMileage, setEditMileage] = useState("");
   const [editSaving, setEditSaving] = useState(false);
 
   const fetchData = async () => {
@@ -95,27 +95,37 @@ const Receipts = () => {
 
   const startEditing = () => {
     if (!detailReceipt) return;
-    setEditDate(detailReceipt.date);
-    setEditAmount(detailReceipt.amount?.toString() || "");
-    setEditDescription(detailReceipt.description || "");
     setEditPersonMet(detailReceipt.person_met || "");
     setEditOrganization(detailReceipt.organization || "");
     setEditMeetingPurpose(detailReceipt.meeting_purpose || "");
     setEditCompanyId(detailReceipt.company_id || "");
+    setEditLicensePlate(detailReceipt.license_plate || "");
+    setEditMileage(detailReceipt.mileage?.toString() || "");
     setIsEditing(true);
   };
+
+  const isFuel = (r: Receipt | null) => r?.receipt_type === "fuel";
 
   const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!detailReceipt) return;
     setEditSaving(true);
-    const { error } = await supabase.from("receipts").update({
-      person_met: editPersonMet || null,
-      organization: editOrganization || null,
-      meeting_purpose: editMeetingPurpose || null,
+
+    const updateData: any = {
       company_id: editCompanyId || null,
       status: "complete",
-    }).eq("id", detailReceipt.id);
+    };
+
+    if (isFuel(detailReceipt)) {
+      updateData.license_plate = editLicensePlate || null;
+      updateData.mileage = editMileage ? parseFloat(editMileage) : null;
+    } else {
+      updateData.person_met = editPersonMet || null;
+      updateData.organization = editOrganization || null;
+      updateData.meeting_purpose = editMeetingPurpose || null;
+    }
+
+    const { error } = await supabase.from("receipts").update(updateData).eq("id", detailReceipt.id);
     if (error) {
       toast({ title: error.message, variant: "destructive" });
     } else {
@@ -181,6 +191,9 @@ const Receipts = () => {
                       <span className="text-xs text-muted-foreground whitespace-nowrap">
                         {new Date(r.date).toLocaleDateString(locale)}
                       </span>
+                      {r.receipt_type === "fuel" && (
+                        <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded whitespace-nowrap">⛽</span>
+                      )}
                       {r.status === "pending" && (
                         <span className="text-[10px] bg-warning/20 text-warning px-1.5 py-0.5 rounded whitespace-nowrap">
                           {tt({de:"Offen", en:"Pending", tr:"Beklemede", ar:"معلق", ru:"Ожидает"})}
@@ -246,24 +259,45 @@ const Receipts = () => {
                   <span className="text-muted-foreground">{t("receipts.company")}</span>
                   <span>{companyName(detailReceipt.company_id)}</span>
                 </div>
-                {detailReceipt.person_met && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{t("receipts.person")}</span>
-                    <span>{detailReceipt.person_met}</span>
-                  </div>
+
+                {isFuel(detailReceipt) ? (
+                  <>
+                    {detailReceipt.license_plate && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{tt({de:"Kennzeichen", en:"License Plate", tr:"Plaka", ar:"لوحة الترخيص", ru:"Номерной знак"})}</span>
+                        <span>{detailReceipt.license_plate}</span>
+                      </div>
+                    )}
+                    {detailReceipt.mileage != null && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{tt({de:"Kilometerstand", en:"Mileage", tr:"Kilometre", ar:"عداد المسافات", ru:"Пробег"})}</span>
+                        <span>{detailReceipt.mileage.toLocaleString()} km</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {detailReceipt.person_met && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{t("receipts.person")}</span>
+                        <span>{detailReceipt.person_met}</span>
+                      </div>
+                    )}
+                    {detailReceipt.organization && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{t("receipts.organization")}</span>
+                        <span>{detailReceipt.organization}</span>
+                      </div>
+                    )}
+                    {detailReceipt.meeting_purpose && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{t("receipts.meetingPurpose")}</span>
+                        <span className="text-right max-w-[60%]">{detailReceipt.meeting_purpose}</span>
+                      </div>
+                    )}
+                  </>
                 )}
-                {detailReceipt.organization && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{t("receipts.organization")}</span>
-                    <span>{detailReceipt.organization}</span>
-                  </div>
-                )}
-                {detailReceipt.meeting_purpose && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{t("receipts.meetingPurpose")}</span>
-                    <span className="text-right max-w-[60%]">{detailReceipt.meeting_purpose}</span>
-                  </div>
-                )}
+
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Status</span>
                   <span className={detailReceipt.status === "pending" ? "text-warning" : "text-green-600"}>
@@ -315,18 +349,35 @@ const Receipts = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm">{t("receipts.person")}</Label>
-                <Input value={editPersonMet} onChange={(e) => setEditPersonMet(e.target.value)} className="h-10" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm">{t("receipts.organization")}</Label>
-                <Input value={editOrganization} onChange={(e) => setEditOrganization(e.target.value)} className="h-10" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm">{t("receipts.meetingPurpose")}</Label>
-                <Input value={editMeetingPurpose} onChange={(e) => setEditMeetingPurpose(e.target.value)} className="h-10" />
-              </div>
+
+              {isFuel(detailReceipt) ? (
+                <>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">{tt({de:"Kennzeichen", en:"License Plate", tr:"Plaka", ar:"لوحة الترخيص", ru:"Номерной знак"})}</Label>
+                    <Input value={editLicensePlate} onChange={(e) => setEditLicensePlate(e.target.value)} placeholder={tt({de:"z.B. B-AB 1234", en:"e.g. B-AB 1234", tr:"ör. 34 ABC 123", ar:"مثال: B-AB 1234", ru:"напр. B-AB 1234"})} className="h-10" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">{tt({de:"Kilometerstand", en:"Mileage", tr:"Kilometre", ar:"عداد المسافات", ru:"Пробег"})}</Label>
+                    <Input type="number" value={editMileage} onChange={(e) => setEditMileage(e.target.value)} placeholder={tt({de:"z.B. 45230", en:"e.g. 45230", tr:"ör. 45230", ar:"مثال: 45230", ru:"напр. 45230"})} className="h-10" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">{t("receipts.person")}</Label>
+                    <Input value={editPersonMet} onChange={(e) => setEditPersonMet(e.target.value)} className="h-10" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">{t("receipts.organization")}</Label>
+                    <Input value={editOrganization} onChange={(e) => setEditOrganization(e.target.value)} className="h-10" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">{t("receipts.meetingPurpose")}</Label>
+                    <Input value={editMeetingPurpose} onChange={(e) => setEditMeetingPurpose(e.target.value)} className="h-10" />
+                  </div>
+                </>
+              )}
+
               <div className="flex gap-2 pt-1">
                 <Button type="button" variant="outline" className="flex-1" onClick={() => setIsEditing(false)}>
                   {t("general.cancel")}
