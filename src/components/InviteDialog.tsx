@@ -95,24 +95,15 @@ const InviteDialog = () => {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="email">
-            <form onSubmit={handleEmailInvite} className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label htmlFor="invite-email">{tt({de:"E-Mail-Adresse", en:"Email address", tr:"E-posta adresi", ar:"عنوان البريد الإلكتروني", ru:"Электронная почта"})}</Label>
-                <Input
-                  id="invite-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="kollege@firma.de"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading
-                  ? tt({de:"Senden...", en:"Sending...", tr:"Gönderiliyor...", ar:"جارٍ الإرسال...", ru:"Отправка..."})
-                  : tt({de:"Einladung senden", en:"Send invitation", tr:"Davet gönder", ar:"إرسال الدعوة", ru:"Отправить приглашение"})}
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">
+                {tt({de:"Dein E-Mail-Programm öffnet sich mit einem vorformulierten Einladungstext. Wähle dort den Empfänger aus.", en:"Your email client will open with a pre-written invitation. Choose the recipient there.", tr:"E-posta istemciniz önceden yazılmış bir davetle açılacak. Alıcıyı orada seçin.", ar:"سيفتح برنامج البريد بدعوة مكتوبة مسبقاً. اختر المستلم هناك.", ru:"Почтовый клиент откроется с готовым текстом. Выберите получателя."})}
+              </p>
+              <Button onClick={handleEmailInvite} className="w-full gap-2">
+                <Mail className="h-4 w-4" />
+                {tt({de:"Per E-Mail einladen", en:"Invite via email", tr:"E-posta ile davet et", ar:"دعوة عبر البريد", ru:"Пригласить по почте"})}
               </Button>
-            </form>
+            </div>
           </TabsContent>
           <TabsContent value="whatsapp">
             <div className="space-y-4 pt-2">
