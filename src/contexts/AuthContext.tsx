@@ -108,7 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -116,6 +116,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setTimeout(() => checkSubscription(), 0);
       } else {
         setSubscription({ subscribed: false, productId: null, subscriptionEnd: null, tier: "free", loading: false });
+      }
+
+      // If token was refreshed, log it for debugging
+      if (event === "TOKEN_REFRESHED") {
+        console.log("[Auth] Token refreshed automatically");
       }
     });
 
@@ -126,7 +131,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) checkSubscription();
     });
 
-    return () => authSub.unsubscribe();
+    // Proactively refresh the session every 10 minutes to prevent token expiry
+    const refreshInterval = setInterval(async () => {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) {
+        console.warn("[Auth] Session refresh failed:", error.message);
+      } else if (data.session) {
+        console.log("[Auth] Session proactively refreshed");
+      }
+    }, 10 * 60 * 1000);
+
+    return () => {
+      authSub.unsubscribe();
+      clearInterval(refreshInterval);
+    };
   }, []);
 
   // Periodic refresh every 60s
