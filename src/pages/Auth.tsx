@@ -108,12 +108,19 @@ const Auth = () => {
                     <MailCheck className="h-7 w-7 text-primary" />
                   </div>
                   <h2 className="text-lg font-semibold text-foreground">
-                    {lang === "de" ? "Bestätigungs-E-Mail gesendet" : "Confirmation email sent"}
+                    {isForgot
+                      ? (lang === "de" ? "Link zum Zurücksetzen gesendet" : "Reset link sent")
+                      : (lang === "de" ? "Bestätigungs-E-Mail gesendet" : "Confirmation email sent")}
                   </h2>
                   <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                    {lang === "de"
-                      ? `Wir haben eine Bestätigungs-E-Mail an ${email} gesendet. Bitte klicken Sie auf den Link in der E-Mail, um Ihr Konto zu aktivieren.`
-                      : `We've sent a confirmation email to ${email}. Please click the link in the email to activate your account.`}
+                    {isForgot
+                      ? (lang === "de"
+                          ? `Wir haben einen Link zum Zurücksetzen an ${email} gesendet. Klicken Sie auf den Link in der E-Mail.`
+                          : `We've sent a reset link to ${email}. Click the link in the email.`)
+                      : (lang === "de"
+                          ? `Wir haben eine Bestätigungs-E-Mail an ${email} gesendet. Bitte klicken Sie auf den Link in der E-Mail, um Ihr Konto zu aktivieren.`
+                          : `We've sent a confirmation email to ${email}. Please click the link in the email to activate your account.`)
+                    }
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {lang === "de"
