@@ -268,10 +268,16 @@ const ExpenseReport = () => {
             <div className="md:hidden divide-y">
               {receipts.map((r) => (
                 <div key={r.id} className="px-4 py-3 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">{new Date(r.date).toLocaleDateString(locale)}</span>
-                    <span className="font-mono text-sm font-semibold whitespace-nowrap">{r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}</span>
-                  </div>
+                   <div className="flex items-center justify-between">
+                     <span className="text-sm text-muted-foreground">{new Date(r.date).toLocaleDateString(locale)}</span>
+                     <span className="font-mono text-sm font-semibold whitespace-nowrap">{r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}</span>
+                   </div>
+                   {r.vat_amount != null && (
+                     <div className="flex items-center justify-between text-xs text-muted-foreground">
+                       <span>MwSt.</span>
+                       <span className="font-mono">{r.vat_amount.toFixed(2)} € {r.vat_rate != null ? `(${r.vat_rate}%)` : ""}</span>
+                     </div>
+                   )}
                   {r.description && <p className="text-sm truncate">{r.description}</p>}
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{getCompanyName(r.company_id)}</span>
