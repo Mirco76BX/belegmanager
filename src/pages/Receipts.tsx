@@ -249,16 +249,7 @@ const Receipts = () => {
               {renderMobileCards(fuelReceipts)}
             </div>
           )}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                  {r.description && <p className="text-sm text-foreground truncate mt-0.5">{r.description}</p>}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </>
+        </div>
       )}
 
       <ScanWizard
