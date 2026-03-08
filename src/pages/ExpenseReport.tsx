@@ -49,6 +49,8 @@ const ExpenseReport = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [filterCompanyId, setFilterCompanyId] = useState<string>("all");
+  const [filterMonth, setFilterMonth] = useState<string>("all");
 
   const fetchData = async () => {
     if (!user || subscription.tier === "free") return;
