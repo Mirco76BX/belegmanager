@@ -23,6 +23,8 @@ interface Receipt {
   receipt_type?: string;
   license_plate?: string | null;
   mileage?: number | null;
+  vat_amount?: number | null;
+  vat_rate?: number | null;
 }
 
 interface Company {

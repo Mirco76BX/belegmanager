@@ -28,6 +28,7 @@ interface ScanResult {
   description: string | null;
   vendor: string | null;
   tax_amount: number | null;
+  tax_rate: number | null;
   items: string[];
   is_fuel_receipt?: boolean;
 }
@@ -166,6 +167,8 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         company_id: companyId || null, file_path: path,
         receipt_type: isFuelReceipt ? "fuel" : "general",
         status: skipDetails ? "pending" : "complete",
+        vat_amount: scanResult?.tax_amount ?? null,
+        vat_rate: scanResult?.tax_rate ?? null,
       };
 
       if (isFuelReceipt) {
@@ -270,6 +273,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                 </p>
                 {scanResult.vendor && <p className="text-muted-foreground text-xs">📍 {scanResult.vendor}</p>}
                 {scanResult.amount && <p className="text-muted-foreground text-xs">💰 {scanResult.amount.toFixed(2)} €</p>}
+                {scanResult.tax_amount != null && <p className="text-muted-foreground text-xs">🧾 MwSt: {scanResult.tax_amount.toFixed(2)} € {scanResult.tax_rate != null ? `(${scanResult.tax_rate}%)` : ""}</p>}
                 {scanResult.date && <p className="text-muted-foreground text-xs">📅 {scanResult.date}</p>}
                 {isFuelReceipt && <p className="text-muted-foreground text-xs">⛽ {tt({de:"Tankquittung erkannt", en:"Fuel receipt detected", tr:"Yakıt fişi algılandı", ar:"تم اكتشاف إيصال وقود", ru:"Обнаружен чек на топливо"})}</p>}
               </div>

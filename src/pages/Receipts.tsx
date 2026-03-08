@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Camera, Receipt as ReceiptIcon, Trash2, Pencil, ScanLine } from "lucide-react";
+import { Camera, Receipt as ReceiptIcon, Trash2, Pencil, ScanLine, RefreshCw } from "lucide-react";
 import ScanWizard from "@/components/ScanWizard";
 import ReceiptsInlineTable from "@/components/ReceiptsInlineTable";
 
@@ -28,6 +28,8 @@ interface Receipt {
   receipt_type?: string;
   license_plate?: string | null;
   mileage?: number | null;
+  vat_amount?: number | null;
+  vat_rate?: number | null;
 }
 
 interface Company {
@@ -62,6 +64,21 @@ const Receipts = () => {
   const [editLicensePlate, setEditLicensePlate] = useState("");
   const [editMileage, setEditMileage] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+  const [reprocessing, setReprocessing] = useState(false);
+
+  const handleReprocess = async () => {
+    setReprocessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("reprocess-receipts");
+      if (error) throw error;
+      toast({ title: tt({de:`${data.processed} Belege aktualisiert`, en:`${data.processed} receipts updated`, tr:`${data.processed} fiş güncellendi`, ar:`تم تحديث ${data.processed} إيصالات`, ru:`${data.processed} чеков обновлено`}) });
+      fetchData();
+    } catch (e: any) {
+      toast({ title: e.message || "Error", variant: "destructive" });
+    } finally {
+      setReprocessing(false);
+    }
+  };
 
   const fetchData = async () => {
     if (!user) return;
@@ -205,10 +222,18 @@ const Receipts = () => {
     <div className="animate-fade-in space-y-4">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-xl md:text-2xl font-bold">{t("receipts.title")}</h1>
-        <Button className="gap-2" onClick={() => setScanOpen(true)}>
-          <ScanLine className="h-4 w-4" />
-          {t("receipts.scan")}
-        </Button>
+        <div className="flex gap-2">
+          {receipts.some(r => r.vat_amount == null && r.file_path) && (
+            <Button variant="outline" size="sm" className="gap-2" onClick={handleReprocess} disabled={reprocessing}>
+              <RefreshCw className={`h-4 w-4 ${reprocessing ? "animate-spin" : ""}`} />
+              <span className="hidden sm:inline">{tt({de:"MwSt. nachlesen", en:"Extract VAT", tr:"KDV çıkar", ar:"استخراج الضريبة", ru:"Извлечь НДС"})}</span>
+            </Button>
+          )}
+          <Button className="gap-2" onClick={() => setScanOpen(true)}>
+            <ScanLine className="h-4 w-4" />
+            {t("receipts.scan")}
+          </Button>
+        </div>
       </div>
 
       {receipts.length > 0 && (
@@ -331,10 +356,19 @@ const Receipts = () => {
                   <span className="text-muted-foreground">{t("receipts.date")}</span>
                   <span className="font-medium">{new Date(detailReceipt.date).toLocaleDateString(locale)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t("receipts.amount")}</span>
-                  <span className="font-mono font-semibold">{formatAmount(detailReceipt.amount)}</span>
-                </div>
+                 <div className="flex justify-between text-sm">
+                   <span className="text-muted-foreground">{t("receipts.amount")}</span>
+                   <span className="font-mono font-semibold">{formatAmount(detailReceipt.amount)}</span>
+                 </div>
+                 {(detailReceipt.vat_amount != null || detailReceipt.vat_rate != null) && (
+                   <div className="flex justify-between text-sm">
+                     <span className="text-muted-foreground">MwSt.</span>
+                     <span className="font-mono">
+                       {detailReceipt.vat_amount != null ? `${detailReceipt.vat_amount.toFixed(2)} €` : "–"}
+                       {detailReceipt.vat_rate != null ? ` (${detailReceipt.vat_rate}%)` : ""}
+                     </span>
+                   </div>
+                 )}
                 {detailReceipt.description && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{t("receipts.description")}</span>

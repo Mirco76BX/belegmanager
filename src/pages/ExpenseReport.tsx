@@ -23,6 +23,8 @@ interface Receipt {
   meeting_purpose: string | null;
   file_path: string | null;
   company_id: string | null;
+  vat_amount: number | null;
+  vat_rate: number | null;
 }
 
 interface Company {
@@ -78,9 +80,10 @@ const ExpenseReport = () => {
 
   const getCompanyName = (id: string | null) => id ? companies.find((c) => c.id === id)?.name || "–" : "–";
   const totalAmount = receipts.reduce((sum, r) => sum + (r.amount || 0), 0);
+  const totalVat = receipts.reduce((sum, r) => sum + (r.vat_amount || 0), 0);
 
   const getTableHeaders = () => [
-    t("receipts.date"), t("receipts.amount"), t("receipts.description"),
+    t("receipts.date"), t("receipts.amount"), "MwSt.", "MwSt.-%", t("receipts.description"),
     t("receipts.company"), t("receipts.person"), tt({de:"Zweck", en:"Purpose", tr:"Amaç", ar:"الغرض", ru:"Цель"}),
   ];
 
@@ -88,6 +91,8 @@ const ExpenseReport = () => {
     receipts.map((r) => [
       new Date(r.date).toLocaleDateString(locale),
       r.amount != null ? `${r.amount.toFixed(2)} €` : "–",
+      r.vat_amount != null ? `${r.vat_amount.toFixed(2)} €` : "–",
+      r.vat_rate != null ? `${r.vat_rate}%` : "–",
       r.description || "–", getCompanyName(r.company_id),
       r.person_met || "–", r.meeting_purpose || "–",
     ]);
@@ -101,7 +106,7 @@ const ExpenseReport = () => {
     const csvContent = [
       headers.join(";"),
       ...rows.map((row) => row.map((cell) => `"${cell}"`).join(";")),
-      [totalLabel, `${totalAmount.toFixed(2)} €`, "", "", "", ""].map((c) => `"${c}"`).join(";"),
+      [totalLabel, `${totalAmount.toFixed(2)} €`, `${totalVat.toFixed(2)} €`, "", "", "", "", ""].map((c) => `"${c}"`).join(";"),
     ].join("\n");
 
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
@@ -132,7 +137,7 @@ const ExpenseReport = () => {
       doc.text(`${t("expense.period")}: ${fromDate} – ${toDate}`, pageWidth / 2, 30, { align: "center" });
 
       const rows = getTableRows();
-      rows.push([totalLabel, `${totalAmount.toFixed(2)} €`, "", "", "", ""]);
+      rows.push([totalLabel, `${totalAmount.toFixed(2)} €`, `${totalVat.toFixed(2)} €`, "", "", "", "", ""]);
 
       autoTable(doc, {
         startY: 40, head: [getTableHeaders()], body: rows,
@@ -226,41 +231,53 @@ const ExpenseReport = () => {
           <CardContent className="p-0">
             <div className="hidden md:block">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("receipts.date")}</TableHead>
-                    <TableHead className="text-right">{t("receipts.amount")}</TableHead>
-                    <TableHead>{t("receipts.description")}</TableHead>
-                    <TableHead>{t("receipts.company")}</TableHead>
-                    <TableHead>{t("receipts.person")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {receipts.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(locale)}</TableCell>
-                      <TableCell className="font-mono text-right whitespace-nowrap">{r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}</TableCell>
-                      <TableCell>{r.description || "–"}</TableCell>
-                      <TableCell>{getCompanyName(r.company_id)}</TableCell>
-                      <TableCell>{r.person_met || "–"}</TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow className="font-bold border-t-2">
-                    <TableCell>{totalLabel}</TableCell>
-                    <TableCell className="font-mono text-right whitespace-nowrap">{totalAmount.toFixed(2)} €</TableCell>
-                    <TableCell colSpan={3} />
-                  </TableRow>
-                </TableBody>
+                 <TableHeader>
+                   <TableRow>
+                     <TableHead>{t("receipts.date")}</TableHead>
+                     <TableHead className="text-right">{t("receipts.amount")}</TableHead>
+                     <TableHead className="text-right">MwSt.</TableHead>
+                     <TableHead>{t("receipts.description")}</TableHead>
+                     <TableHead>{t("receipts.company")}</TableHead>
+                     <TableHead>{t("receipts.person")}</TableHead>
+                   </TableRow>
+                 </TableHeader>
+                 <TableBody>
+                   {receipts.map((r) => (
+                     <TableRow key={r.id}>
+                       <TableCell className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(locale)}</TableCell>
+                       <TableCell className="font-mono text-right whitespace-nowrap">{r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}</TableCell>
+                       <TableCell className="font-mono text-right whitespace-nowrap text-muted-foreground">
+                         {r.vat_amount != null ? `${r.vat_amount.toFixed(2)} €` : "–"}
+                         {r.vat_rate != null ? ` (${r.vat_rate}%)` : ""}
+                       </TableCell>
+                       <TableCell>{r.description || "–"}</TableCell>
+                       <TableCell>{getCompanyName(r.company_id)}</TableCell>
+                       <TableCell>{r.person_met || "–"}</TableCell>
+                     </TableRow>
+                   ))}
+                   <TableRow className="font-bold border-t-2">
+                     <TableCell>{totalLabel}</TableCell>
+                     <TableCell className="font-mono text-right whitespace-nowrap">{totalAmount.toFixed(2)} €</TableCell>
+                     <TableCell className="font-mono text-right whitespace-nowrap">{totalVat.toFixed(2)} €</TableCell>
+                     <TableCell colSpan={3} />
+                   </TableRow>
+                 </TableBody>
               </Table>
             </div>
 
             <div className="md:hidden divide-y">
               {receipts.map((r) => (
                 <div key={r.id} className="px-4 py-3 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">{new Date(r.date).toLocaleDateString(locale)}</span>
-                    <span className="font-mono text-sm font-semibold whitespace-nowrap">{r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}</span>
-                  </div>
+                   <div className="flex items-center justify-between">
+                     <span className="text-sm text-muted-foreground">{new Date(r.date).toLocaleDateString(locale)}</span>
+                     <span className="font-mono text-sm font-semibold whitespace-nowrap">{r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}</span>
+                   </div>
+                   {r.vat_amount != null && (
+                     <div className="flex items-center justify-between text-xs text-muted-foreground">
+                       <span>MwSt.</span>
+                       <span className="font-mono">{r.vat_amount.toFixed(2)} € {r.vat_rate != null ? `(${r.vat_rate}%)` : ""}</span>
+                     </div>
+                   )}
                   {r.description && <p className="text-sm truncate">{r.description}</p>}
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{getCompanyName(r.company_id)}</span>
