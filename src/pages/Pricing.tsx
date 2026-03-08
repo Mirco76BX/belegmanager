@@ -2,7 +2,7 @@ import { useAuth, TIERS } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Check, Crown, Zap, Loader2, Tag } from "lucide-react";
+import { Check, Crown, Zap, Loader2, Tag, Gem } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
