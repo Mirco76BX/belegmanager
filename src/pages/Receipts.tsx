@@ -47,6 +47,7 @@ const Receipts = () => {
   const [scanOpen, setScanOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [defaultCompanyId, setDefaultCompanyId] = useState<string | null>(null);
+  const [filterCompanyId, setFilterCompanyId] = useState<string>("all");
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailReceipt, setDetailReceipt] = useState<Receipt | null>(null);
