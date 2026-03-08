@@ -87,8 +87,8 @@ const Pricing = () => {
       period: relaxPrice.period,
       hint: relaxPrice.hint,
       features: lang === "de"
-        ? ["150 Scans / Jahr", "Belegverwaltung", "Reisekostenabrechnung"]
-        : ["150 Scans / year", "Receipt management", "Travel expense reports"],
+        ? ["150 Scans / Jahr", "Belegverwaltung", "Reisekosten\u00ADabrechnung"]
+        : ["150 Scans / year", "Receipt management", "Expense reports"],
       current: isRelax,
       priceId: billingCycle === "yearly" ? TIERS.relax.yearly.price_id : TIERS.relax.monthly.price_id,
     },
@@ -100,8 +100,8 @@ const Pricing = () => {
       period: lang === "de" ? "/ Jahr" : "/ year",
       hint: lang === "de" ? "~4 €/Monat" : "~4 €/month",
       features: lang === "de"
-        ? ["Unbegrenzte Scans", "Belegverwaltung", "Reisekostenabrechnung", "Prioritäts-Support"]
-        : ["Unlimited Scans", "Receipt management", "Travel expense reports", "Priority support"],
+        ? ["Unbegrenzte Scans", "Belegverwaltung", "Reisekosten\u00ADabrechnung", "Prioritäts\u00ADSupport"]
+        : ["Unlimited Scans", "Receipt management", "Expense reports", "Priority support"],
       current: isMaster,
       priceId: TIERS.master.yearly.price_id,
     },
