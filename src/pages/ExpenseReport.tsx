@@ -50,7 +50,7 @@ const ExpenseReport = () => {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [filterCompanyId, setFilterCompanyId] = useState<string>("all");
-  const [profile, setProfile] = useState<{ display_name: string | null; email: string } | null>(null);
+  const [profile, setProfile] = useState<{ first_name: string | null; last_name: string | null; display_name: string | null; email: string } | null>(null);
   
 
   const fetchData = async () => {
