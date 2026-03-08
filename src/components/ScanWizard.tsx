@@ -402,7 +402,8 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                     </div>
                   )}
                 </div>
-                </div>
+
+
               </>
             ) : (
               <>
