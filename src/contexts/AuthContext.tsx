@@ -37,7 +37,7 @@ interface SubscriptionState {
   subscribed: boolean;
   productId: string | null;
   subscriptionEnd: string | null;
-  tier: "free" | "relax" | "master";
+  tier: "free" | "relax" | "master" | "tax_advisor";
   loading: boolean;
 }
 
