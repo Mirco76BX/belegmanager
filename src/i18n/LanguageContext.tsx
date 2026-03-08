@@ -19,6 +19,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const setLang = useCallback((newLang: Language) => {
     setLangState(newLang);
     localStorage.setItem("app-language", newLang);
+    document.documentElement.dir = newLang === "ar" ? "rtl" : "ltr";
   }, []);
 
   const translate = useCallback((key: TranslationKey) => t(key, lang), [lang]);
