@@ -39,6 +39,36 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Check for active coupon redemption first
+    const { data: redemptions } = await supabaseClient
+      .from("coupon_redemptions")
+      .select("tier, expires_at")
+      .eq("user_id", user.id)
+      .gte("expires_at", new Date().toISOString())
+      .order("expires_at", { ascending: false })
+      .limit(1);
+
+    if (redemptions && redemptions.length > 0) {
+      const redemption = redemptions[0];
+      logStep("Active coupon redemption found", { tier: redemption.tier, expires_at: redemption.expires_at });
+      
+      // Map coupon tier to a product_id-like identifier for frontend compatibility
+      const tierProductMap: Record<string, string> = {
+        relax: "coupon_relax",
+        master: "coupon_master",
+      };
+      
+      return new Response(JSON.stringify({
+        subscribed: true,
+        product_id: tierProductMap[redemption.tier] || "coupon_relax",
+        subscription_end: redemption.expires_at,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Fall back to Stripe check
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
 

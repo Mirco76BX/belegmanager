@@ -11,7 +11,12 @@ import {
   ArrowRight, CheckCircle2, Smartphone, Cloud, Lock,
 } from "lucide-react";
 import receiptScanImg from "@/assets/receipt-scan.jpg";
+import taxAdvisorImg from "@/assets/tax-advisor-hero.jpg";
+import testimonial1Img from "@/assets/testimonial-1.jpg";
+import testimonial2Img from "@/assets/testimonial-2.jpg";
+import testimonial3Img from "@/assets/testimonial-3.jpg";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { Star } from "lucide-react";
 
 const Demo = () => {
   const { lang, setLang, tt } = useLanguage();
@@ -193,6 +198,98 @@ const Demo = () => {
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Tax Advisor Recommendation */}
+      <section className="px-4 py-20">
+        <div className="mx-auto max-w-5xl">
+          <div className="flex flex-col items-center gap-10 md:flex-row md:gap-14">
+            <div className="w-full max-w-xs shrink-0">
+              <div className="overflow-hidden rounded-2xl shadow-xl ring-1 ring-border">
+                <img src={taxAdvisorImg} alt={tt({de:"Moderner Steuerberater empfiehlt BelegManager", en:"Modern tax advisor recommends ReceiptManager", tr:"Modern mali müşavir BelegManager'ı öneriyor", ar:"مستشار ضريبي حديث يوصي بمدير الإيصالات", ru:"Современный налоговый консультант рекомендует ЧекМенеджер"})} className="w-full" loading="lazy" />
+              </div>
+            </div>
+            <div className="flex-1 space-y-4 text-center md:text-left">
+              <blockquote className="text-xl font-medium leading-relaxed text-foreground italic">
+                {tt({
+                  de: "\u201EAls Steuerberater empfehle ich meinen Mandanten BelegManager, weil es den gesamten Belegprozess digitalisiert und uns beiden wertvolle Zeit spart. Die KI-gest\u00FCtzte Erfassung ist beeindruckend genau.\u201C",
+                  en: "\u201CAs a tax advisor, I recommend ReceiptManager to my clients because it digitizes the entire receipt process and saves us both valuable time. The AI-powered capture is impressively accurate.\u201D",
+                  tr: "\u201CBir vergi dan\u0131\u015Fman\u0131 olarak m\u00FC\u015Fterilerime BelegManager\u2019\u0131 \u00F6neriyorum \u00E7\u00FCnk\u00FC t\u00FCm fi\u015F s\u00FCrecini dijitalle\u015Ftiriyor ve her ikimize de de\u011Ferli zaman kazand\u0131r\u0131yor.\u201D",
+                  ar: "\u201Cكمستشار ضريبي، أنصح عملائي بمدير الإيصالات لأنه يرقمن عملية الإيصالات بالكامل ويوفر لنا وقتاً ثميناً.\u201D",
+                  ru: "\u201CКак налоговый консультант, я рекомендую ЧекМенеджер своим клиентам, потому что он оцифровывает весь процесс работы с чеками и экономит нам обоим ценное время.\u201D",
+                })}
+              </blockquote>
+              <div>
+                <p className="font-semibold text-foreground">Thomas Weber</p>
+                <p className="text-sm text-muted-foreground">{tt({de:"Steuerberater, Kanzlei Weber & Partner", en:"Tax Advisor, Weber & Partner", tr:"Mali Müşavir, Weber & Partner", ar:"مستشار ضريبي، ويبر وشركاه", ru:"Налоговый консультант, Weber & Partner"})}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="border-t border-border bg-muted/30 px-4 py-20">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="mb-4 text-center text-3xl font-bold text-foreground">
+            {tt({de:"Das sagen unsere Nutzer", en:"What our users say", tr:"Kullanıcılarımız ne diyor", ar:"ماذا يقول مستخدمونا", ru:"Что говорят наши пользователи"})}
+          </h2>
+          <p className="mb-12 text-center text-muted-foreground">
+            {tt({de:"Überzeugen Sie sich selbst – echte Erfahrungen mit BelegManager.", en:"See for yourself – real experiences with ReceiptManager.", tr:"Kendiniz görün – BelegManager ile gerçek deneyimler.", ar:"اكتشف بنفسك – تجارب حقيقية مع مدير الإيصالات.", ru:"Убедитесь сами – реальный опыт с ЧекМенеджер."})}
+          </p>
+          <div className="grid gap-8 md:grid-cols-3">
+            {[
+              {
+                img: testimonial1Img,
+                name: "Sandra Müller",
+                role: tt({de:"Freiberuflerin", en:"Freelancer", tr:"Serbest çalışan", ar:"عاملة مستقلة", ru:"Фрилансер"}),
+                text: tt({
+                  de: "Endlich kein Schuhkarton voller Quittungen mehr! Die KI erkennt alles sofort und die Reisekostenabrechnung erstellt sich fast von allein. Absolute Empfehlung!",
+                  en: "Finally no more shoebox full of receipts! The AI recognizes everything instantly and expense reports practically create themselves. Highly recommended!",
+                  tr: "Sonunda kutu dolusu fişlerden kurtuldum! Yapay zeka her şeyi anında tanıyor ve masraf raporları neredeyse kendiliğinden oluşuyor.",
+                  ar: "أخيراً لا مزيد من صناديق الإيصالات! الذكاء الاصطناعي يتعرف على كل شيء فوراً وتقارير المصاريف تنشئ نفسها تقريباً.",
+                  ru: "Наконец-то никаких коробок с чеками! ИИ распознаёт всё мгновенно, а отчёты о расходах создаются почти сами. Абсолютная рекомендация!",
+                }),
+              },
+              {
+                img: testimonial2Img,
+                name: "Dr. Michael Braun",
+                role: tt({de:"Geschäftsführer, Braun Consulting", en:"CEO, Braun Consulting", tr:"Genel Müdür, Braun Consulting", ar:"المدير التنفيذي، Braun Consulting", ru:"Генеральный директор, Braun Consulting"}),
+                text: tt({
+                  de: "Als Vielreisender ist BelegManager für mich unverzichtbar geworden. Beleg fotografieren, fertig. Mein Steuerberater bekommt alles digital und ordentlich – das spart uns beiden enorm Zeit.",
+                  en: "As a frequent traveler, ReceiptManager has become indispensable. Snap a receipt, done. My tax advisor gets everything digitally and neatly – saves us both enormous time.",
+                  tr: "Sık seyahat eden biri olarak BelegManager vazgeçilmezim oldu. Fişi çek, bitti. Mali müşavirim her şeyi dijital ve düzenli alıyor.",
+                  ar: "كمسافر دائم، أصبح مدير الإيصالات لا غنى عنه. صوّر الإيصال وانتهى الأمر. مستشاري الضريبي يحصل على كل شيء رقمياً ومنظماً.",
+                  ru: "Как часто путешествующий человек, ЧекМенеджер стал для меня незаменим. Сфотографировал чек – готово. Мой консультант получает всё в цифровом виде.",
+                }),
+              },
+              {
+                img: testimonial3Img,
+                name: "Lukas Hofmann",
+                role: tt({de:"Vereinsvorstand, TSV Grünwald", en:"Association Chair, TSV Grünwald", tr:"Dernek Başkanı, TSV Grünwald", ar:"رئيس الجمعية، TSV Grünwald", ru:"Председатель, TSV Grünwald"}),
+                text: tt({
+                  de: "Für unseren Verein ist BelegManager perfekt: Alle Vorstandsmitglieder können Belege mobil erfassen und wir haben endlich einen sauberen Überblick über unsere Ausgaben. Klare 5 Sterne!",
+                  en: "BelegManager is perfect for our association: all board members can capture receipts on mobile and we finally have a clean overview of our expenses. A clear 5 stars!",
+                  tr: "Derneğimiz için BelegManager mükemmel: tüm yönetim kurulu üyeleri fişleri mobil olarak kaydedebiliyor ve harcamalarımızın temiz bir genel görünümüne sahibiz.",
+                  ar: "مدير الإيصالات مثالي لجمعيتنا: يمكن لجميع أعضاء مجلس الإدارة التقاط الإيصالات عبر الجوال ولدينا أخيراً نظرة واضحة على مصاريفنا.",
+                  ru: "ЧекМенеджер идеален для нашего объединения: все члены правления могут фиксировать чеки с мобильного, и у нас наконец чёткий обзор расходов.",
+                }),
+              },
+            ].map((t) => (
+              <div key={t.name} className="flex flex-col items-center rounded-xl border-2 border-border bg-card p-6 text-center">
+                <img src={t.img} alt={t.name} className="mb-4 h-20 w-20 rounded-full object-cover ring-2 ring-primary/20" loading="lazy" />
+                <div className="mb-3 flex gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                <p className="mb-4 text-sm leading-relaxed text-muted-foreground italic">{"\u201E"}{t.text}{"\u201C"}</p>
+                <p className="font-semibold text-foreground">{t.name}</p>
+                <p className="text-xs text-muted-foreground">{t.role}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

@@ -6,13 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { User, CreditCard, ScanLine, Loader2 } from "lucide-react";
+import { User, CreditCard, ScanLine, Loader2, Ticket } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const Account = () => {
-  const { user, subscription } = useAuth();
+  const { user, subscription, checkSubscription } = useAuth();
   const { lang, tt } = useLanguage();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<{ display_name: string | null; email: string; is_tax_advisor: boolean; kanzlei: string | null } | null>(null);
@@ -20,6 +20,8 @@ const Account = () => {
   const [displayName, setDisplayName] = useState("");
   const [saving, setSaving] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -131,6 +133,53 @@ const Account = () => {
                   {tt({de:"Plan upgraden", en:"Upgrade plan", tr:"Planı yükselt", ar:"ترقية الخطة", ru:"Обновить план"})}
                 </Button>
               )}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Ticket className="h-4 w-4" />
+              {tt({de:"Gutscheincode einlösen", en:"Redeem Coupon", tr:"Kupon Kullan", ar:"استرداد القسيمة", ru:"Погасить купон"})}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {tt({de:"Haben Sie einen Gutscheincode? Geben Sie ihn hier ein, um Ihren Zugang freizuschalten.", en:"Have a coupon code? Enter it here to unlock your access.", tr:"Kupon kodunuz var mı? Erişiminizi açmak için buraya girin.", ar:"هل لديك رمز قسيمة؟ أدخله هنا لفتح وصولك.", ru:"Есть купон? Введите его здесь для активации доступа."})}
+            </p>
+            <div className="flex gap-2">
+              <Input
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+                placeholder={tt({de:"Gutscheincode", en:"Coupon code", tr:"Kupon kodu", ar:"رمز القسيمة", ru:"Код купона"})}
+                className="h-9 uppercase"
+              />
+              <Button
+                size="sm"
+                disabled={couponLoading || !couponCode.trim()}
+                onClick={async () => {
+                  setCouponLoading(true);
+                  try {
+                    const { data, error } = await supabase.functions.invoke("redeem-coupon", {
+                      body: { code: couponCode.trim() },
+                    });
+                    if (error) throw error;
+                    if (data?.error) {
+                      toast.error(data.error);
+                    } else {
+                      toast.success(tt({de:"Gutschein erfolgreich eingelöst!", en:"Coupon redeemed successfully!", tr:"Kupon başarıyla kullanıldı!", ar:"تم استرداد القسيمة بنجاح!", ru:"Купон успешно погашен!"}));
+                      setCouponCode("");
+                      await checkSubscription();
+                    }
+                  } catch (e: any) {
+                    toast.error(e.message || "Error");
+                  } finally {
+                    setCouponLoading(false);
+                  }
+                }}
+              >
+                {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : tt({de:"Einlösen", en:"Redeem", tr:"Kullan", ar:"استرداد", ru:"Погасить"})}
+              </Button>
             </div>
           </CardContent>
         </Card>
