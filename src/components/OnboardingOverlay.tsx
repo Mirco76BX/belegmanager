@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ScanLine, ArrowDown, X } from "lucide-react";
-
-const ONBOARDING_KEY = "onboarding_seen";
 
 const OnboardingOverlay = () => {
   const { user } = useAuth();
@@ -15,15 +14,30 @@ const OnboardingOverlay = () => {
 
   useEffect(() => {
     if (!user) return;
-    const seen = localStorage.getItem(`${ONBOARDING_KEY}_${user.id}`);
-    if (!seen) {
-      const timer = setTimeout(() => setVisible(true), 600);
-      return () => clearTimeout(timer);
-    }
+    supabase
+      .from("profiles")
+      .select("onboarding_seen")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data && !data.onboarding_seen) {
+          setTimeout(() => setVisible(true), 600);
+        }
+      });
   }, [user]);
 
-  const dismiss = () => { if (user) localStorage.setItem(`${ONBOARDING_KEY}_${user.id}`, "true"); setVisible(false); };
-  const handleScan = () => { dismiss(); navigate("/receipts"); setTimeout(() => window.dispatchEvent(new CustomEvent("open-scan")), 200); };
+  const dismiss = async () => {
+    setVisible(false);
+    if (user) {
+      await supabase.from("profiles").update({ onboarding_seen: true }).eq("id", user.id);
+    }
+  };
+
+  const handleScan = () => {
+    dismiss();
+    navigate("/receipts");
+    setTimeout(() => window.dispatchEvent(new CustomEvent("open-scan")), 200);
+  };
 
   if (!visible) return null;
 
