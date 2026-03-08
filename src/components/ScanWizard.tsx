@@ -92,7 +92,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       setPersonMet(""); setOrganization(""); setMeetingPurpose("");
       setShowCustomPurpose(false); setShowNewCompany(false); setNewCompanyName("");
       setLimitReached(false); setIsFuelReceipt(false);
-      setLicensePlate(""); setMileage("");
+      setLicensePlate(""); setMileage(""); setMileageWarning(null);
 
       const maxScans = subscription.tier === "master" ? Infinity
         : subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans;
