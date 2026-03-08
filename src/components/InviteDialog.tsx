@@ -2,10 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserPlus, Mail, MessageCircle } from "lucide-react";
@@ -14,12 +11,8 @@ const REGISTER_URL = window.location.origin + "/auth";
 
 const InviteDialog = () => {
   const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { tt } = useLanguage();
-  const { toast } = useToast();
 
   const handleEmailInvite = () => {
     const message = tt({
