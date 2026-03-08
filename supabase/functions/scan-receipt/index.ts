@@ -48,7 +48,8 @@ serve(async (req) => {
   "description": "brief description of what was purchased/service",
   "vendor": "name of the store/restaurant/vendor",
   "tax_amount": number or null (VAT/tax amount if visible),
-  "items": ["list of individual items if visible"] or []
+  "items": ["list of individual items if visible"] or [],
+  "is_fuel_receipt": true or false (set to true if this is a gas station / fuel / petrol receipt, e.g. from a Tankstelle, gas station, petrol station, or if fuel items like Diesel, Benzin, Super, etc. are listed)
 }
 Do not include any other text, just the JSON object.`,
               },
@@ -88,7 +89,6 @@ Do not include any other text, just the JSON object.`,
     // Parse the JSON from the AI response
     let extracted;
     try {
-      // Try to find JSON in the response (in case there's extra text)
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       extracted = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(content);
     } catch {
@@ -101,6 +101,7 @@ Do not include any other text, just the JSON object.`,
         vendor: null,
         tax_amount: null,
         items: [],
+        is_fuel_receipt: false,
       };
     }
 
