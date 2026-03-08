@@ -147,11 +147,16 @@ const Receipts = () => {
   const formatAmount = (a: number | null) => a != null ? `${a.toFixed(2)} €` : "–";
   const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "–";
 
-  const filtered = filterCompanyId === "all" ? receipts
+  const filteredByCompany = filterCompanyId === "all" ? receipts
     : filterCompanyId === "none" ? receipts.filter(r => !r.company_id)
     : receipts.filter(r => r.company_id === filterCompanyId);
+  const filtered = filterMonth === "all" ? filteredByCompany
+    : filteredByCompany.filter(r => r.date.substring(0, 7) === filterMonth);
   const generalReceipts = filtered.filter(r => r.receipt_type !== "fuel");
   const fuelReceipts = filtered.filter(r => r.receipt_type === "fuel");
+
+  // Build unique months from receipts for filter
+  const availableMonths = Array.from(new Set(receipts.map(r => r.date.substring(0, 7)))).sort().reverse();
 
   const renderMobileCards = (list: Receipt[]) => (
     <div className="md:hidden space-y-2">
