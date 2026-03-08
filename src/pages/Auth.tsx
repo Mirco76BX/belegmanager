@@ -82,6 +82,35 @@ const Auth = () => {
               <p className="mt-1 text-sm text-muted-foreground">{t("app.tagline")}</p>
             </div>
 
+            {emailSent ? (
+              <Card>
+                <CardContent className="py-10 text-center space-y-4">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                    <MailCheck className="h-7 w-7 text-primary" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-foreground">
+                    {lang === "de" ? "Bestätigungs-E-Mail gesendet" : "Confirmation email sent"}
+                  </h2>
+                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                    {lang === "de"
+                      ? `Wir haben eine Bestätigungs-E-Mail an ${email} gesendet. Bitte klicken Sie auf den Link in der E-Mail, um Ihr Konto zu aktivieren.`
+                      : `We've sent a confirmation email to ${email}. Please click the link in the email to activate your account.`}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {lang === "de"
+                      ? "Prüfen Sie auch Ihren Spam-Ordner."
+                      : "Please also check your spam folder."}
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => { setEmailSent(false); setIsLogin(true); }}
+                    className="mt-2"
+                  >
+                    {lang === "de" ? "Zurück zum Login" : "Back to login"}
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -151,6 +180,7 @@ const Auth = () => {
                 </div>
               </CardContent>
             </Card>
+            )}
           </div>
         </div>
       </div>
