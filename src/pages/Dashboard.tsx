@@ -75,7 +75,7 @@ const Dashboard = () => {
     <div className="animate-fade-in space-y-6">
       <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4">
         {stats.map((stat) => (
           <Card key={stat.key}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
