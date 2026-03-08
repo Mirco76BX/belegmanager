@@ -172,7 +172,7 @@ const ExpenseReport = () => {
       rows.push([totalLabel, `${totalAmount.toFixed(2)} €`, `${totalVat.toFixed(2)} €`, "", "", "", "", ""]);
 
       autoTable(doc, {
-        startY: 40, head: [getTableHeaders()], body: rows,
+        startY: yPos, head: [getTableHeaders()], body: rows,
         styles: { fontSize: 8, cellPadding: 3 },
         headStyles: { fillColor: [41, 74, 112] },
         footStyles: { fontStyle: "bold" }, theme: "grid",
