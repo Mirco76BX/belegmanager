@@ -10,6 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Camera, Upload, Loader2, Check, SkipForward, ArrowRight, Plus } from "lucide-react";
 
+const PURPOSE_PRESETS = [
+  { value: "Geschäftsessen", labelDe: "🍽️ Geschäftsessen", labelEn: "🍽️ Business meal" },
+  { value: "Tanken", labelDe: "⛽ Tanken", labelEn: "⛽ Fuel" },
+  { value: "Akquise", labelDe: "🤝 Akquise", labelEn: "🤝 Acquisition" },
+  { value: "Büromaterial", labelDe: "📎 Büromaterial", labelEn: "📎 Office supplies" },
+  { value: "Reisekosten", labelDe: "✈️ Reisekosten", labelEn: "✈️ Travel expenses" },
+  { value: "Fortbildung", labelDe: "📚 Fortbildung", labelEn: "📚 Training" },
+  { value: "Bewirtung", labelDe: "🥂 Bewirtung", labelEn: "🥂 Hospitality" },
+  { value: "Telefon/Internet", labelDe: "📱 Telefon/Internet", labelEn: "📱 Phone/Internet" },
+];
+
 interface ScanResult {
   date: string | null;
   amount: number | null;
