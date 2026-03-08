@@ -68,6 +68,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkSubscription = async () => {
     try {
+      // First check if user is a tax advisor via profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_tax_advisor")
+        .eq("id", user?.id ?? "")
+        .maybeSingle();
+
+      if (profile?.is_tax_advisor) {
+        setSubscription({
+          subscribed: true,
+          productId: null,
+          subscriptionEnd: null,
+          tier: "tax_advisor",
+          loading: false,
+        });
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("check-subscription");
       if (error) throw error;
       const pid = data?.product_id;
