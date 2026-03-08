@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const TIERS = {
   free: { name: "FREE", maxScans: 10 },
+  tax_advisor: { name: "STEUERBERATER", maxScans: 50 },
   relax: {
     name: "RELAX",
     maxScans: 150,
