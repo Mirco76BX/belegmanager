@@ -122,7 +122,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       setFile(croppedFile);
       setPreview(croppedBase64);
 
-      const { data, error } = await supabase.functions.invoke("scan-receipt", { body: { imageBase64: base64 } });
+      const { data, error } = await supabase.functions.invoke("scan-receipt", { body: { imageBase64: croppedBase64 } });
       if (error) throw error;
 
       setScanResult(data);
