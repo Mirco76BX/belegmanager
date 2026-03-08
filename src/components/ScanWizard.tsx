@@ -28,6 +28,7 @@ interface ScanResult {
   description: string | null;
   vendor: string | null;
   tax_amount: number | null;
+  tax_rate: number | null;
   items: string[];
   is_fuel_receipt?: boolean;
 }
