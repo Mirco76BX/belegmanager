@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,9 @@ import PricingPlans from "@/components/PricingPlans";
 import ContactSection from "@/components/ContactSection";
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<"login" | "register" | "forgot">("login");
+  const isLogin = mode === "login";
+  const isForgot = mode === "forgot";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -25,6 +28,22 @@ const Auth = () => {
   const { t, lang, setLang } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setEmailSent(true);
+    } catch (err: any) {
+      toast({ title: err.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,12 +108,19 @@ const Auth = () => {
                     <MailCheck className="h-7 w-7 text-primary" />
                   </div>
                   <h2 className="text-lg font-semibold text-foreground">
-                    {lang === "de" ? "Bestätigungs-E-Mail gesendet" : "Confirmation email sent"}
+                    {isForgot
+                      ? (lang === "de" ? "Link zum Zurücksetzen gesendet" : "Reset link sent")
+                      : (lang === "de" ? "Bestätigungs-E-Mail gesendet" : "Confirmation email sent")}
                   </h2>
                   <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                    {lang === "de"
-                      ? `Wir haben eine Bestätigungs-E-Mail an ${email} gesendet. Bitte klicken Sie auf den Link in der E-Mail, um Ihr Konto zu aktivieren.`
-                      : `We've sent a confirmation email to ${email}. Please click the link in the email to activate your account.`}
+                    {isForgot
+                      ? (lang === "de"
+                          ? `Wir haben einen Link zum Zurücksetzen an ${email} gesendet. Klicken Sie auf den Link in der E-Mail.`
+                          : `We've sent a reset link to ${email}. Click the link in the email.`)
+                      : (lang === "de"
+                          ? `Wir haben eine Bestätigungs-E-Mail an ${email} gesendet. Bitte klicken Sie auf den Link in der E-Mail, um Ihr Konto zu aktivieren.`
+                          : `We've sent a confirmation email to ${email}. Please click the link in the email to activate your account.`)
+                    }
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {lang === "de"
@@ -103,7 +129,7 @@ const Auth = () => {
                   </p>
                   <Button
                     variant="outline"
-                    onClick={() => { setEmailSent(false); setIsLogin(true); }}
+                    onClick={() => { setEmailSent(false); setMode("login"); }}
                     className="mt-2"
                   >
                     {lang === "de" ? "Zurück zum Login" : "Back to login"}
@@ -114,7 +140,7 @@ const Auth = () => {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>{isLogin ? t("auth.login") : t("auth.register")}</CardTitle>
+                  <CardTitle>{isForgot ? t("auth.forgotPassword") : isLogin ? t("auth.login") : t("auth.register")}</CardTitle>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -126,19 +152,44 @@ const Auth = () => {
                   </Button>
                 </div>
                 <CardDescription>
-                  {isLogin
+                  {isForgot
+                    ? (lang === "de" ? "Geben Sie Ihre E-Mail ein, um einen Link zum Zurücksetzen zu erhalten" : "Enter your email to receive a reset link")
+                    : isLogin
                     ? (lang === "de" ? "Melden Sie sich mit Ihrem Konto an" : "Sign in to your account")
                     : (lang === "de" ? "Erstellen Sie ein neues Konto" : "Create a new account")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {isForgot ? (
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">{t("auth.email")}</Label>
+                      <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? t("general.loading") : (lang === "de" ? "Link senden" : "Send link")}
+                    </Button>
+                    <div className="text-center">
+                      <button type="button" onClick={() => setMode("login")} className="text-sm font-medium text-primary hover:underline">
+                        {lang === "de" ? "Zurück zum Login" : "Back to login"}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">{t("auth.email")}</Label>
                     <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">{t("auth.password")}</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">{t("auth.password")}</Label>
+                      {isLogin && (
+                        <button type="button" onClick={() => setMode("forgot")} className="text-xs text-primary hover:underline">
+                          {t("auth.forgotPassword")}
+                        </button>
+                      )}
+                    </div>
                     <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
                   </div>
                   {!isLogin && (
@@ -151,6 +202,9 @@ const Auth = () => {
                     {isLoading ? t("general.loading") : isLogin ? t("auth.login") : t("auth.register")}
                   </Button>
                 </form>
+                )}
+                {!isForgot && (
+                  <>
                 <div className="relative my-4">
                   <Separator />
                   <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
@@ -174,10 +228,12 @@ const Auth = () => {
                   <span className="text-muted-foreground">
                     {isLogin ? t("auth.noAccount") : t("auth.hasAccount")}{" "}
                   </span>
-                  <button onClick={() => setIsLogin(!isLogin)} className="font-medium text-primary hover:underline">
+                  <button onClick={() => setMode(isLogin ? "register" : "login")} className="font-medium text-primary hover:underline">
                     {isLogin ? t("auth.register") : t("auth.login")}
                   </button>
                 </div>
+                  </>
+                )}
               </CardContent>
             </Card>
             )}

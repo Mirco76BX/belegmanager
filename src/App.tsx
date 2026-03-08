@@ -18,6 +18,7 @@ import Account from "@/pages/Account";
 import Impressum from "@/pages/Impressum";
 import Datenschutz from "@/pages/Datenschutz";
 import Demo from "@/pages/Demo";
+import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ const App = () => (
             <ScrollToTop />
             <Routes>
               <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/demo" element={<Demo />} />
               <Route path="/impressum" element={<Impressum />} />
               <Route path="/datenschutz" element={<Datenschutz />} />
