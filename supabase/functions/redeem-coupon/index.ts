@@ -36,7 +36,7 @@ serve(async (req) => {
     const { data: coupon, error: couponErr } = await supabase
       .from("coupons")
       .select("*")
-      .eq("code", normalizedCode)
+      .ilike("code", normalizedCode)
       .eq("is_active", true)
       .maybeSingle();
 

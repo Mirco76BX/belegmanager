@@ -97,7 +97,10 @@ const Pricing = () => {
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value)}
               placeholder={tt({de:"Code eingeben", en:"Enter code", tr:"Kodu girin", ar:"أدخل الرمز", ru:"Введите код"})}
-              className="h-9 text-sm uppercase"
+              className="h-9 text-sm"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               onKeyDown={(e) => e.key === "Enter" && handleRedeemCoupon()}
             />
             <Button size="sm" onClick={handleRedeemCoupon} disabled={couponLoading || !couponCode.trim()}>
