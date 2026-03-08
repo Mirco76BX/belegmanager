@@ -32,7 +32,7 @@ const Dashboard = () => {
     const sixMonthsAgo = fmt(new Date(now.getFullYear(), now.getMonth() - 5, 1));
 
     Promise.all([
-      supabase.from("receipts").select("id, date, amount, description", { count: "exact" }),
+      supabase.from("receipts").select("id, date, amount, amount_eur, description", { count: "exact" }),
       supabase.from("receipts").select("id").gte("date", monthStart),
       supabase.from("companies").select("id", { count: "exact" }),
       supabase.from("receipts").select("id, date, amount, description").order("created_at", { ascending: false }).limit(5),
