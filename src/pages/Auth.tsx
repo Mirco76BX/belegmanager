@@ -122,7 +122,7 @@ const Auth = () => {
                   </p>
                   <Button
                     variant="outline"
-                    onClick={() => { setEmailSent(false); setIsLogin(true); }}
+                    onClick={() => { setEmailSent(false); setMode("login"); }}
                     className="mt-2"
                   >
                     {lang === "de" ? "Zurück zum Login" : "Back to login"}
