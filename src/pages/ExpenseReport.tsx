@@ -141,11 +141,32 @@ const ExpenseReport = () => {
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 14;
+      let yPos = 20;
 
       doc.setFontSize(18);
-      doc.text(t("expense.title"), pageWidth / 2, 20, { align: "center" });
+      doc.text(t("expense.title"), pageWidth / 2, yPos, { align: "center" });
+      yPos += 12;
+
+      // User info
+      doc.setFontSize(10);
+      if (profile?.display_name) {
+        doc.text(profile.display_name, pageWidth / 2, yPos, { align: "center" });
+        yPos += 5;
+      }
+      doc.text(profile?.email || user?.email || "", pageWidth / 2, yPos, { align: "center" });
+      yPos += 7;
+
+      // Selected organization
+      const selectedCompanyName = filterCompanyId !== "all" && filterCompanyId !== "none"
+        ? companies.find(c => c.id === filterCompanyId)?.name : null;
+      if (selectedCompanyName) {
+        doc.text(`${tt({de:"Organisation", en:"Organization", tr:"Kuruluş", ar:"المنظمة", ru:"Организация"})}: ${selectedCompanyName}`, pageWidth / 2, yPos, { align: "center" });
+        yPos += 7;
+      }
+
       doc.setFontSize(11);
-      doc.text(`${t("expense.period")}: ${fromDate} – ${toDate}`, pageWidth / 2, 30, { align: "center" });
+      doc.text(`${t("expense.period")}: ${fromDate} – ${toDate}`, pageWidth / 2, yPos, { align: "center" });
+      yPos += 10;
 
       const rows = getTableRows();
       rows.push([totalLabel, `${totalAmount.toFixed(2)} €`, `${totalVat.toFixed(2)} €`, "", "", "", "", ""]);
