@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Camera, Receipt as ReceiptIcon, Trash2, Eye, Pencil, ScanLine } from "lucide-react";
 import ScanWizard from "@/components/ScanWizard";
+import ReceiptsInlineTable from "@/components/ReceiptsInlineTable";
 
 interface Receipt {
   id: string;
@@ -160,38 +161,16 @@ const Receipts = () => {
         </Card>
       ) : (
         <>
-          {/* Desktop Table */}
+          {/* Desktop Table – inline editable */}
           <Card className="hidden md:block">
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("receipts.date")}</TableHead>
-                    <TableHead>{t("receipts.amount")}</TableHead>
-                    <TableHead>{t("receipts.description")}</TableHead>
-                    <TableHead>{t("receipts.company")}</TableHead>
-                    <TableHead className="text-right">{lang === "de" ? "Aktionen" : "Actions"}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {receipts.map((r) => (
-                    <TableRow key={r.id} className="cursor-pointer" onClick={() => openDetail(r)}>
-                      <TableCell>{new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}</TableCell>
-                      <TableCell className="font-mono">{formatAmount(r.amount)}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{r.description || "–"}</TableCell>
-                      <TableCell>{companyName(r.company_id)}</TableCell>
-                      <TableCell className="text-right space-x-1" onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="sm" onClick={() => openDetail(r)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(r.id, r.file_path)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <ReceiptsInlineTable
+                receipts={receipts}
+                companies={companies}
+                onDelete={handleDelete}
+                onOpenDetail={openDetail}
+                onSaved={fetchData}
+              />
             </CardContent>
           </Card>
 
