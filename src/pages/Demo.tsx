@@ -272,12 +272,12 @@ const Demo = () => {
             ))}
           </div>
           <div className="mt-10">
-            <Link to="/auth">
+            <a href="#registrierung">
               <Button size="lg" className="gap-2 px-8">
                 {de ? "Jetzt registrieren" : "Register now"}
                 <ArrowRight className="h-4 w-4" />
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
       </section>
