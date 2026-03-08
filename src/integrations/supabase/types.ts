@@ -199,6 +199,7 @@ export type Database = {
           is_tax_advisor: boolean
           kanzlei: string | null
           last_name: string | null
+          onboarding_seen: boolean
         }
         Insert: {
           created_at?: string
@@ -211,6 +212,7 @@ export type Database = {
           is_tax_advisor?: boolean
           kanzlei?: string | null
           last_name?: string | null
+          onboarding_seen?: boolean
         }
         Update: {
           created_at?: string
@@ -223,6 +225,7 @@ export type Database = {
           is_tax_advisor?: boolean
           kanzlei?: string | null
           last_name?: string | null
+          onboarding_seen?: boolean
         }
         Relationships: [
           {
