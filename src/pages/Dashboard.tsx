@@ -68,14 +68,14 @@ const Dashboard = () => {
           ) : (
             <div className="space-y-3">
               {recentReceipts.map((r) => (
-                <div key={r.id} className="flex items-center justify-between border-b border-border pb-2 last:border-0">
-                  <div>
-                    <p className="text-sm font-medium line-clamp-1">{r.description || tt({de:"Ohne Beschreibung", en:"No description", tr:"Açıklama yok", ar:"بدون وصف", ru:"Без описания"})}</p>
+                <div key={r.id} className="flex items-center gap-4 border-b border-border pb-2 last:border-0">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{r.description || tt({de:"Ohne Beschreibung", en:"No description", tr:"Açıklama yok", ar:"بدون وصف", ru:"Без описания"})}</p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(r.date).toLocaleDateString(getLocale(lang))}
                     </p>
                   </div>
-                  <span className="font-mono text-sm font-medium">
+                  <span className="font-mono text-sm font-medium whitespace-nowrap text-right min-w-[5.5rem]">
                     {r.amount != null ? `${Number(r.amount).toFixed(2)} €` : "–"}
                   </span>
                 </div>
