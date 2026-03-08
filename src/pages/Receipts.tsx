@@ -145,6 +145,43 @@ const Receipts = () => {
   const formatAmount = (a: number | null) => a != null ? `${a.toFixed(2)} €` : "–";
   const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "–";
 
+  const generalReceipts = receipts.filter(r => r.receipt_type !== "fuel");
+  const fuelReceipts = receipts.filter(r => r.receipt_type === "fuel");
+
+  const renderMobileCards = (list: Receipt[]) => (
+    <div className="md:hidden space-y-2">
+      {list.map((r) => (
+        <Card key={r.id} className={`cursor-pointer active:bg-muted/50 transition-colors ${r.status === "pending" ? "border-warning/50" : ""}`} onClick={() => openDetail(r)}>
+          <CardContent className="py-3 px-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-mono text-sm font-semibold whitespace-nowrap">{formatAmount(r.amount)}</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {new Date(r.date).toLocaleDateString(locale)}
+                </span>
+                {r.status === "pending" && (
+                  <span className="text-[10px] bg-warning/20 text-warning px-1.5 py-0.5 rounded whitespace-nowrap">
+                    {tt({de:"Offen", en:"Pending", tr:"Beklemede", ar:"معلق", ru:"Ожидает"})}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleDelete(r.id, r.file_path); }}
+                className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-destructive transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+            {r.description && <p className="text-sm text-foreground truncate mt-0.5">{r.description}</p>}
+            {r.receipt_type === "fuel" && r.license_plate && (
+              <p className="text-xs text-muted-foreground mt-0.5">🚗 {r.license_plate}{r.mileage != null ? ` · ${r.mileage.toLocaleString()} km` : ""}</p>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
   return (
     <div className="animate-fade-in space-y-4">
       <div className="flex items-center justify-between gap-2">
@@ -168,41 +205,50 @@ const Receipts = () => {
           </CardContent>
         </Card>
       ) : (
-        <>
-          <Card className="hidden md:block">
-            <CardContent className="p-0">
-              <ReceiptsInlineTable
-                receipts={receipts}
-                companies={companies}
-                onDelete={handleDelete}
-                onOpenDetail={openDetail}
-                onSaved={fetchData}
-              />
-            </CardContent>
-          </Card>
+        <div className="space-y-6">
+          {/* General Receipts */}
+          {generalReceipts.length > 0 && (
+            <div className="space-y-2">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                🧾 {tt({de:"Belege", en:"Receipts", tr:"Fişler", ar:"الإيصالات", ru:"Чеки"})}
+                <span className="text-sm font-normal text-muted-foreground">({generalReceipts.length})</span>
+              </h2>
+              <Card className="hidden md:block">
+                <CardContent className="p-0">
+                  <ReceiptsInlineTable
+                    receipts={generalReceipts}
+                    companies={companies}
+                    onDelete={handleDelete}
+                    onOpenDetail={openDetail}
+                    onSaved={fetchData}
+                  />
+                </CardContent>
+              </Card>
+              {renderMobileCards(generalReceipts)}
+            </div>
+          )}
 
-          <div className="md:hidden space-y-2">
-            {receipts.map((r) => (
-              <Card key={r.id} className={`cursor-pointer active:bg-muted/50 transition-colors ${r.status === "pending" ? "border-warning/50" : ""}`} onClick={() => openDetail(r)}>
-                <CardContent className="py-3 px-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-mono text-sm font-semibold whitespace-nowrap">{formatAmount(r.amount)}</span>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {new Date(r.date).toLocaleDateString(locale)}
-                      </span>
-                      {r.receipt_type === "fuel" && (
-                        <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded whitespace-nowrap">⛽</span>
-                      )}
-                      {r.status === "pending" && (
-                        <span className="text-[10px] bg-warning/20 text-warning px-1.5 py-0.5 rounded whitespace-nowrap">
-                          {tt({de:"Offen", en:"Pending", tr:"Beklemede", ar:"معلق", ru:"Ожидает"})}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDelete(r.id, r.file_path); }}
-                      className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-destructive transition-colors"
+          {/* Fuel Receipts */}
+          {fuelReceipts.length > 0 && (
+            <div className="space-y-2">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                ⛽ {tt({de:"Tankquittungen", en:"Fuel Receipts", tr:"Yakıt Fişleri", ar:"إيصالات الوقود", ru:"Чеки на топливо"})}
+                <span className="text-sm font-normal text-muted-foreground">({fuelReceipts.length})</span>
+              </h2>
+              <Card className="hidden md:block">
+                <CardContent className="p-0">
+                  <ReceiptsInlineTable
+                    receipts={fuelReceipts}
+                    companies={companies}
+                    onDelete={handleDelete}
+                    onOpenDetail={openDetail}
+                    onSaved={fetchData}
+                  />
+                </CardContent>
+              </Card>
+              {renderMobileCards(fuelReceipts)}
+            </div>
+          )}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
