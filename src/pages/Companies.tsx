@@ -117,12 +117,17 @@ const Companies = () => {
           {companies.map((c) => (
             <Card key={c.id}>
               <CardContent className="flex items-center justify-between py-4">
-                <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">{orgTypeIcons[(c.org_type as OrgType) || "company"]}</span>
                   <p className="font-medium text-foreground">{c.name}</p>
-                  <div className="flex gap-4 text-xs text-muted-foreground">
-                    {c.tax_id && <span>{t("companies.taxId")}: {c.tax_id}</span>}
-                    {c.address && <span>{c.address}</span>}
-                  </div>
+                  <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                    {t(`companies.type.${(c.org_type as OrgType) || "company"}` as any)}
+                  </span>
+                </div>
+                <div className="flex gap-4 text-xs text-muted-foreground mt-0.5">
+                  {c.tax_id && <span>{t("companies.taxId")}: {c.tax_id}</span>}
+                  {c.address && <span>{c.address}</span>}
+                </div>
                 </div>
                 <div className="flex gap-1">
                   <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>
