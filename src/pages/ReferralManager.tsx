@@ -35,9 +35,28 @@ const ReferralManager = () => {
     e.preventDefault();
     if (!user) return;
     setLoading(true);
+
+    const message = tt({
+      de: `Hallo! Ich empfehle Ihnen BelegManager zur digitalen Belegverwaltung. Registrieren Sie sich hier kostenlos: ${REGISTER_URL}`,
+      en: `Hi! I recommend ReceiptManager for digital receipt management. Register for free here: ${REGISTER_URL}`,
+      tr: `Merhaba! Dijital fiş yönetimi için BelegManager'ı öneriyorum. Buradan ücretsiz kaydolun: ${REGISTER_URL}`,
+      ar: `مرحباً! أوصي بمدير الإيصالات لإدارة الإيصالات الرقمية. سجل مجاناً هنا: ${REGISTER_URL}`,
+      ru: `Привет! Рекомендую ЧекМенеджер для управления чеками. Зарегистрируйтесь бесплатно: ${REGISTER_URL}`,
+    });
+
+    const subject = tt({
+      de: "Empfehlung: BelegManager",
+      en: "Recommendation: ReceiptManager",
+      tr: "Öneri: BelegManager",
+      ar: "توصية: مدير الإيصالات",
+      ru: "Рекомендация: ЧекМенеджер",
+    });
+
+    window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`, "_self");
+
     const { error } = await supabase.from("invitations").insert({ invited_by: user.id, email });
     if (error) { toast({ title: error.message, variant: "destructive" }); }
-    else { toast({ title: tt({de:`Einladung an ${email} gespeichert`, en:`Invitation saved for ${email}`, tr:`${email} için davetiye kaydedildi`, ar:`تم حفظ الدعوة لـ ${email}`, ru:`Приглашение для ${email} сохранено`}) }); setEmail(""); fetchInvitations(); }
+    else { toast({ title: tt({de:`Einladung an ${email} gesendet`, en:`Invitation sent to ${email}`, tr:`${email} için davet gönderildi`, ar:`تم حفظ الدعوة لـ ${email}`, ru:`Приглашение для ${email} отправлено`}) }); setEmail(""); fetchInvitations(); }
     setLoading(false);
   };
 

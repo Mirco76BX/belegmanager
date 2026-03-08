@@ -26,6 +26,25 @@ const InviteDialog = () => {
     if (!user) return;
     setLoading(true);
 
+    const message = tt({
+      de: `Hallo! Ich nutze BelegManager zur Belegverwaltung und möchte dich einladen. Registriere dich hier: ${REGISTER_URL}`,
+      en: `Hi! I'm using ReceiptManager for expense tracking and would like to invite you. Register here: ${REGISTER_URL}`,
+      tr: `Merhaba! Masraf takibi için BelegManager kullanıyorum ve sizi davet etmek istiyorum. Buradan kayıt olun: ${REGISTER_URL}`,
+      ar: `مرحباً! أنا أستخدم مدير الإيصالات لتتبع المصاريف وأود دعوتك. سجل هنا: ${REGISTER_URL}`,
+      ru: `Привет! Я использую ЧекМенеджер для учёта расходов и хочу пригласить тебя. Зарегистрируйся здесь: ${REGISTER_URL}`,
+    });
+
+    const subject = tt({
+      de: "Einladung zu BelegManager",
+      en: "Invitation to ReceiptManager",
+      tr: "BelegManager'a davet",
+      ar: "دعوة إلى مدير الإيصالات",
+      ru: "Приглашение в ЧекМенеджер",
+    });
+
+    window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`, "_self");
+
+    // Save invitation to DB
     const { error } = await supabase.from("invitations").insert({
       invited_by: user.id,
       email,
@@ -34,7 +53,7 @@ const InviteDialog = () => {
     if (error) {
       toast({ title: error.message, variant: "destructive" });
     } else {
-      toast({ title: tt({de:`Einladung an ${email} gespeichert`, en:`Invitation saved for ${email}`, tr:`${email} için davet kaydedildi`, ar:`تم حفظ الدعوة لـ ${email}`, ru:`Приглашение для ${email} сохранено`}) });
+      toast({ title: tt({de:`Einladung an ${email} gesendet`, en:`Invitation sent to ${email}`, tr:`${email} için davet gönderildi`, ar:`تم إرسال الدعوة لـ ${email}`, ru:`Приглашение для ${email} отправлено`}) });
       setEmail("");
       setOpen(false);
     }
