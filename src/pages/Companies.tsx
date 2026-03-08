@@ -9,15 +9,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Building2, Plus, Pencil, Trash2, Users, User, HelpCircle } from "lucide-react";
+import { Building2, Plus, Pencil, Trash2, Users, User, HelpCircle, FileText, HeartPulse } from "lucide-react";
 
-const ORG_TYPES = ["company", "association", "personal", "other"] as const;
+const ORG_TYPES = ["company", "association", "personal", "tax", "health_insurance", "other"] as const;
 type OrgType = typeof ORG_TYPES[number];
 
 const orgTypeIcons: Record<OrgType, React.ReactNode> = {
   company: <Building2 className="h-4 w-4" />,
   association: <Users className="h-4 w-4" />,
   personal: <User className="h-4 w-4" />,
+  tax: <FileText className="h-4 w-4" />,
+  health_insurance: <HeartPulse className="h-4 w-4" />,
   other: <HelpCircle className="h-4 w-4" />,
 };
 

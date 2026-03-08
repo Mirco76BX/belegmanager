@@ -59,6 +59,8 @@ const translations = {
   "companies.type.company": { de: "Firma", en: "Company" },
   "companies.type.association": { de: "Verein", en: "Association" },
   "companies.type.personal": { de: "Privat", en: "Personal" },
+  "companies.type.tax": { de: "Steuerbeleg", en: "Tax Document" },
+  "companies.type.health_insurance": { de: "Krankenkasse", en: "Health Insurance" },
   "companies.type.other": { de: "Sonstiges", en: "Other" },
 
   // Expense Report
