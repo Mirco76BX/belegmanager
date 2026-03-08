@@ -39,7 +39,7 @@ const Auth = () => {
         navigate("/");
       } else {
         await signUp(email, password);
-        toast({ title: lang === "de" ? "Konto erstellt! Bitte E-Mail bestätigen." : "Account created! Please confirm your email." });
+        setEmailSent(true);
       }
     } catch (err: any) {
       toast({ title: err.message, variant: "destructive" });
