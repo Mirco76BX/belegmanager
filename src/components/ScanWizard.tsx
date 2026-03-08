@@ -422,7 +422,25 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm">{tt({de:"Kennzeichen", en:"License Plate", tr:"Plaka", ar:"لوحة الترخيص", ru:"Номерной знак"})}</Label>
-                  <Input value={licensePlate} onChange={(e) => { setLicensePlate(e.target.value); if (mileage) checkMileage(e.target.value, mileage); }} placeholder={tt({de:"z.B. B-AB 1234", en:"e.g. B-AB 1234", tr:"ör. 34 ABC 123", ar:"مثال: B-AB 1234", ru:"напр. B-AB 1234"})} className="h-11 text-base" />
+                  {savedVehicles.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-1.5">
+                      {savedVehicles.map((v) => (
+                        <button
+                          key={v.license_plate}
+                          type="button"
+                          onClick={() => { setLicensePlate(v.license_plate); if (mileage) checkMileage(v.license_plate, mileage); }}
+                          className={`text-xs px-2.5 py-1 rounded-full border font-mono transition-colors ${
+                            licensePlate === v.license_plate
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
+                          }`}
+                        >
+                          🚗 {v.license_plate}{v.name ? ` · ${v.name}` : ""}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <Input value={licensePlate} onChange={(e) => { setLicensePlate(e.target.value); if (mileage) checkMileage(e.target.value, mileage); }} placeholder={tt({de:"z.B. B-AB 1234", en:"e.g. B-AB 1234", tr:"ör. 34 ABC 123", ar:"مثال: B-AB 1234", ru:"напр. B-AB 1234"})} className="h-11 text-base uppercase font-mono" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm">{tt({de:"Kilometerstand", en:"Mileage", tr:"Kilometre", ar:"عداد المسافات", ru:"Пробег"})}</Label>
