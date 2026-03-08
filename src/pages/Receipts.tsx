@@ -47,6 +47,7 @@ const Receipts = () => {
   const [scanOpen, setScanOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [defaultCompanyId, setDefaultCompanyId] = useState<string | null>(null);
+  const [filterCompanyId, setFilterCompanyId] = useState<string>("all");
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailReceipt, setDetailReceipt] = useState<Receipt | null>(null);
@@ -145,8 +146,11 @@ const Receipts = () => {
   const formatAmount = (a: number | null) => a != null ? `${a.toFixed(2)} €` : "–";
   const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "–";
 
-  const generalReceipts = receipts.filter(r => r.receipt_type !== "fuel");
-  const fuelReceipts = receipts.filter(r => r.receipt_type === "fuel");
+  const filtered = filterCompanyId === "all" ? receipts
+    : filterCompanyId === "none" ? receipts.filter(r => !r.company_id)
+    : receipts.filter(r => r.company_id === filterCompanyId);
+  const generalReceipts = filtered.filter(r => r.receipt_type !== "fuel");
+  const fuelReceipts = filtered.filter(r => r.receipt_type === "fuel");
 
   const renderMobileCards = (list: Receipt[]) => (
     <div className="md:hidden space-y-2">
@@ -200,6 +204,23 @@ const Receipts = () => {
           {t("receipts.scan")}
         </Button>
       </div>
+
+      {receipts.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Select value={filterCompanyId} onValueChange={setFilterCompanyId}>
+            <SelectTrigger className="h-9 w-[200px] text-sm">
+              <SelectValue placeholder={tt({de:"Alle Organisationen", en:"All organizations", tr:"Tüm kuruluşlar", ar:"جميع المنظمات", ru:"Все организации"})} />
+            </SelectTrigger>
+            <SelectContent position="popper" sideOffset={4} className="max-h-56">
+              <SelectItem value="all">{tt({de:"Alle Organisationen", en:"All organizations", tr:"Tüm kuruluşlar", ar:"جميع المنظمات", ru:"Все организации"})}</SelectItem>
+              <SelectItem value="none">{tt({de:"Ohne Organisation", en:"No organization", tr:"Kuruluşsuz", ar:"بدون منظمة", ru:"Без организации"})}</SelectItem>
+              {companies.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {receipts.length === 0 ? (
         <Card>
