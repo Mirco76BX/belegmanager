@@ -222,7 +222,7 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
             ) : (
               <>
                 <TableCell className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(locale)}</TableCell>
-                <TableCell className="font-mono whitespace-nowrap">{formatAmount(r.amount)}</TableCell>
+                <TableCell className="font-mono whitespace-nowrap">{formatAmount(r.amount, r.currency)}</TableCell>
                 <TableCell className="max-w-[200px] truncate">{r.description || "–"}</TableCell>
                 <TableCell>{companyName(r.company_id)}</TableCell>
                 <TableCell className="max-w-[200px] truncate">
