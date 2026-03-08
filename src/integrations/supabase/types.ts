@@ -35,6 +35,36 @@ export type Database = {
         }
         Relationships: []
       }
+      advisor_invitations: {
+        Row: {
+          advisor_id: string
+          client_email: string
+          client_id: string | null
+          created_at: string
+          id: string
+          responded_at: string | null
+          status: string
+        }
+        Insert: {
+          advisor_id: string
+          client_email: string
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          responded_at?: string | null
+          status?: string
+        }
+        Update: {
+          advisor_id?: string
+          client_email?: string
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          responded_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           address: string | null
