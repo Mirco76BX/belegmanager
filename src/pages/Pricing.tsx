@@ -228,6 +228,7 @@ const Pricing = () => {
                 {lang === "de" ? "Aktiver Plan" : "Current Plan"}
               </Button>
             )}
+            </div>
           </div>
         ))}
       </div>
