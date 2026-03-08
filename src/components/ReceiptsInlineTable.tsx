@@ -86,7 +86,8 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
   const isEditing = (id: string) => editingId === id;
 
   return (
-    <Table>
+    <div className="overflow-x-auto -mx-4 px-4">
+      <Table className="min-w-[900px]">
       <TableHeader>
         <TableRow>
           <TableHead>{lang === "de" ? "Datum" : "Date"}</TableHead>
@@ -187,6 +188,7 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
         ))}
       </TableBody>
     </Table>
+    </div>
   );
 };
 
