@@ -97,6 +97,10 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       setLimitReached(false); setIsFuelReceipt(false);
       setLicensePlate(""); setMileage(""); setMileageWarning(null);
 
+      // Load saved vehicles
+      supabase.from("vehicles").select("license_plate, name").order("license_plate")
+        .then(({ data }) => { if (data) setSavedVehicles(data); });
+
       const maxScans = subscription.tier === "master" ? Infinity
         : subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans;
 
