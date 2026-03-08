@@ -75,7 +75,7 @@ const Dashboard = () => {
                       {new Date(r.date).toLocaleDateString(getLocale(lang))}
                     </p>
                   </div>
-                  <span className="font-mono text-sm font-medium whitespace-nowrap text-right min-w-[5.5rem]">
+                  <span className="font-mono text-sm font-medium whitespace-nowrap shrink-0">
                     {r.amount != null ? `${Number(r.amount).toLocaleString(getLocale(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` : "–"}
                   </span>
                 </div>
