@@ -2,10 +2,11 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard, UserCircle } from "lucide-react";
+import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard, UserCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InviteDialog from "@/components/InviteDialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import ThemeToggle from "@/components/ThemeToggle";
 import { useState } from "react";
 
 const AppSidebar = () => {
@@ -24,6 +25,7 @@ const AppSidebar = () => {
     { key: "nav.receipts" as const, icon: Receipt, path: "/receipts" },
     { key: "nav.companies" as const, icon: Building2, path: "/companies" },
     { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report" },
+    ...(isTaxAdvisor ? [{ key: "nav.clients" as const, icon: Users, path: "/clients" }] : []),
   ];
 
   return (
@@ -102,6 +104,7 @@ const AppSidebar = () => {
           </button>
           <InviteDialog />
           <LanguageSwitcher showLabel className="w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground" />
+          <ThemeToggle showLabel className="w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground" />
           <Button
             variant="ghost"
             size="sm"
@@ -153,6 +156,7 @@ const AppSidebar = () => {
           </button>
           <InviteDialog />
           <LanguageSwitcher showLabel onSelect={() => setMobileMenuOpen(false)} className="w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground" />
+          <ThemeToggle showLabel onSelect={() => setMobileMenuOpen(false)} className="w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground" />
           <Button
             variant="ghost"
             size="sm"

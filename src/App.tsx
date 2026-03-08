@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { LanguageProvider } from "@/i18n/LanguageContext";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import Auth from "@/pages/Auth";
@@ -16,6 +17,7 @@ import AdminUsers from "@/pages/AdminUsers";
 import Pricing from "@/pages/Pricing";
 import Account from "@/pages/Account";
 import Impressum from "@/pages/Impressum";
+import Clients from "@/pages/Clients";
 import Datenschutz from "@/pages/Datenschutz";
 import Demo from "@/pages/Demo";
 import ResetPassword from "@/pages/ResetPassword";
@@ -45,6 +47,7 @@ const ScrollToTop = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
     <LanguageProvider>
       <AuthProvider>
         <TooltipProvider>
@@ -65,6 +68,7 @@ const App = () => (
                 <Route path="/expense-report" element={<ExpenseReport />} />
                 <Route path="/admin/users" element={<AdminUsers />} />
                 <Route path="/pricing" element={<Pricing />} />
+                <Route path="/clients" element={<Clients />} />
                 <Route path="/account" element={<Account />} />
               </Route>
               <Route path="*" element={<NotFound />} />
@@ -73,6 +77,7 @@ const App = () => (
         </TooltipProvider>
       </AuthProvider>
     </LanguageProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
