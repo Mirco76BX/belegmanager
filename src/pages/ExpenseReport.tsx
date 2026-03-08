@@ -175,6 +175,12 @@ const ExpenseReport = () => {
         startY: yPos, head: [getTableHeaders()], body: rows,
         styles: { fontSize: 8, cellPadding: 3 },
         headStyles: { fillColor: [41, 74, 112] },
+        columnStyles: {
+          0: { cellWidth: 22 },  // Datum
+          1: { cellWidth: 24, halign: 'right' },  // Betrag
+          2: { cellWidth: 20, halign: 'right' },  // MwSt.
+          3: { cellWidth: 16, halign: 'right' },  // MwSt.-%
+        },
         footStyles: { fontStyle: "bold" }, theme: "grid",
       });
 
