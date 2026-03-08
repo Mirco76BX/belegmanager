@@ -80,9 +80,10 @@ const ExpenseReport = () => {
 
   const getCompanyName = (id: string | null) => id ? companies.find((c) => c.id === id)?.name || "–" : "–";
   const totalAmount = receipts.reduce((sum, r) => sum + (r.amount || 0), 0);
+  const totalVat = receipts.reduce((sum, r) => sum + (r.vat_amount || 0), 0);
 
   const getTableHeaders = () => [
-    t("receipts.date"), t("receipts.amount"), t("receipts.description"),
+    t("receipts.date"), t("receipts.amount"), "MwSt.", "MwSt.-%", t("receipts.description"),
     t("receipts.company"), t("receipts.person"), tt({de:"Zweck", en:"Purpose", tr:"Amaç", ar:"الغرض", ru:"Цель"}),
   ];
 
@@ -90,6 +91,8 @@ const ExpenseReport = () => {
     receipts.map((r) => [
       new Date(r.date).toLocaleDateString(locale),
       r.amount != null ? `${r.amount.toFixed(2)} €` : "–",
+      r.vat_amount != null ? `${r.vat_amount.toFixed(2)} €` : "–",
+      r.vat_rate != null ? `${r.vat_rate}%` : "–",
       r.description || "–", getCompanyName(r.company_id),
       r.person_met || "–", r.meeting_purpose || "–",
     ]);
