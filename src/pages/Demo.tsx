@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   FileText, ScanLine, FolderOpen, FileSpreadsheet, ShieldCheck, Users,
-  Globe, ArrowRight, CheckCircle2, Smartphone, Cloud, Lock,
+  ArrowRight, CheckCircle2, Smartphone, Cloud, Lock,
 } from "lucide-react";
 import receiptScanImg from "@/assets/receipt-scan.jpg";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const Demo = () => {
   const { lang, setLang, tt } = useLanguage();
