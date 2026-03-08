@@ -41,16 +41,21 @@ const PricingPlans = ({ currentTier, renderAction, compact }: PricingPlansProps)
       priceId: billingCycle === "yearly" ? TIERS.relax.yearly.price_id : TIERS.relax.monthly.price_id,
     },
     {
-      id: "master" as const, icon: Gem, name: "MASTER", price: "49 €",
-      period: tt({de:"/ Jahr", en:"/ year", tr:"/ yıl", ar:"/ سنة", ru:"/ год"}),
-      hint: tt({de:"~4 €/Monat", en:"~4 €/month", tr:"~4 €/ay", ar:"~4 €/شهر", ru:"~4 €/мес"}),
+      id: "master" as const, icon: Gem, name: "MASTER",
+      price: billingCycle === "yearly" ? "49 €" : "6 €",
+      period: billingCycle === "yearly"
+        ? tt({de:"/ Jahr", en:"/ year", tr:"/ yıl", ar:"/ سنة", ru:"/ год"})
+        : tt({de:"/ Monat", en:"/ month", tr:"/ ay", ar:"/ شهر", ru:"/ мес"}),
+      hint: billingCycle === "yearly"
+        ? tt({de:"~4 €/Monat", en:"~4 €/month", tr:"~4 €/ay", ar:"~4 €/شهر", ru:"~4 €/мес"})
+        : tt({de:"72 €/Jahr", en:"72 €/year", tr:"72 €/yıl", ar:"72 €/سنة", ru:"72 €/год"}),
       features: [
         tt({de:"Unbegrenzte Scans", en:"Unlimited Scans", tr:"Sınırsız Tarama", ar:"مسح غير محدود", ru:"Безлимитные сканы"}),
         tt({de:"Belegverwaltung", en:"Receipt management", tr:"Fiş yönetimi", ar:"إدارة الإيصالات", ru:"Управление чеками"}),
         tt({de:"Reisekosten\u00ADabrechnung", en:"Expense reports", tr:"Masraf raporu", ar:"تقرير المصاريف", ru:"Отчёт о расходах"}),
         tt({de:"Prioritäts\u00ADSupport", en:"Priority support", tr:"Öncelikli destek", ar:"دعم ذو أولوية", ru:"Приоритетная поддержка"}),
       ],
-      priceId: TIERS.master.yearly.price_id,
+      priceId: billingCycle === "yearly" ? TIERS.master.yearly.price_id : TIERS.master.monthly.price_id,
     },
   ];
 
@@ -69,7 +74,7 @@ const PricingPlans = ({ currentTier, renderAction, compact }: PricingPlansProps)
         >
           {tt({de:"Jährlich", en:"Yearly", tr:"Yıllık", ar:"سنوي", ru:"Ежегодно"})}
           <span className="ml-1.5 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent">
-            {tt({de:"spare 67%", en:"save 67%", tr:"%67 tasarruf", ar:"وفّر 67%", ru:"скидка 67%"})}
+            {tt({de:"bis 67% sparen", en:"save up to 67%", tr:"%67'e kadar tasarruf", ar:"وفّر حتى 67%", ru:"скидка до 67%"})}
           </span>
         </button>
       </div>

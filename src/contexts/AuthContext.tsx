@@ -27,11 +27,16 @@ export const TIERS = {
       product_id: "prod_U6rPZtvWVoYlGl",
       price: 49,
     },
+    monthly: {
+      price_id: "price_1T8l4i2OSLlEeYaU3OzHyBBP",
+      product_id: "prod_U6z2fWio959aX5",
+      price: 6,
+    },
   },
 } as const;
 
 const RELAX_PRODUCT_IDS = [TIERS.relax.yearly.product_id, TIERS.relax.monthly.product_id, "coupon_relax"];
-const MASTER_PRODUCT_IDS = [TIERS.master.yearly.product_id, "coupon_master"];
+const MASTER_PRODUCT_IDS = [TIERS.master.yearly.product_id, TIERS.master.monthly.product_id, "coupon_master"];
 
 interface SubscriptionState {
   subscribed: boolean;
