@@ -128,12 +128,12 @@ const AppSidebar = () => {
 
       {/* Mobile Header */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-sidebar px-4 py-3">
-        <div className="flex items-center gap-2">
+        <button onClick={() => navigate("/")} className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
             <FileText className="h-4 w-4 text-sidebar-primary-foreground" />
           </div>
           <span className="text-sm font-semibold text-sidebar-foreground">{t("app.name")}</span>
-        </div>
+        </button>
         <Button
           variant="ghost"
           size="sm"
