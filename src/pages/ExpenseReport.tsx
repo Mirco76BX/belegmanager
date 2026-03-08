@@ -283,7 +283,7 @@ const ExpenseReport = () => {
                    </TableRow>
                  </TableHeader>
                  <TableBody>
-                   {receipts.map((r) => (
+                   {filteredReceipts.map((r) => (
                      <TableRow key={r.id}>
                        <TableCell className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(locale)}</TableCell>
                        <TableCell className="font-mono text-right whitespace-nowrap">{r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}</TableCell>
