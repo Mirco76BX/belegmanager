@@ -20,6 +20,7 @@ const AppSidebar = () => {
     { key: "nav.receipts" as const, icon: Receipt, path: "/receipts" },
     { key: "nav.companies" as const, icon: Building2, path: "/companies" },
     { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report" },
+    { key: "nav.pricing" as const, icon: CreditCard, path: "/pricing" },
   ];
 
   return (
