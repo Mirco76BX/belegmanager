@@ -27,6 +27,11 @@ export const TIERS = {
       product_id: "prod_U6rPZtvWVoYlGl",
       price: 49,
     },
+    monthly: {
+      price_id: "price_1T8l4i2OSLlEeYaU3OzHyBBP",
+      product_id: "prod_U6z2fWio959aX5",
+      price: 6,
+    },
   },
 } as const;
 
