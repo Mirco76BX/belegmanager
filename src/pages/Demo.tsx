@@ -136,7 +136,7 @@ const Demo = () => {
 
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="mx-auto max-w-6xl px-4 py-20 md:py-28">
+        <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
           <div className="flex flex-col items-center gap-12 md:flex-row md:gap-16">
             <div className="flex-1 space-y-6 text-center md:text-left">
               <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-4 py-1.5 text-sm font-medium text-accent">
