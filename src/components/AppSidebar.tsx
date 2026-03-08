@@ -2,7 +2,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, Globe, FileText, Shield, Menu, X, ScanLine, Upload } from "lucide-react";
+import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, Globe, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InviteDialog from "@/components/InviteDialog";
 import { useState } from "react";
@@ -20,6 +20,7 @@ const AppSidebar = () => {
     { key: "nav.receipts" as const, icon: Receipt, path: "/receipts" },
     { key: "nav.companies" as const, icon: Building2, path: "/companies" },
     { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report" },
+    { key: "nav.pricing" as const, icon: CreditCard, path: "/pricing" },
   ];
 
   return (

@@ -12,6 +12,7 @@ import Receipts from "@/pages/Receipts";
 import Companies from "@/pages/Companies";
 import ExpenseReport from "@/pages/ExpenseReport";
 import AdminUsers from "@/pages/AdminUsers";
+import Pricing from "@/pages/Pricing";
 import Impressum from "@/pages/Impressum";
 import NotFound from "./pages/NotFound";
 
@@ -48,6 +49,7 @@ const App = () => (
                 <Route path="/companies" element={<Companies />} />
                 <Route path="/expense-report" element={<ExpenseReport />} />
                 <Route path="/admin/users" element={<AdminUsers />} />
+                <Route path="/pricing" element={<Pricing />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

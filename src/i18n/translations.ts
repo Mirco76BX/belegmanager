@@ -17,6 +17,7 @@ const translations = {
   "nav.receipts": { de: "Belege", en: "Receipts" },
   "nav.companies": { de: "Orga", en: "Orgs" },
   "nav.expenseReport": { de: "Report", en: "Report" },
+  "nav.pricing": { de: "Preise", en: "Pricing" },
   "nav.settings": { de: "Einstellungen", en: "Settings" },
 
   // Dashboard
