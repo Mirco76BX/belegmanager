@@ -83,9 +83,9 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
     setLocalCompanies(companies);
   }, [companies]);
 
-  // Reset on open
+  // Check scan limit and reset on open
   useEffect(() => {
-    if (open) {
+    if (open && user) {
       setStep("upload");
       setFile(null);
       setPreview(null);
@@ -100,8 +100,30 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       setShowCustomPurpose(false);
       setShowNewCompany(false);
       setNewCompanyName("");
+      setLimitReached(false);
+
+      // Check scan count
+      const maxScans = subscription.tier === "master"
+        ? Infinity
+        : subscription.tier === "relax"
+          ? TIERS.relax.maxScans
+          : TIERS.free.maxScans;
+
+      if (maxScans !== Infinity) {
+        supabase
+          .from("receipts")
+          .select("id", { count: "exact", head: true })
+          .then(({ count }) => {
+            const c = count ?? 0;
+            setScanCount(c);
+            if (c >= maxScans) setLimitReached(true);
+          });
+      } else {
+        setScanCount(null);
+        setLimitReached(false);
+      }
     }
-  }, [open, defaultCompanyId]);
+  }, [open, defaultCompanyId, user, subscription.tier]);
 
   const handleFileSelected = async (selectedFile: File) => {
     setFile(selectedFile);
