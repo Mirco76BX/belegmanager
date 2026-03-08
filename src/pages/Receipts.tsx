@@ -208,18 +208,10 @@ const Receipts = () => {
     <div className="animate-fade-in space-y-4">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-xl md:text-2xl font-bold">{t("receipts.title")}</h1>
-        <div className="flex gap-2">
-          {receipts.some(r => r.vat_amount == null && r.file_path) && (
-            <Button variant="outline" size="sm" className="gap-2" onClick={handleReprocess} disabled={reprocessing}>
-              <RefreshCw className={`h-4 w-4 ${reprocessing ? "animate-spin" : ""}`} />
-              <span className="hidden sm:inline">{tt({de:"MwSt. nachlesen", en:"Extract VAT", tr:"KDV çıkar", ar:"استخراج الضريبة", ru:"Извлечь НДС"})}</span>
-            </Button>
-          )}
-          <Button className="gap-2" onClick={() => setScanOpen(true)}>
-            <ScanLine className="h-4 w-4" />
-            {t("receipts.scan")}
-          </Button>
-        </div>
+        <Button className="gap-2" onClick={() => setScanOpen(true)}>
+          <ScanLine className="h-4 w-4" />
+          {t("receipts.scan")}
+        </Button>
       </div>
 
       {receipts.length > 0 && (
