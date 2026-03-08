@@ -86,9 +86,9 @@ const ExpenseReport = () => {
   const filteredByCompany = filterCompanyId === "all" ? receipts
     : filterCompanyId === "none" ? receipts.filter(r => !r.company_id)
     : receipts.filter(r => r.company_id === filterCompanyId);
-  const filteredReceipts = filterMonth === "all" ? filteredByCompany
-    : filteredByCompany.filter(r => r.date.substring(0, 7) === filterMonth);
-  const availableMonths = Array.from(new Set(receipts.map(r => r.date.substring(0, 7)))).sort().reverse();
+  const filteredReceipts = filterCompanyId === "all" ? receipts
+    : filterCompanyId === "none" ? receipts.filter(r => !r.company_id)
+    : receipts.filter(r => r.company_id === filterCompanyId);
 
   const totalAmount = filteredReceipts.reduce((sum, r) => sum + (r.amount || 0), 0);
   const totalVat = filteredReceipts.reduce((sum, r) => sum + (r.vat_amount || 0), 0);
