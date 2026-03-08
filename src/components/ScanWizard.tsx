@@ -153,6 +153,33 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
     finally { setCreatingCompany(false); }
   };
 
+  const checkMileage = async (plate: string, km: string) => {
+    setMileageWarning(null);
+    if (!plate.trim() || !km || !user) return;
+    const kmVal = parseFloat(km);
+    if (isNaN(kmVal)) return;
+    const { data } = await supabase
+      .from("receipts")
+      .select("mileage, date")
+      .eq("user_id", user.id)
+      .eq("receipt_type", "fuel")
+      .eq("license_plate", plate.trim())
+      .not("mileage", "is", null)
+      .order("mileage", { ascending: false })
+      .limit(1);
+    if (data && data.length > 0 && data[0].mileage != null && kmVal < data[0].mileage) {
+      setMileageWarning(
+        tt({
+          de: `Achtung: Der km-Stand (${kmVal.toLocaleString()}) ist niedriger als der letzte erfasste Stand (${data[0].mileage.toLocaleString()} km) für ${plate.trim()}.`,
+          en: `Warning: Mileage (${kmVal.toLocaleString()}) is lower than the last recorded value (${data[0].mileage.toLocaleString()} km) for ${plate.trim()}.`,
+          tr: `Uyarı: Kilometre (${kmVal.toLocaleString()}) ${plate.trim()} için son kayıtlı değerden (${data[0].mileage.toLocaleString()} km) düşük.`,
+          ar: `تحذير: المسافة (${kmVal.toLocaleString()}) أقل من آخر قيمة مسجلة (${data[0].mileage.toLocaleString()} كم) لـ ${plate.trim()}.`,
+          ru: `Внимание: Пробег (${kmVal.toLocaleString()}) ниже последнего зафиксированного значения (${data[0].mileage.toLocaleString()} км) для ${plate.trim()}.`,
+        })
+      );
+    }
+  };
+
   const handleSave = async (skipDetails = false) => {
     if (!user || !file) return;
     setSaving(true);
