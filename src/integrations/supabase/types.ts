@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      advisor_clients: {
+        Row: {
+          advisor_id: string
+          client_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          advisor_id: string
+          client_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          advisor_id?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           address: string | null
