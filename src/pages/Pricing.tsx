@@ -20,6 +20,9 @@ const Pricing = () => {
   const [portalLoading, setPortalLoading] = useState(false);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("yearly");
   const [couponCode, setCouponCode] = useState("");
+  const [contactForm, setContactForm] = useState({ name: "", organization: "", email: "", phone: "", orgType: "company", message: "" });
+  const [contactSending, setContactSending] = useState(false);
+  const [contactSent, setContactSent] = useState(false);
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
