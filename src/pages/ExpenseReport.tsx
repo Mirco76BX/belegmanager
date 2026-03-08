@@ -36,6 +36,17 @@ const ExpenseReport = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const [fromDate, setFromDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().split("T")[0];
+  });
+  const [toDate, setToDate] = useState(new Date().toISOString().split("T")[0]);
+  const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+
   // FREE tier cannot access expense reports
   if (subscription.tier === "free") {
     return (
@@ -55,18 +66,6 @@ const ExpenseReport = () => {
       </div>
     );
   }
-  const { toast } = useToast();
-
-  const [fromDate, setFromDate] = useState(() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - 1);
-    return d.toISOString().split("T")[0];
-  });
-  const [toDate, setToDate] = useState(new Date().toISOString().split("T")[0]);
-  const [receipts, setReceipts] = useState<Receipt[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [generating, setGenerating] = useState(false);
 
   const fetchData = async () => {
     if (!user) return;
