@@ -83,9 +83,6 @@ const ExpenseReport = () => {
 
   const getCompanyName = (id: string | null) => id ? companies.find((c) => c.id === id)?.name || "–" : "–";
 
-  const filteredByCompany = filterCompanyId === "all" ? receipts
-    : filterCompanyId === "none" ? receipts.filter(r => !r.company_id)
-    : receipts.filter(r => r.company_id === filterCompanyId);
   const filteredReceipts = filterCompanyId === "all" ? receipts
     : filterCompanyId === "none" ? receipts.filter(r => !r.company_id)
     : receipts.filter(r => r.company_id === filterCompanyId);
