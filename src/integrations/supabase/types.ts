@@ -148,9 +148,12 @@ export type Database = {
           description: string | null
           file_path: string | null
           id: string
+          license_plate: string | null
           meeting_purpose: string | null
+          mileage: number | null
           organization: string | null
           person_met: string | null
+          receipt_type: string
           status: string
           updated_at: string
           user_id: string
@@ -163,9 +166,12 @@ export type Database = {
           description?: string | null
           file_path?: string | null
           id?: string
+          license_plate?: string | null
           meeting_purpose?: string | null
+          mileage?: number | null
           organization?: string | null
           person_met?: string | null
+          receipt_type?: string
           status?: string
           updated_at?: string
           user_id: string
@@ -178,9 +184,12 @@ export type Database = {
           description?: string | null
           file_path?: string | null
           id?: string
+          license_plate?: string | null
           meeting_purpose?: string | null
+          mileage?: number | null
           organization?: string | null
           person_met?: string | null
+          receipt_type?: string
           status?: string
           updated_at?: string
           user_id?: string
