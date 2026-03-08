@@ -109,9 +109,6 @@ const Receipts = () => {
     if (!detailReceipt) return;
     setEditSaving(true);
     const { error } = await supabase.from("receipts").update({
-      date: editDate,
-      amount: editAmount ? parseFloat(editAmount) : null,
-      description: editDescription || null,
       person_met: editPersonMet || null,
       organization: editOrganization || null,
       meeting_purpose: editMeetingPurpose || null,
