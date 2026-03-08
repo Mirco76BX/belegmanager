@@ -57,18 +57,20 @@ const AppSidebar = () => {
           })}
         </nav>
 
-        <div className="px-3 pb-2">
-          <Button
-            className="w-full gap-2"
-            onClick={() => {
-              navigate("/receipts");
-              setTimeout(() => window.dispatchEvent(new CustomEvent("open-scan")), 100);
-            }}
-          >
-            <Upload className="h-4 w-4" />
-            {lang === "de" ? "Beleg hochladen" : "Upload Receipt"}
-          </Button>
-        </div>
+        {location.pathname !== "/admin/users" && (
+          <div className="px-3 pb-2">
+            <Button
+              className="w-full gap-2"
+              onClick={() => {
+                navigate("/receipts");
+                setTimeout(() => window.dispatchEvent(new CustomEvent("open-scan")), 100);
+              }}
+            >
+              <Upload className="h-4 w-4" />
+              {lang === "de" ? "Beleg hochladen" : "Upload Receipt"}
+            </Button>
+          </div>
+        )}
 
         <div className="border-t border-sidebar-border px-3 py-3 space-y-1">
           {isAdmin && (
