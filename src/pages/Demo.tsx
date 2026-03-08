@@ -282,18 +282,102 @@ const Demo = () => {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section className="px-4 py-20">
-        <div className="mx-auto max-w-4xl space-y-4 text-center">
-          <h2 className="text-3xl font-bold text-foreground">
-            {de ? "Transparente Preise" : "Transparent Pricing"}
-          </h2>
-          <p className="text-muted-foreground">
-            {de ? "Kostenlos starten – upgraden wenn Sie mehr brauchen." : "Start free – upgrade when you need more."}
-          </p>
-        </div>
-        <div className="mx-auto mt-10 max-w-4xl">
-          <PricingPlans compact />
+      {/* Tax Advisor Registration */}
+      <section className="px-4 py-20" id="registrierung">
+        <div className="mx-auto max-w-lg">
+          <div className="text-center space-y-2 mb-8">
+            <h2 className="text-3xl font-bold text-foreground">
+              {de ? "Kostenlos als Steuerberater registrieren" : "Register free as a tax advisor"}
+            </h2>
+            <p className="text-muted-foreground">
+              {de ? "50 Scans kostenlos – testen Sie BelegManager und empfehlen Sie es Ihren Mandanten." : "50 free scans – try ReceiptManager and recommend it to your clients."}
+            </p>
+          </div>
+
+          {regDone ? (
+            <div className="flex flex-col items-center gap-3 py-12 text-center rounded-xl border-2 border-border">
+              <CheckCircle2 className="h-12 w-12 text-accent" />
+              <p className="text-lg font-semibold text-foreground">
+                {de ? "Registrierung erfolgreich!" : "Registration successful!"}
+              </p>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                {de ? "Bitte bestätigen Sie Ihre E-Mail-Adresse. Danach können Sie sich anmelden und die App ausprobieren." : "Please confirm your email address. Then you can sign in and try the app."}
+              </p>
+              <Link to="/auth">
+                <Button className="mt-4 gap-2">
+                  {de ? "Zur Anmeldung" : "Go to login"}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setRegError("");
+                if (regForm.password !== regForm.confirmPassword) {
+                  setRegError(de ? "Passwörter stimmen nicht überein" : "Passwords don't match");
+                  return;
+                }
+                setRegLoading(true);
+                try {
+                  // Sign up
+                  const { data, error } = await supabase.auth.signUp({
+                    email: regForm.email,
+                    password: regForm.password,
+                    options: { emailRedirectTo: window.location.origin },
+                  });
+                  if (error) throw error;
+
+                  // Update profile with tax advisor flag
+                  if (data.user) {
+                    await supabase.from("profiles").update({
+                      is_tax_advisor: true,
+                      kanzlei: regForm.kanzlei.trim(),
+                      display_name: regForm.name.trim(),
+                    }).eq("id", data.user.id);
+                  }
+
+                  setRegDone(true);
+                } catch (err: any) {
+                  setRegError(err.message);
+                } finally {
+                  setRegLoading(false);
+                }
+              }}
+              className="space-y-4 rounded-xl border-2 border-border p-6 md:p-8"
+            >
+              <div className="space-y-1.5">
+                <Label>{de ? "Ihr Name *" : "Your name *"}</Label>
+                <Input required value={regForm.name} onChange={(e) => setRegForm(f => ({ ...f, name: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{de ? "Kanzlei / Unternehmen *" : "Firm / Company *"}</Label>
+                <Input required value={regForm.kanzlei} onChange={(e) => setRegForm(f => ({ ...f, kanzlei: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{de ? "E-Mail *" : "Email *"}</Label>
+                <Input required type="email" value={regForm.email} onChange={(e) => setRegForm(f => ({ ...f, email: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{de ? "Passwort *" : "Password *"}</Label>
+                <Input required type="password" minLength={6} value={regForm.password} onChange={(e) => setRegForm(f => ({ ...f, password: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{de ? "Passwort bestätigen *" : "Confirm password *"}</Label>
+                <Input required type="password" minLength={6} value={regForm.confirmPassword} onChange={(e) => setRegForm(f => ({ ...f, confirmPassword: e.target.value }))} />
+              </div>
+              {regError && <p className="text-sm text-destructive">{regError}</p>}
+              <Button type="submit" className="w-full gap-2" disabled={regLoading}>
+                {regLoading ? (de ? "Registrierung..." : "Registering...") : (de ? "Kostenlos registrieren" : "Register for free")}
+                {!regLoading && <ArrowRight className="h-4 w-4" />}
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">
+                {de ? "Bereits registriert?" : "Already registered?"}{" "}
+                <Link to="/auth" className="text-primary hover:underline">{de ? "Anmelden" : "Sign in"}</Link>
+              </p>
+            </form>
+          )}
         </div>
       </section>
 
