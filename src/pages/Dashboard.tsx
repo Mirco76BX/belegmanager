@@ -36,7 +36,7 @@ const Dashboard = () => {
       supabase.from("receipts").select("id").gte("date", monthStart),
       supabase.from("companies").select("id", { count: "exact" }),
       supabase.from("receipts").select("id, date, amount, description").order("created_at", { ascending: false }).limit(5),
-      supabase.from("receipts").select("date, amount").gte("date", sixMonthsAgo),
+      supabase.from("receipts").select("date, amount, amount_eur").gte("date", sixMonthsAgo),
     ]).then(([allRes, monthRes, compRes, recentRes, chartRes]) => {
       setTotalReceipts(allRes.count || 0);
       setTotalAmount(allRes.data?.reduce((s, r) => s + ((r as any).amount_eur ?? r.amount ?? 0), 0) || 0);
