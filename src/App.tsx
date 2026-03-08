@@ -14,6 +14,7 @@ import ExpenseReport from "@/pages/ExpenseReport";
 import AdminUsers from "@/pages/AdminUsers";
 import Pricing from "@/pages/Pricing";
 import Impressum from "@/pages/Impressum";
+import Datenschutz from "@/pages/Datenschutz";
 import Demo from "@/pages/Demo";
 import NotFound from "./pages/NotFound";
 
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
               <Route path="/demo" element={<Demo />} />
               <Route path="/impressum" element={<Impressum />} />
+              <Route path="/datenschutz" element={<Datenschutz />} />
               <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/receipts" element={<Receipts />} />

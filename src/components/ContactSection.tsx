@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,11 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building2, Send, Check, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
 const ContactSection = () => {
   const { lang } = useLanguage();
   const [form, setForm] = useState({ name: "", organization: "", email: "", phone: "", orgType: "company", message: "" });
+  const [consent, setConsent] = useState(false);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -97,7 +100,26 @@ const ContactSection = () => {
             <Textarea value={form.message} onChange={(e) => setForm(f => ({ ...f, message: e.target.value }))} rows={3} className="resize-none" />
           </div>
 
-          <Button type="submit" className="w-full sm:w-auto gap-2" disabled={sending}>
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id="contact-consent"
+              checked={consent}
+              onCheckedChange={(v) => setConsent(v === true)}
+              required
+              className="mt-0.5"
+            />
+            <label htmlFor="contact-consent" className="text-xs text-muted-foreground leading-relaxed">
+              {lang === "de" ? (
+                <>Ich stimme der Verarbeitung meiner Daten gemäß der{" "}
+                  <Link to="/datenschutz" className="text-primary hover:underline">Datenschutzerklärung</Link> zu. *</>
+              ) : (
+                <>I agree to the processing of my data according to the{" "}
+                  <Link to="/datenschutz" className="text-primary hover:underline">Privacy Policy</Link>. *</>
+              )}
+            </label>
+          </div>
+
+          <Button type="submit" className="w-full sm:w-auto gap-2" disabled={sending || !consent}>
             {sending && <Loader2 className="h-4 w-4 animate-spin" />}
             <Send className="h-4 w-4" />
             {lang === "de" ? "Anfrage senden" : "Send Request"}

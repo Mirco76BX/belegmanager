@@ -183,6 +183,9 @@ const Auth = () => {
         <Link to="/impressum" state={{ from: "/auth" }} className="text-xs text-muted-foreground hover:text-foreground hover:underline">
           Impressum
         </Link>
+        <Link to="/datenschutz" state={{ from: "/auth" }} className="text-xs text-muted-foreground hover:text-foreground hover:underline">
+          {lang === "de" ? "Datenschutz" : "Privacy"}
+        </Link>
       </footer>
     </div>
   );
