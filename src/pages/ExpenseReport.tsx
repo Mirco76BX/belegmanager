@@ -231,31 +231,37 @@ const ExpenseReport = () => {
           <CardContent className="p-0">
             <div className="hidden md:block">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("receipts.date")}</TableHead>
-                    <TableHead className="text-right">{t("receipts.amount")}</TableHead>
-                    <TableHead>{t("receipts.description")}</TableHead>
-                    <TableHead>{t("receipts.company")}</TableHead>
-                    <TableHead>{t("receipts.person")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {receipts.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(locale)}</TableCell>
-                      <TableCell className="font-mono text-right whitespace-nowrap">{r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}</TableCell>
-                      <TableCell>{r.description || "–"}</TableCell>
-                      <TableCell>{getCompanyName(r.company_id)}</TableCell>
-                      <TableCell>{r.person_met || "–"}</TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow className="font-bold border-t-2">
-                    <TableCell>{totalLabel}</TableCell>
-                    <TableCell className="font-mono text-right whitespace-nowrap">{totalAmount.toFixed(2)} €</TableCell>
-                    <TableCell colSpan={3} />
-                  </TableRow>
-                </TableBody>
+                 <TableHeader>
+                   <TableRow>
+                     <TableHead>{t("receipts.date")}</TableHead>
+                     <TableHead className="text-right">{t("receipts.amount")}</TableHead>
+                     <TableHead className="text-right">MwSt.</TableHead>
+                     <TableHead>{t("receipts.description")}</TableHead>
+                     <TableHead>{t("receipts.company")}</TableHead>
+                     <TableHead>{t("receipts.person")}</TableHead>
+                   </TableRow>
+                 </TableHeader>
+                 <TableBody>
+                   {receipts.map((r) => (
+                     <TableRow key={r.id}>
+                       <TableCell className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(locale)}</TableCell>
+                       <TableCell className="font-mono text-right whitespace-nowrap">{r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}</TableCell>
+                       <TableCell className="font-mono text-right whitespace-nowrap text-muted-foreground">
+                         {r.vat_amount != null ? `${r.vat_amount.toFixed(2)} €` : "–"}
+                         {r.vat_rate != null ? ` (${r.vat_rate}%)` : ""}
+                       </TableCell>
+                       <TableCell>{r.description || "–"}</TableCell>
+                       <TableCell>{getCompanyName(r.company_id)}</TableCell>
+                       <TableCell>{r.person_met || "–"}</TableCell>
+                     </TableRow>
+                   ))}
+                   <TableRow className="font-bold border-t-2">
+                     <TableCell>{totalLabel}</TableCell>
+                     <TableCell className="font-mono text-right whitespace-nowrap">{totalAmount.toFixed(2)} €</TableCell>
+                     <TableCell className="font-mono text-right whitespace-nowrap">{totalVat.toFixed(2)} €</TableCell>
+                     <TableCell colSpan={3} />
+                   </TableRow>
+                 </TableBody>
               </Table>
             </div>
 
