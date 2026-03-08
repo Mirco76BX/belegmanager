@@ -240,6 +240,7 @@ export type Database = {
       receipts: {
         Row: {
           amount: number | null
+          amount_eur: number | null
           company_id: string | null
           created_at: string
           currency: string
@@ -261,6 +262,7 @@ export type Database = {
         }
         Insert: {
           amount?: number | null
+          amount_eur?: number | null
           company_id?: string | null
           created_at?: string
           currency?: string
@@ -282,6 +284,7 @@ export type Database = {
         }
         Update: {
           amount?: number | null
+          amount_eur?: number | null
           company_id?: string | null
           created_at?: string
           currency?: string
