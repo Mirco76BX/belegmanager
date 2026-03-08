@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, TIERS } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Camera, Upload, Loader2, Check, SkipForward, ArrowRight, Plus } from "lucide-react";
+import { Camera, Upload, Loader2, Check, SkipForward, ArrowRight, Plus, AlertTriangle } from "lucide-react";
 
 const PURPOSE_PRESETS = [
   { value: "Geschäftsessen", labelDe: "🍽️ Geschäftsessen", labelEn: "🍽️ Business meal" },
@@ -45,11 +46,15 @@ interface ScanWizardProps {
 }
 
 const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCompaniesChanged }: ScanWizardProps) => {
-  const { user } = useAuth();
+  const { user, subscription } = useAuth();
   const { lang } = useLanguage();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const [scanCount, setScanCount] = useState<number | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
 
   const [step, setStep] = useState<"upload" | "scanning" | "company" | "details">("upload");
   const [file, setFile] = useState<File | null>(null);
@@ -78,9 +83,9 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
     setLocalCompanies(companies);
   }, [companies]);
 
-  // Reset on open
+  // Check scan limit and reset on open
   useEffect(() => {
-    if (open) {
+    if (open && user) {
       setStep("upload");
       setFile(null);
       setPreview(null);
@@ -95,8 +100,30 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       setShowCustomPurpose(false);
       setShowNewCompany(false);
       setNewCompanyName("");
+      setLimitReached(false);
+
+      // Check scan count
+      const maxScans = subscription.tier === "master"
+        ? Infinity
+        : subscription.tier === "relax"
+          ? TIERS.relax.maxScans
+          : TIERS.free.maxScans;
+
+      if (maxScans !== Infinity) {
+        supabase
+          .from("receipts")
+          .select("id", { count: "exact", head: true })
+          .then(({ count }) => {
+            const c = count ?? 0;
+            setScanCount(c);
+            if (c >= maxScans) setLimitReached(true);
+          });
+      } else {
+        setScanCount(null);
+        setLimitReached(false);
+      }
     }
-  }, [open, defaultCompanyId]);
+  }, [open, defaultCompanyId, user, subscription.tier]);
 
   const handleFileSelected = async (selectedFile: File) => {
     setFile(selectedFile);
@@ -212,9 +239,37 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
           </DialogTitle>
         </DialogHeader>
 
+        {/* Scan limit reached */}
+        {limitReached && (
+          <div className="flex flex-col items-center gap-4 py-6 text-center">
+            <AlertTriangle className="h-10 w-10 text-destructive" />
+            <h3 className="font-semibold text-foreground">
+              {lang === "de" ? "Scan-Limit erreicht" : "Scan limit reached"}
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              {lang === "de"
+                ? `Du hast ${scanCount} von ${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} Scans verwendet. Upgrade deinen Plan für mehr Scans.`
+                : `You've used ${scanCount} of ${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} scans. Upgrade your plan for more scans.`}
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose}>
+                {lang === "de" ? "Schließen" : "Close"}
+              </Button>
+              <Button onClick={() => { onClose(); navigate("/pricing"); }}>
+                {lang === "de" ? "Jetzt upgraden" : "Upgrade Now"}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Step 1: Upload */}
-        {step === "upload" && (
+        {step === "upload" && !limitReached && (
           <div className="space-y-4">
+            {scanCount !== null && !limitReached && (
+              <p className="text-xs text-muted-foreground text-right">
+                {scanCount} / {subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} Scans
+              </p>
+            )}
             <p className="text-sm text-muted-foreground">
               {lang === "de"
                 ? "Fotografiere deinen Beleg oder lade ein Bild/PDF hoch."
