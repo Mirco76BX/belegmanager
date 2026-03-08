@@ -175,11 +175,11 @@ const AppSidebar = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => { setLang(lang === "de" ? "en" : "de"); setMobileMenuOpen(false); }}
+            onClick={() => { nextLang(); setMobileMenuOpen(false); }}
             className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
           >
             <Globe className="h-4 w-4" />
-            {lang === "de" ? "English" : "Deutsch"}
+            {langLabels[lang]} → {langLabels[langOrder[(langOrder.indexOf(lang) + 1) % langOrder.length]]}
           </Button>
           <Button
             variant="ghost"
