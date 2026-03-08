@@ -2,7 +2,7 @@ import { useAuth, TIERS } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Check, Crown, Zap, Loader2, Tag } from "lucide-react";
+import { Check, Crown, Zap, Loader2, Tag, Gem } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -29,10 +29,7 @@ const Pricing = () => {
     }
   }, [searchParams]);
 
-  const handleCheckout = async () => {
-    const priceId = billingCycle === "yearly"
-      ? TIERS.relax.yearly.price_id
-      : TIERS.relax.monthly.price_id;
+  const handleCheckout = async (priceId: string) => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
@@ -61,6 +58,8 @@ const Pricing = () => {
   };
 
   const isRelax = subscription.tier === "relax";
+  const isMaster = subscription.tier === "master";
+  const isPaid = isRelax || isMaster;
 
   const relaxPrice = billingCycle === "yearly"
     ? { amount: "12 €", period: lang === "de" ? "/ Jahr" : "/ year", hint: lang === "de" ? "1 €/Monat" : "1 €/month" }
@@ -77,7 +76,8 @@ const Pricing = () => {
       features: lang === "de"
         ? ["10 Scans", "Belegverwaltung", "Reisekostenabrechnung"]
         : ["10 Scans", "Receipt management", "Travel expense reports"],
-      current: !isRelax,
+      current: subscription.tier === "free",
+      priceId: null,
     },
     {
       id: "relax" as const,
@@ -90,6 +90,20 @@ const Pricing = () => {
         ? ["150 Scans / Jahr", "Belegverwaltung", "Reisekostenabrechnung", "Prioritäts-Support"]
         : ["150 Scans / year", "Receipt management", "Travel expense reports", "Priority support"],
       current: isRelax,
+      priceId: billingCycle === "yearly" ? TIERS.relax.yearly.price_id : TIERS.relax.monthly.price_id,
+    },
+    {
+      id: "master" as const,
+      icon: Gem,
+      name: "MASTER",
+      price: "49 €",
+      period: lang === "de" ? "/ Jahr" : "/ year",
+      hint: lang === "de" ? "~4 €/Monat" : "~4 €/month",
+      features: lang === "de"
+        ? ["Unbegrenzte Scans", "Belegverwaltung", "Reisekostenabrechnung", "Prioritäts-Support"]
+        : ["Unlimited Scans", "Receipt management", "Travel expense reports", "Priority support"],
+      current: isMaster,
+      priceId: TIERS.master.yearly.price_id,
     },
   ];
 
@@ -133,7 +147,7 @@ const Pricing = () => {
         </button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 max-w-2xl mx-auto">
+      <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
         {plans.map((plan) => (
           <div
             key={plan.id}
@@ -180,7 +194,8 @@ const Pricing = () => {
               ))}
             </ul>
 
-            {plan.id === "relax" && !isRelax && (
+            {/* Upgrade button for non-current paid plans */}
+            {plan.priceId && !plan.current && !isPaid && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Tag className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -191,21 +206,23 @@ const Pricing = () => {
                     className="h-9 text-sm"
                   />
                 </div>
-                <Button className="w-full" onClick={handleCheckout} disabled={loading}>
+                <Button className="w-full" onClick={() => handleCheckout(plan.priceId!)} disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {lang === "de" ? "Jetzt upgraden" : "Upgrade Now"}
                 </Button>
               </div>
             )}
 
-            {plan.id === "relax" && isRelax && (
+            {/* Manage button for current paid plan */}
+            {plan.current && isPaid && (
               <Button variant="outline" className="w-full" onClick={handleManage} disabled={portalLoading}>
                 {portalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {lang === "de" ? "Abo verwalten" : "Manage Subscription"}
               </Button>
             )}
 
-            {plan.id === "free" && !isRelax && (
+            {/* Current free plan */}
+            {plan.id === "free" && plan.current && (
               <Button variant="outline" className="w-full" disabled>
                 {lang === "de" ? "Aktiver Plan" : "Current Plan"}
               </Button>
