@@ -112,9 +112,20 @@ const ExpenseReport = () => {
 
   const exportCSV = () => {
     if (filteredReceipts.length === 0) return;
+    const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ");
+    const selectedCompany = filterCompanyId !== "all" && filterCompanyId !== "none"
+      ? companies.find(c => c.id === filterCompanyId)?.name : null;
+    const metaLines: string[] = [];
+    if (fullName) metaLines.push(`"${tt({de:"Name", en:"Name", tr:"Ad", ar:"الاسم", ru:"Имя"})}";"${fullName}"`);
+    metaLines.push(`"${tt({de:"E-Mail", en:"Email", tr:"E-posta", ar:"البريد", ru:"Почта"})}";"${profile?.email || user?.email || ""}"`);
+    if (selectedCompany) metaLines.push(`"${tt({de:"Organisation", en:"Organization", tr:"Kuruluş", ar:"المنظمة", ru:"Организация"})}";"${selectedCompany}"`);
+    metaLines.push(`"${t("expense.period")}";"${fromDate} – ${toDate}"`);
+    metaLines.push("");
+
     const headers = getTableHeaders();
     const rows = getTableRows();
     const csvContent = [
+      ...metaLines,
       headers.join(";"),
       ...rows.map((row) => row.map((cell) => `"${cell}"`).join(";")),
       [totalLabel, `${totalAmount.toFixed(2)}\u00A0€`, `${totalVat.toFixed(2)}\u00A0€`, "", "", "", "", ""].map((c) => `"${c}"`).join(";"),
