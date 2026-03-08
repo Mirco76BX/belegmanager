@@ -146,8 +146,11 @@ const Receipts = () => {
   const formatAmount = (a: number | null) => a != null ? `${a.toFixed(2)} €` : "–";
   const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "–";
 
-  const generalReceipts = receipts.filter(r => r.receipt_type !== "fuel");
-  const fuelReceipts = receipts.filter(r => r.receipt_type === "fuel");
+  const filtered = filterCompanyId === "all" ? receipts
+    : filterCompanyId === "none" ? receipts.filter(r => !r.company_id)
+    : receipts.filter(r => r.company_id === filterCompanyId);
+  const generalReceipts = filtered.filter(r => r.receipt_type !== "fuel");
+  const fuelReceipts = filtered.filter(r => r.receipt_type === "fuel");
 
   const renderMobileCards = (list: Receipt[]) => (
     <div className="md:hidden space-y-2">
