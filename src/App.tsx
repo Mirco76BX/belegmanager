@@ -13,6 +13,7 @@ import Companies from "@/pages/Companies";
 import ExpenseReport from "@/pages/ExpenseReport";
 import AdminUsers from "@/pages/AdminUsers";
 import Pricing from "@/pages/Pricing";
+import Account from "@/pages/Account";
 import Impressum from "@/pages/Impressum";
 import Datenschutz from "@/pages/Datenschutz";
 import Demo from "@/pages/Demo";
@@ -54,6 +55,7 @@ const App = () => (
                 <Route path="/expense-report" element={<ExpenseReport />} />
                 <Route path="/admin/users" element={<AdminUsers />} />
                 <Route path="/pricing" element={<Pricing />} />
+                <Route path="/account" element={<Account />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

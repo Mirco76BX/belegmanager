@@ -2,25 +2,32 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, Globe, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard } from "lucide-react";
+import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, Globe, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InviteDialog from "@/components/InviteDialog";
 import { useState } from "react";
 
 const AppSidebar = () => {
-  const { signOut } = useAuth();
+  const { signOut, subscription } = useAuth();
   const { t, lang, setLang } = useLanguage();
   const { isAdmin } = useUserRole();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const isTaxAdvisor = subscription.tier === "tax_advisor";
+
   const navItems = [
     { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/" },
     { key: "nav.receipts" as const, icon: Receipt, path: "/receipts" },
     { key: "nav.companies" as const, icon: Building2, path: "/companies" },
     { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report" },
-    { key: "nav.pricing" as const, icon: CreditCard, path: "/pricing" },
+    {
+      key: "nav.pricing" as const,
+      icon: isTaxAdvisor ? UserCircle : CreditCard,
+      path: "/pricing",
+      labelOverride: isTaxAdvisor ? (lang === "de" ? "Empfehlungen" : "Referrals") : undefined,
+    },
   ];
 
   return (
@@ -51,7 +58,7 @@ const AppSidebar = () => {
                 }`}
               >
                 <item.icon className="h-4 w-4" />
-                {t(item.key)}
+                {item.labelOverride || t(item.key)}
               </button>
             );
           })}
@@ -86,6 +93,17 @@ const AppSidebar = () => {
               {lang === "de" ? "Benutzerverwaltung" : "User Management"}
             </button>
           )}
+          <button
+            onClick={() => navigate("/account")}
+            className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
+              location.pathname === "/account"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            }`}
+          >
+            <UserCircle className="h-4 w-4" />
+            {lang === "de" ? "Mein Konto" : "My Account"}
+          </button>
           <InviteDialog />
           <Button
             variant="ghost"
@@ -138,6 +156,13 @@ const AppSidebar = () => {
               {lang === "de" ? "Benutzerverwaltung" : "User Management"}
             </button>
           )}
+          <button
+            onClick={() => { navigate("/account"); setMobileMenuOpen(false); }}
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50"
+          >
+            <UserCircle className="h-4 w-4" />
+            {lang === "de" ? "Mein Konto" : "My Account"}
+          </button>
           <InviteDialog />
           <Button
             variant="ghost"
@@ -183,7 +208,7 @@ const AppSidebar = () => {
                 }`}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium">{t(item.key)}</span>
+                <span className="text-[10px] font-medium">{item.labelOverride || t(item.key)}</span>
               </button>
             );
           })}
@@ -213,7 +238,7 @@ const AppSidebar = () => {
                 }`}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium">{t(item.key)}</span>
+                <span className="text-[10px] font-medium">{item.labelOverride || t(item.key)}</span>
               </button>
             );
           })}
