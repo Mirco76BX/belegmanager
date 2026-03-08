@@ -46,11 +46,15 @@ interface ScanWizardProps {
 }
 
 const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCompaniesChanged }: ScanWizardProps) => {
-  const { user } = useAuth();
+  const { user, subscription } = useAuth();
   const { lang } = useLanguage();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const [scanCount, setScanCount] = useState<number | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
 
   const [step, setStep] = useState<"upload" | "scanning" | "company" | "details">("upload");
   const [file, setFile] = useState<File | null>(null);
