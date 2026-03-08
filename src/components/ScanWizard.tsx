@@ -137,7 +137,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
     } catch (err: any) {
       console.error("Scan error:", err);
       toast({ title: tt({de:"Scan fehlgeschlagen. Daten manuell eingeben.", en:"Scan failed. Enter data manually.", tr:"Tarama başarısız. Verileri manuel girin.", ar:"فشل المسح. أدخل البيانات يدوياً.", ru:"Сканирование не удалось. Введите данные вручную."}), variant: "destructive" });
-      setDate(new Date().toISOString().split("T")[0]);
+      const now = new Date(); setDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`);
       setStep("company");
     }
   };
@@ -194,7 +194,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       if (uploadError) throw uploadError;
 
       const insertData: any = {
-        user_id: user.id, date: date || new Date().toISOString().split("T")[0],
+        user_id: user.id, date: date || (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`; })(),
         amount: amount ? parseFloat(amount) : null, description: description || null,
         company_id: companyId || null, file_path: path,
         receipt_type: isFuelReceipt ? "fuel" : "general",

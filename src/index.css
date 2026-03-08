@@ -102,17 +102,27 @@
   }
 }
 
-/* Fix native date input calendar icon alignment */
+/* Fix native date input for iOS and mobile */
 input[type="date"] {
   position: relative;
   padding-right: 2.5rem;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator {
   position: absolute;
-  right: 0.75rem;
+  right: 0.5rem;
   top: 50%;
   transform: translateY(-50%);
   cursor: pointer;
   opacity: 0.6;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
 }

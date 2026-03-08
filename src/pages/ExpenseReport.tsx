@@ -33,6 +33,10 @@ interface Company {
   name: string;
 }
 
+function formatLocalDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 const ExpenseReport = () => {
   const { t, lang, tt } = useLanguage();
   const { user, subscription } = useAuth();
@@ -42,9 +46,9 @@ const ExpenseReport = () => {
 
   const [fromDate, setFromDate] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 1);
-    return d.toISOString().split("T")[0];
+    return formatLocalDate(d);
   });
-  const [toDate, setToDate] = useState(new Date().toISOString().split("T")[0]);
+  const [toDate, setToDate] = useState(formatLocalDate(new Date()));
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
@@ -266,14 +270,14 @@ const ExpenseReport = () => {
       <Card>
         <CardHeader><CardTitle className="text-lg">{t("expense.period")}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 overflow-hidden">
             <div className="space-y-2 min-w-0">
               <Label>{t("expense.from")}</Label>
-              <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full" />
+              <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full max-w-full text-sm" />
             </div>
             <div className="space-y-2 min-w-0">
               <Label>{t("expense.to")}</Label>
-              <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full" />
+              <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full max-w-full text-sm" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
