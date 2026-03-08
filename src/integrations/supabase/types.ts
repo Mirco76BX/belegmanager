@@ -106,6 +106,8 @@ export type Database = {
           email: string
           id: string
           is_blocked: boolean
+          is_tax_advisor: boolean
+          kanzlei: string | null
         }
         Insert: {
           created_at?: string
@@ -114,6 +116,8 @@ export type Database = {
           email: string
           id: string
           is_blocked?: boolean
+          is_tax_advisor?: boolean
+          kanzlei?: string | null
         }
         Update: {
           created_at?: string
@@ -122,6 +126,8 @@ export type Database = {
           email?: string
           id?: string
           is_blocked?: boolean
+          is_tax_advisor?: boolean
+          kanzlei?: string | null
         }
         Relationships: [
           {

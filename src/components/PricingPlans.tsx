@@ -7,7 +7,7 @@ type BillingCycle = "monthly" | "yearly";
 
 interface PricingPlansProps {
   /** If provided, highlights the current plan */
-  currentTier?: "free" | "relax" | "master";
+  currentTier?: "free" | "relax" | "master" | "tax_advisor";
   /** Optional action rendered below each plan */
   renderAction?: (plan: { id: "free" | "relax" | "master"; priceId: string | null }) => React.ReactNode;
   compact?: boolean;
