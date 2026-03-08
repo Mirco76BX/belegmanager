@@ -140,10 +140,8 @@ const Account = () => {
                 <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder={tt({de:"Mustermann", en:"Doe", tr:"Yılmaz", ar:"محمد", ru:"Иванов"})} className="h-9" />
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm">{tt({de:"Anzeigename (optional)", en:"Display name (optional)", tr:"Görünen ad (isteğe bağlı)", ar:"الاسم المعروض (اختياري)", ru:"Отображаемое имя (необязательно)"})}</Label>
-              <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder={tt({de:"Optional", en:"Optional", tr:"İsteğe bağlı", ar:"اختياري", ru:"Необязательно"})} className="h-9" />
-            </div>
+
+
             <Button size="sm" onClick={handleSaveProfile} disabled={saving} className="w-full sm:w-auto">
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               {tt({de:"Profil speichern", en:"Save profile", tr:"Profili kaydet", ar:"حفظ الملف", ru:"Сохранить профиль"})}
