@@ -6,6 +6,7 @@ import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, FileText,
 import { Button } from "@/components/ui/button";
 import InviteDialog from "@/components/InviteDialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import ThemeToggle from "@/components/ThemeToggle";
 import { useState } from "react";
 
 const AppSidebar = () => {
