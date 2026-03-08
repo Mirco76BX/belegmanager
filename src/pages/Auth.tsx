@@ -140,7 +140,7 @@ const Auth = () => {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>{isLogin ? t("auth.login") : t("auth.register")}</CardTitle>
+                  <CardTitle>{isForgot ? t("auth.forgotPassword") : isLogin ? t("auth.login") : t("auth.register")}</CardTitle>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -152,7 +152,9 @@ const Auth = () => {
                   </Button>
                 </div>
                 <CardDescription>
-                  {isLogin
+                  {isForgot
+                    ? (lang === "de" ? "Geben Sie Ihre E-Mail ein, um einen Link zum Zurücksetzen zu erhalten" : "Enter your email to receive a reset link")
+                    : isLogin
                     ? (lang === "de" ? "Melden Sie sich mit Ihrem Konto an" : "Sign in to your account")
                     : (lang === "de" ? "Erstellen Sie ein neues Konto" : "Create a new account")}
                 </CardDescription>
