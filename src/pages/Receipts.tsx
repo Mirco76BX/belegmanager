@@ -257,49 +257,68 @@ const Receipts = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {/* General Receipts */}
-          {generalReceipts.length > 0 && (
-            <div className="space-y-2">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                🧾 {tt({de:"Belege", en:"Receipts", tr:"Fişler", ar:"الإيصالات", ru:"Чеки"})}
-                <span className="text-sm font-normal text-muted-foreground">({generalReceipts.length})</span>
-              </h2>
-              <Card className="hidden md:block">
-                <CardContent className="p-0">
-                  <ReceiptsInlineTable
-                    receipts={generalReceipts}
-                    companies={companies}
-                    onDelete={handleDelete}
-                    onOpenDetail={openDetail}
-                    onSaved={fetchData}
-                  />
-                </CardContent>
-              </Card>
-              {renderMobileCards(generalReceipts)}
-            </div>
-          )}
+        <div className="space-y-4">
+          {/* Tabs */}
+          <div className="flex gap-1 rounded-lg bg-muted p-1">
+            <button
+              onClick={() => setActiveTab("general")}
+              className={`flex-1 flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                activeTab === "general" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              🧾 {tt({de:"Belege", en:"Receipts", tr:"Fişler", ar:"الإيصالات", ru:"Чеки"})}
+              <span className="text-xs text-muted-foreground">({generalReceipts.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("fuel")}
+              className={`flex-1 flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                activeTab === "fuel" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              ⛽ {tt({de:"Tankquittungen", en:"Fuel Receipts", tr:"Yakıt Fişleri", ar:"إيصالات الوقود", ru:"Чеки на топливо"})}
+              <span className="text-xs text-muted-foreground">({fuelReceipts.length})</span>
+            </button>
+          </div>
 
-          {/* Fuel Receipts */}
-          {fuelReceipts.length > 0 && (
-            <div className="space-y-2">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                ⛽ {tt({de:"Tankquittungen", en:"Fuel Receipts", tr:"Yakıt Fişleri", ar:"إيصالات الوقود", ru:"Чеки на топливо"})}
-                <span className="text-sm font-normal text-muted-foreground">({fuelReceipts.length})</span>
-              </h2>
-              <Card className="hidden md:block">
-                <CardContent className="p-0">
-                  <ReceiptsInlineTable
-                    receipts={fuelReceipts}
-                    companies={companies}
-                    onDelete={handleDelete}
-                    onOpenDetail={openDetail}
-                    onSaved={fetchData}
-                  />
-                </CardContent>
-              </Card>
-              {renderMobileCards(fuelReceipts)}
-            </div>
+          {/* Active tab content */}
+          {activeTab === "general" ? (
+            generalReceipts.length > 0 ? (
+              <>
+                <Card className="hidden md:block">
+                  <CardContent className="p-0">
+                    <ReceiptsInlineTable
+                      receipts={generalReceipts}
+                      companies={companies}
+                      onDelete={handleDelete}
+                      onOpenDetail={openDetail}
+                      onSaved={fetchData}
+                    />
+                  </CardContent>
+                </Card>
+                {renderMobileCards(generalReceipts)}
+              </>
+            ) : (
+              <Card><CardContent className="py-8 text-center text-muted-foreground">{tt({de:"Keine Belege vorhanden", en:"No receipts", tr:"Fiş yok", ar:"لا إيصالات", ru:"Нет чеков"})}</CardContent></Card>
+            )
+          ) : (
+            fuelReceipts.length > 0 ? (
+              <>
+                <Card className="hidden md:block">
+                  <CardContent className="p-0">
+                    <ReceiptsInlineTable
+                      receipts={fuelReceipts}
+                      companies={companies}
+                      onDelete={handleDelete}
+                      onOpenDetail={openDetail}
+                      onSaved={fetchData}
+                    />
+                  </CardContent>
+                </Card>
+                {renderMobileCards(fuelReceipts)}
+              </>
+            ) : (
+              <Card><CardContent className="py-8 text-center text-muted-foreground">{tt({de:"Keine Tankquittungen vorhanden", en:"No fuel receipts", tr:"Yakıt fişi yok", ar:"لا إيصالات وقود", ru:"Нет чеков на топливо"})}</CardContent></Card>
+            )
           )}
         </div>
       )}
