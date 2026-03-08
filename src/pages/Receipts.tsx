@@ -17,6 +17,7 @@ interface Receipt {
   id: string;
   date: string;
   amount: number | null;
+  currency?: string;
   description: string | null;
   person_met: string | null;
   organization: string | null;
