@@ -55,6 +55,11 @@ const translations = {
   "companies.address": { de: "Adresse", en: "Address" },
   "companies.noCompanies": { de: "Noch keine Organisationen angelegt", en: "No organizations yet" },
   "companies.edit": { de: "Bearbeiten", en: "Edit" },
+  "companies.type": { de: "Typ", en: "Type" },
+  "companies.type.company": { de: "Firma", en: "Company" },
+  "companies.type.association": { de: "Verein", en: "Association" },
+  "companies.type.personal": { de: "Privat", en: "Personal" },
+  "companies.type.other": { de: "Sonstiges", en: "Other" },
 
   // Expense Report
   "expense.title": { de: "Reisekostenabrechnung", en: "Travel Expense Report" },
