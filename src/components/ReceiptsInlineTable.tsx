@@ -63,9 +63,6 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
   const saveEdit = async (id: string) => {
     setSaving(true);
     const { error } = await supabase.from("receipts").update({
-      date: editValues.date,
-      amount: editValues.amount != null ? editValues.amount : null,
-      description: editValues.description || null,
       person_met: editValues.person_met || null,
       organization: editValues.organization || null,
       meeting_purpose: editValues.meeting_purpose || null,
@@ -110,32 +107,14 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
           >
             {isEditing(r.id) ? (
               <>
-                <TableCell>
-                  <Input
-                    type="date"
-                    value={editValues.date || ""}
-                    onChange={(e) => setEditValues(v => ({ ...v, date: e.target.value }))}
-                    className="h-8 w-[130px] text-sm"
-                    onClick={(e) => e.stopPropagation()}
-                  />
+                <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                  {new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}
                 </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={editValues.amount ?? ""}
-                    onChange={(e) => setEditValues(v => ({ ...v, amount: e.target.value ? parseFloat(e.target.value) : null }))}
-                    className="h-8 w-[100px] text-sm font-mono"
-                    onClick={(e) => e.stopPropagation()}
-                  />
+                <TableCell className="font-mono text-sm text-muted-foreground whitespace-nowrap">
+                  {formatAmount(r.amount)}
                 </TableCell>
-                <TableCell>
-                  <Input
-                    value={editValues.description || ""}
-                    onChange={(e) => setEditValues(v => ({ ...v, description: e.target.value }))}
-                    className="h-8 text-sm"
-                    onClick={(e) => e.stopPropagation()}
-                  />
+                <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
+                  {r.description || "–"}
                 </TableCell>
                 <TableCell>
                   <div onClick={(e) => e.stopPropagation()}>
