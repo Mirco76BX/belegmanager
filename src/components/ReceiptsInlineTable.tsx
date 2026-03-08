@@ -63,9 +63,6 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
   const saveEdit = async (id: string) => {
     setSaving(true);
     const { error } = await supabase.from("receipts").update({
-      date: editValues.date,
-      amount: editValues.amount != null ? editValues.amount : null,
-      description: editValues.description || null,
       person_met: editValues.person_met || null,
       organization: editValues.organization || null,
       meeting_purpose: editValues.meeting_purpose || null,
