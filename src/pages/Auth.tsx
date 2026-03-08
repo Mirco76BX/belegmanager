@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { FileText, Globe } from "lucide-react";
+import { FileText, Globe, MailCheck } from "lucide-react";
 import receiptScanImg from "@/assets/receipt-scan.jpg";
 import PricingPlans from "@/components/PricingPlans";
 import ContactSection from "@/components/ContactSection";
@@ -20,6 +20,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const { signIn, signUp } = useAuth();
   const { t, lang, setLang } = useLanguage();
   const { toast } = useToast();
@@ -38,7 +39,7 @@ const Auth = () => {
         navigate("/");
       } else {
         await signUp(email, password);
-        toast({ title: lang === "de" ? "Konto erstellt! Bitte E-Mail bestätigen." : "Account created! Please confirm your email." });
+        setEmailSent(true);
       }
     } catch (err: any) {
       toast({ title: err.message, variant: "destructive" });
@@ -81,6 +82,35 @@ const Auth = () => {
               <p className="mt-1 text-sm text-muted-foreground">{t("app.tagline")}</p>
             </div>
 
+            {emailSent ? (
+              <Card>
+                <CardContent className="py-10 text-center space-y-4">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                    <MailCheck className="h-7 w-7 text-primary" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-foreground">
+                    {lang === "de" ? "Bestätigungs-E-Mail gesendet" : "Confirmation email sent"}
+                  </h2>
+                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                    {lang === "de"
+                      ? `Wir haben eine Bestätigungs-E-Mail an ${email} gesendet. Bitte klicken Sie auf den Link in der E-Mail, um Ihr Konto zu aktivieren.`
+                      : `We've sent a confirmation email to ${email}. Please click the link in the email to activate your account.`}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {lang === "de"
+                      ? "Prüfen Sie auch Ihren Spam-Ordner."
+                      : "Please also check your spam folder."}
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => { setEmailSent(false); setIsLogin(true); }}
+                    className="mt-2"
+                  >
+                    {lang === "de" ? "Zurück zum Login" : "Back to login"}
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -150,6 +180,7 @@ const Auth = () => {
                 </div>
               </CardContent>
             </Card>
+            )}
           </div>
         </div>
       </div>
