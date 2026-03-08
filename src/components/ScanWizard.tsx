@@ -26,6 +26,7 @@ const PURPOSE_PRESETS = [
 interface ScanResult {
   date: string | null;
   amount: number | null;
+  currency?: string;
   description: string | null;
   vendor: string | null;
   tax_amount: number | null;
