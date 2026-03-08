@@ -199,7 +199,7 @@ const Companies = () => {
           <Car className="h-5 w-5" />
           {tt({de:"Fahrzeuge", en:"Vehicles", tr:"Araçlar", ar:"المركبات", ru:"Транспорт"})}
         </h2>
-        <Button variant="outline" className="gap-2 w-full sm:w-auto" onClick={() => { resetVehicleForm(); setVehicleDialogOpen(true); }}>
+        <Button className="gap-2 w-full sm:w-auto" onClick={() => { resetVehicleForm(); setVehicleDialogOpen(true); }}>
           <Plus className="h-4 w-4" />
           {tt({de:"Fahrzeug hinzufügen", en:"Add Vehicle", tr:"Araç Ekle", ar:"إضافة مركبة", ru:"Добавить транспорт"})}
         </Button>
