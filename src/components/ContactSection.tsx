@@ -14,6 +14,7 @@ import { toast } from "sonner";
 const ContactSection = () => {
   const { lang } = useLanguage();
   const [form, setForm] = useState({ name: "", organization: "", email: "", phone: "", orgType: "company", message: "" });
+  const [consent, setConsent] = useState(false);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
