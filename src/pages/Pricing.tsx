@@ -2,7 +2,8 @@ import { useAuth, TIERS } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Check, Crown, Zap, Loader2 } from "lucide-react";
+import { Check, Crown, Zap, Loader2, Tag } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -15,6 +16,7 @@ const Pricing = () => {
   const [loading, setLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("yearly");
+  const [couponCode, setCouponCode] = useState("");
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -34,7 +36,7 @@ const Pricing = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { priceId },
+        body: { priceId, couponCode: couponCode.trim() || undefined },
       });
       if (error) throw error;
       if (data?.url) window.open(data.url, "_blank");
@@ -179,10 +181,21 @@ const Pricing = () => {
             </ul>
 
             {plan.id === "relax" && !isRelax && (
-              <Button className="w-full" onClick={handleCheckout} disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {lang === "de" ? "Jetzt upgraden" : "Upgrade Now"}
-              </Button>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <Input
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    placeholder={lang === "de" ? "Gutscheincode" : "Coupon code"}
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <Button className="w-full" onClick={handleCheckout} disabled={loading}>
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {lang === "de" ? "Jetzt upgraden" : "Upgrade Now"}
+                </Button>
+              </div>
             )}
 
             {plan.id === "relax" && isRelax && (

@@ -24,7 +24,7 @@ serve(async (req) => {
     const user = data.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
 
-    const { priceId } = await req.json();
+    const { priceId, couponCode } = await req.json();
     if (!priceId) throw new Error("priceId is required");
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
@@ -34,12 +34,25 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
+    // Resolve coupon if provided
+    const discounts: { coupon: string }[] = [];
+    if (couponCode) {
+      // List coupons and find by name match
+      const coupons = await stripe.coupons.list({ limit: 100 });
+      const match = coupons.data.find(
+        (c) => c.name?.toLowerCase() === couponCode.toLowerCase() && c.valid
+      );
+      if (!match) throw new Error("Ungültiger Gutscheincode / Invalid coupon code");
+      discounts.push({ coupon: match.id });
+    }
+
     const origin = req.headers.get("origin") || "http://localhost:3000";
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
+      ...(discounts.length > 0 ? { discounts } : {}),
       success_url: `${origin}/pricing?success=true`,
       cancel_url: `${origin}/pricing?canceled=true`,
     });
