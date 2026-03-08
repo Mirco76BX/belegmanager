@@ -36,7 +36,7 @@ const Pricing = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { priceId },
+        body: { priceId, couponCode: couponCode.trim() || undefined },
       });
       if (error) throw error;
       if (data?.url) window.open(data.url, "_blank");
