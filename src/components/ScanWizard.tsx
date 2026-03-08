@@ -167,6 +167,8 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         company_id: companyId || null, file_path: path,
         receipt_type: isFuelReceipt ? "fuel" : "general",
         status: skipDetails ? "pending" : "complete",
+        vat_amount: scanResult?.tax_amount ?? null,
+        vat_rate: scanResult?.tax_rate ?? null,
       };
 
       if (isFuelReceipt) {
