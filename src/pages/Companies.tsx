@@ -71,7 +71,7 @@ const Companies = () => {
     if (!user) return;
     setSaving(true);
 
-    const data = { name, tax_id: taxId || null, address: address || null };
+    const data = { name, tax_id: taxId || null, address: address || null, org_type: orgType };
     let error;
     if (editing) {
       ({ error } = await supabase.from("companies").update(data).eq("id", editing.id));
