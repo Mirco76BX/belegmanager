@@ -56,12 +56,12 @@ const Demo = () => {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2.5">
+          <Link to="/demo" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
               <FileText className="h-5 w-5 text-primary-foreground" />
             </div>
             <span className="text-lg font-bold text-foreground">BelegManager</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-3">
             <LanguageSwitcher className="text-xs text-muted-foreground" />
             <Link to="/auth">
