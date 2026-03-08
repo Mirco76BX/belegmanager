@@ -25,10 +25,11 @@ const Dashboard = () => {
   useEffect(() => {
     if (!user) return;
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+    const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const monthStart = fmt(new Date(now.getFullYear(), now.getMonth(), 1));
 
     // 6 months ago
-    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().split("T")[0];
+    const sixMonthsAgo = fmt(new Date(now.getFullYear(), now.getMonth() - 5, 1));
 
     Promise.all([
       supabase.from("receipts").select("id, date, amount, description", { count: "exact" }),
