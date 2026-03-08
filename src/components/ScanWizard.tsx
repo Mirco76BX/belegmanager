@@ -83,6 +83,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const [newCompanyName, setNewCompanyName] = useState("");
   const [creatingCompany, setCreatingCompany] = useState(false);
   const [localCompanies, setLocalCompanies] = useState<Company[]>(companies);
+  const [savedVehicles, setSavedVehicles] = useState<{ license_plate: string; name: string | null }[]>([]);
 
   useEffect(() => { setLocalCompanies(companies); }, [companies]);
 
