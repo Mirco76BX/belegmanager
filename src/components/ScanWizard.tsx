@@ -390,11 +390,18 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm">{tt({de:"Kennzeichen", en:"License Plate", tr:"Plaka", ar:"لوحة الترخيص", ru:"Номерной знак"})}</Label>
-                  <Input value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} placeholder={tt({de:"z.B. B-AB 1234", en:"e.g. B-AB 1234", tr:"ör. 34 ABC 123", ar:"مثال: B-AB 1234", ru:"напр. B-AB 1234"})} className="h-11 text-base" />
+                  <Input value={licensePlate} onChange={(e) => { setLicensePlate(e.target.value); if (mileage) checkMileage(e.target.value, mileage); }} placeholder={tt({de:"z.B. B-AB 1234", en:"e.g. B-AB 1234", tr:"ör. 34 ABC 123", ar:"مثال: B-AB 1234", ru:"напр. B-AB 1234"})} className="h-11 text-base" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm">{tt({de:"Kilometerstand", en:"Mileage", tr:"Kilometre", ar:"عداد المسافات", ru:"Пробег"})}</Label>
-                  <Input type="number" value={mileage} onChange={(e) => setMileage(e.target.value)} placeholder={tt({de:"z.B. 45230", en:"e.g. 45230", tr:"ör. 45230", ar:"مثال: 45230", ru:"напр. 45230"})} className="h-11 text-base" />
+                  <Input type="number" value={mileage} onChange={(e) => { setMileage(e.target.value); checkMileage(licensePlate, e.target.value); }} placeholder={tt({de:"z.B. 45230", en:"e.g. 45230", tr:"ör. 45230", ar:"مثال: 45230", ru:"напр. 45230"})} className="h-11 text-base" />
+                  {mileageWarning && (
+                    <div className="flex items-start gap-2 rounded-md bg-destructive/10 border border-destructive/30 p-2.5 mt-1.5">
+                      <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                      <p className="text-xs text-destructive">{mileageWarning}</p>
+                    </div>
+                  )}
+                </div>
                 </div>
               </>
             ) : (
