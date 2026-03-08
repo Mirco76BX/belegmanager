@@ -75,6 +75,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const [showCustomPurpose, setShowCustomPurpose] = useState(false);
   const [licensePlate, setLicensePlate] = useState("");
   const [mileage, setMileage] = useState("");
+  const [mileageWarning, setMileageWarning] = useState<string | null>(null);
 
   const [showNewCompany, setShowNewCompany] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState("");
