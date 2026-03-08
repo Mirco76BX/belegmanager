@@ -69,7 +69,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase.functions.invoke("check-subscription");
       if (error) throw error;
-      const tier = RELAX_PRODUCT_IDS.includes(data?.product_id) ? "relax" : "free";
+      const pid = data?.product_id;
+      const tier = MASTER_PRODUCT_IDS.includes(pid) ? "master" : RELAX_PRODUCT_IDS.includes(pid) ? "relax" : "free";
       setSubscription({
         subscribed: data?.subscribed ?? false,
         productId: data?.product_id ?? null,
