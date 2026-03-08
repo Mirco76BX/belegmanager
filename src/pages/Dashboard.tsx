@@ -36,7 +36,7 @@ const Dashboard = () => {
   const stats = [
     { key: "dashboard.totalReceipts" as const, value: String(totalReceipts), icon: Receipt, color: "text-primary" },
     { key: "dashboard.thisMonth" as const, value: String(monthReceipts), icon: TrendingUp, color: "text-accent" },
-    { key: "dashboard.totalAmount" as const, value: `${totalAmount.toFixed(2)} €`, icon: FileSpreadsheet, color: "text-success" },
+    { key: "dashboard.totalAmount" as const, value: totalAmount.toLocaleString(getLocale(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €", icon: FileSpreadsheet, color: "text-success" },
     { key: "dashboard.companies" as const, value: String(companyCount), icon: Building2, color: "text-warning" },
   ];
 
@@ -76,7 +76,7 @@ const Dashboard = () => {
                     </p>
                   </div>
                   <span className="font-mono text-sm font-medium whitespace-nowrap text-right min-w-[5.5rem]">
-                    {r.amount != null ? `${Number(r.amount).toFixed(2)} €` : "–"}
+                    {r.amount != null ? `${Number(r.amount).toLocaleString(getLocale(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` : "–"}
                   </span>
                 </div>
               ))}
