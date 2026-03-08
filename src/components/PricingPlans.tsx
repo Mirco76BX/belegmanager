@@ -74,7 +74,7 @@ const PricingPlans = ({ currentTier, renderAction, compact }: PricingPlansProps)
         >
           {tt({de:"Jährlich", en:"Yearly", tr:"Yıllık", ar:"سنوي", ru:"Ежегодно"})}
           <span className="ml-1.5 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent">
-            {tt({de:"spare 67%", en:"save 67%", tr:"%67 tasarruf", ar:"وفّر 67%", ru:"скидка 67%"})}
+            {tt({de:"bis 67% sparen", en:"save up to 67%", tr:"%67'e kadar tasarruf", ar:"وفّر حتى 67%", ru:"скидка до 67%"})}
           </span>
         </button>
       </div>
