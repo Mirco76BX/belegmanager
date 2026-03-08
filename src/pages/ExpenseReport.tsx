@@ -137,7 +137,7 @@ const ExpenseReport = () => {
       doc.text(`${t("expense.period")}: ${fromDate} – ${toDate}`, pageWidth / 2, 30, { align: "center" });
 
       const rows = getTableRows();
-      rows.push([totalLabel, `${totalAmount.toFixed(2)} €`, "", "", "", ""]);
+      rows.push([totalLabel, `${totalAmount.toFixed(2)} €`, `${totalVat.toFixed(2)} €`, "", "", "", "", ""]);
 
       autoTable(doc, {
         startY: 40, head: [getTableHeaders()], body: rows,
