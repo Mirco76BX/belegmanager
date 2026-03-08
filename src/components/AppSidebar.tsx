@@ -24,12 +24,6 @@ const AppSidebar = () => {
     { key: "nav.receipts" as const, icon: Receipt, path: "/receipts" },
     { key: "nav.companies" as const, icon: Building2, path: "/companies" },
     { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report" },
-    {
-      key: "nav.pricing" as const,
-      icon: isTaxAdvisor ? UserCircle : CreditCard,
-      path: "/pricing",
-      labelOverride: isTaxAdvisor ? (lang === "de" ? "Empfehlungen" : "Referrals") : undefined,
-    },
   ];
 
   return (
@@ -60,7 +54,7 @@ const AppSidebar = () => {
                 }`}
               >
                 <item.icon className="h-4 w-4" />
-                {item.labelOverride || t(item.key)}
+                {t(item.key)}
               </button>
             );
           })}
@@ -194,7 +188,7 @@ const AppSidebar = () => {
                 }`}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium">{item.labelOverride || t(item.key)}</span>
+                <span className="text-[10px] font-medium">{t(item.key)}</span>
               </button>
             );
           })}
@@ -224,7 +218,7 @@ const AppSidebar = () => {
                 }`}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium">{item.labelOverride || t(item.key)}</span>
+                <span className="text-[10px] font-medium">{t(item.key)}</span>
               </button>
             );
           })}
