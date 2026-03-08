@@ -92,6 +92,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       setPersonMet("");
       setOrganization("");
       setMeetingPurpose("");
+      setShowCustomPurpose(false);
       setShowNewCompany(false);
       setNewCompanyName("");
     }
