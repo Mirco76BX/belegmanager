@@ -33,7 +33,7 @@ interface Company {
 }
 
 const Companies = () => {
-  const { t, lang } = useLanguage();
+  const { t, lang, tt } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -60,11 +60,8 @@ const Companies = () => {
   const resetForm = () => { setName(""); setTaxId(""); setAddress(""); setOrgType("company"); setEditing(null); };
 
   const openEdit = (c: Company) => {
-    setEditing(c);
-    setName(c.name);
-    setTaxId(c.tax_id || "");
-    setAddress(c.address || "");
-    setOrgType((c.org_type as OrgType) || "company");
+    setEditing(c); setName(c.name); setTaxId(c.tax_id || "");
+    setAddress(c.address || ""); setOrgType((c.org_type as OrgType) || "company");
     setDialogOpen(true);
   };
 
@@ -72,22 +69,15 @@ const Companies = () => {
     e.preventDefault();
     if (!user) return;
     setSaving(true);
-
     const data = { name, tax_id: taxId || null, address: address || null, org_type: orgType };
     let error;
-    if (editing) {
-      ({ error } = await supabase.from("companies").update(data).eq("id", editing.id));
-    } else {
-      ({ error } = await supabase.from("companies").insert({ ...data, user_id: user.id }));
-    }
+    if (editing) { ({ error } = await supabase.from("companies").update(data).eq("id", editing.id)); }
+    else { ({ error } = await supabase.from("companies").insert({ ...data, user_id: user.id })); }
 
-    if (error) {
-      toast({ title: error.message, variant: "destructive" });
-    } else {
-      toast({ title: lang === "de" ? "Gespeichert" : "Saved" });
-      resetForm();
-      setDialogOpen(false);
-      fetchCompanies();
+    if (error) { toast({ title: error.message, variant: "destructive" }); }
+    else {
+      toast({ title: tt({de:"Gespeichert", en:"Saved", tr:"Kaydedildi", ar:"تم الحفظ", ru:"Сохранено"}) });
+      resetForm(); setDialogOpen(false); fetchCompanies();
     }
     setSaving(false);
   };

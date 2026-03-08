@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/i18n/LanguageContext";
+import { useLanguage, getLocale } from "@/i18n/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,14 +31,14 @@ interface Company {
 }
 
 const ExpenseReport = () => {
-  const { t, lang } = useLanguage();
+  const { t, lang, tt } = useLanguage();
   const { user, subscription } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const locale = getLocale(lang);
 
   const [fromDate, setFromDate] = useState(() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - 1);
+    const d = new Date(); d.setMonth(d.getMonth() - 1);
     return d.toISOString().split("T")[0];
   });
   const [toDate, setToDate] = useState(new Date().toISOString().split("T")[0]);
@@ -51,12 +51,7 @@ const ExpenseReport = () => {
     if (!user || subscription.tier === "free") return;
     setLoading(true);
     const [receiptsRes, companiesRes] = await Promise.all([
-      supabase
-        .from("receipts")
-        .select("*")
-        .gte("date", fromDate)
-        .lte("date", toDate)
-        .order("date", { ascending: true }),
+      supabase.from("receipts").select("*").gte("date", fromDate).lte("date", toDate).order("date", { ascending: true }),
       supabase.from("companies").select("id, name"),
     ]);
     if (receiptsRes.data) setReceipts(receiptsRes.data);
@@ -66,49 +61,38 @@ const ExpenseReport = () => {
 
   useEffect(() => { fetchData(); }, [user, fromDate, toDate, subscription.tier]);
 
-  // FREE tier cannot access expense reports
   if (subscription.tier === "free") {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
         <FileSpreadsheet className="h-12 w-12 text-muted-foreground" />
-        <h2 className="text-xl font-semibold text-foreground">
-          {lang === "de" ? "Reisekostenabrechnung" : "Travel Expense Report"}
-        </h2>
+        <h2 className="text-xl font-semibold text-foreground">{t("expense.title")}</h2>
         <p className="text-muted-foreground max-w-sm">
-          {lang === "de"
-            ? "Diese Funktion ist ab dem RELAX-Plan verfügbar. Upgrade jetzt, um Reisekostenabrechnungen zu erstellen."
-            : "This feature is available from the RELAX plan. Upgrade now to create travel expense reports."}
+          {tt({de:"Diese Funktion ist ab dem RELAX-Plan verfügbar. Upgrade jetzt, um Reisekostenabrechnungen zu erstellen.", en:"This feature is available from the RELAX plan. Upgrade now to create travel expense reports.", tr:"Bu özellik RELAX planından itibaren kullanılabilir. Seyahat masraf raporları oluşturmak için şimdi yükseltin.", ar:"هذه الميزة متاحة من خطة RELAX. قم بالترقية الآن لإنشاء تقارير مصاريف السفر.", ru:"Эта функция доступна с плана RELAX. Обновите сейчас для создания отчётов о командировочных."})}
         </p>
         <Button onClick={() => navigate("/pricing")} className="gap-2">
-          {lang === "de" ? "Jetzt upgraden" : "Upgrade Now"}
+          {tt({de:"Jetzt upgraden", en:"Upgrade Now", tr:"Şimdi Yükselt", ar:"ترقية الآن", ru:"Обновить сейчас"})}
         </Button>
       </div>
     );
   }
 
-  const getCompanyName = (id: string | null) =>
-    id ? companies.find((c) => c.id === id)?.name || "–" : "–";
-
+  const getCompanyName = (id: string | null) => id ? companies.find((c) => c.id === id)?.name || "–" : "–";
   const totalAmount = receipts.reduce((sum, r) => sum + (r.amount || 0), 0);
 
   const getTableHeaders = () => [
-    lang === "de" ? "Datum" : "Date",
-    lang === "de" ? "Betrag" : "Amount",
-    lang === "de" ? "Beschreibung" : "Description",
-    lang === "de" ? "Organisation" : "Organization",
-    lang === "de" ? "Person" : "Person",
-    lang === "de" ? "Zweck" : "Purpose",
+    t("receipts.date"), t("receipts.amount"), t("receipts.description"),
+    t("receipts.company"), t("receipts.person"), tt({de:"Zweck", en:"Purpose", tr:"Amaç", ar:"الغرض", ru:"Цель"}),
   ];
 
   const getTableRows = () =>
     receipts.map((r) => [
-      new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US"),
+      new Date(r.date).toLocaleDateString(locale),
       r.amount != null ? `${r.amount.toFixed(2)} €` : "–",
-      r.description || "–",
-      getCompanyName(r.company_id),
-      r.person_met || "–",
-      r.meeting_purpose || "–",
+      r.description || "–", getCompanyName(r.company_id),
+      r.person_met || "–", r.meeting_purpose || "–",
     ]);
+
+  const totalLabel = tt({de:"Gesamt", en:"Total", tr:"Toplam", ar:"الإجمالي", ru:"Итого"});
 
   const exportCSV = () => {
     if (receipts.length === 0) return;
@@ -117,94 +101,67 @@ const ExpenseReport = () => {
     const csvContent = [
       headers.join(";"),
       ...rows.map((row) => row.map((cell) => `"${cell}"`).join(";")),
-      [lang === "de" ? "Gesamt" : "Total", `${totalAmount.toFixed(2)} €`, "", "", "", ""].map((c) => `"${c}"`).join(";"),
+      [totalLabel, `${totalAmount.toFixed(2)} €`, "", "", "", ""].map((c) => `"${c}"`).join(";"),
     ].join("\n");
 
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${lang === "de" ? "Reisekostenabrechnung" : "expense-report"}_${fromDate}_${toDate}.csv`;
+    a.download = `${tt({de:"Reisekostenabrechnung", en:"expense-report", tr:"masraf-raporu", ar:"تقرير-مصاريف", ru:"отчёт-расходов"})}_${fromDate}_${toDate}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const generatePDF = async () => {
     if (receipts.length === 0) {
-      toast({ title: lang === "de" ? "Keine Belege im Zeitraum" : "No receipts in period", variant: "destructive" });
+      toast({ title: tt({de:"Keine Belege im Zeitraum", en:"No receipts in period", tr:"Dönemde fiş yok", ar:"لا إيصالات في الفترة", ru:"Нет чеков за период"}), variant: "destructive" });
       return;
     }
 
     setGenerating(true);
-
     try {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 14;
 
-      // Title
       doc.setFontSize(18);
-      doc.text(
-        lang === "de" ? "Reisekostenabrechnung" : "Travel Expense Report",
-        pageWidth / 2, 20, { align: "center" }
-      );
-
+      doc.text(t("expense.title"), pageWidth / 2, 20, { align: "center" });
       doc.setFontSize(11);
-      doc.text(
-        `${lang === "de" ? "Zeitraum" : "Period"}: ${fromDate} – ${toDate}`,
-        pageWidth / 2, 30, { align: "center" }
-      );
+      doc.text(`${t("expense.period")}: ${fromDate} – ${toDate}`, pageWidth / 2, 30, { align: "center" });
 
       const rows = getTableRows();
-      rows.push([
-        lang === "de" ? "Gesamt" : "Total",
-        `${totalAmount.toFixed(2)} €`,
-        "", "", "", "",
-      ]);
+      rows.push([totalLabel, `${totalAmount.toFixed(2)} €`, "", "", "", ""]);
 
       autoTable(doc, {
-        startY: 40,
-        head: [getTableHeaders()],
-        body: rows,
+        startY: 40, head: [getTableHeaders()], body: rows,
         styles: { fontSize: 8, cellPadding: 3 },
         headStyles: { fillColor: [41, 74, 112] },
-        footStyles: { fontStyle: "bold" },
-        theme: "grid",
+        footStyles: { fontStyle: "bold" }, theme: "grid",
       });
 
-      // Collect receipt images – multiple per page
-      const receiptFiles = receipts.filter(
-        (r) => r.file_path && !r.file_path.toLowerCase().endsWith(".pdf")
-      );
+      const receiptFiles = receipts.filter((r) => r.file_path && !r.file_path.toLowerCase().endsWith(".pdf"));
 
       if (receiptFiles.length > 0) {
-        // Grid layout: 2 columns, multiple rows per page
         const colCount = 2;
-        const colWidth = (pageWidth - margin * 2 - 10) / colCount; // 10 = gap
+        const colWidth = (pageWidth - margin * 2 - 10) / colCount;
         const maxImgHeight = 80;
         const headerHeight = 12;
         const cellHeight = maxImgHeight + headerHeight + 6;
-
-        let curX = margin;
-        let curY = margin;
-        let col = 0;
+        let curX = margin; let curY = margin; let col = 0;
 
         doc.addPage();
         doc.setFontSize(14);
-        doc.text(lang === "de" ? "Beleganhänge" : "Receipt Attachments", pageWidth / 2, curY, { align: "center" });
+        doc.text(tt({de:"Beleganhänge", en:"Receipt Attachments", tr:"Fiş Ekleri", ar:"مرفقات الإيصالات", ru:"Приложения чеков"}), pageWidth / 2, curY, { align: "center" });
         curY += 10;
 
         for (let i = 0; i < receiptFiles.length; i++) {
           const receipt = receiptFiles[i];
           if (!receipt.file_path) continue;
-
           try {
-            const { data: urlData } = await supabase.storage
-              .from("receipts")
-              .createSignedUrl(receipt.file_path, 60);
+            const { data: urlData } = await supabase.storage.from("receipts").createSignedUrl(receipt.file_path, 60);
             if (!urlData?.signedUrl) continue;
-
             const response = await fetch(urlData.signedUrl);
             const blob = await response.blob();
             const imgData = await new Promise<string>((resolve) => {
@@ -213,47 +170,25 @@ const ExpenseReport = () => {
               reader.readAsDataURL(blob);
             });
 
-            // Check if we need a new page
-            if (curY + cellHeight > pageHeight - margin) {
-              doc.addPage();
-              curY = margin;
-              col = 0;
-            }
-
+            if (curY + cellHeight > pageHeight - margin) { doc.addPage(); curY = margin; col = 0; }
             curX = margin + col * (colWidth + 10);
-
-            // Label
             doc.setFontSize(7);
-            doc.text(
-              `${i + 1}. ${(receipt.description || receipt.date).substring(0, 30)}`,
-              curX, curY + 4
-            );
-
-            // Image
+            doc.text(`${i + 1}. ${(receipt.description || receipt.date).substring(0, 30)}`, curX, curY + 4);
             const imgProps = doc.getImageProperties(imgData);
             const ratio = Math.min(colWidth / imgProps.width, maxImgHeight / imgProps.height);
-            const w = imgProps.width * ratio;
-            const h = imgProps.height * ratio;
+            const w = imgProps.width * ratio; const h = imgProps.height * ratio;
             doc.addImage(imgData, "JPEG", curX, curY + headerHeight, w, h);
-
             col++;
-            if (col >= colCount) {
-              col = 0;
-              curY += cellHeight;
-            }
-          } catch (err) {
-            console.error("Error adding receipt image:", err);
-          }
+            if (col >= colCount) { col = 0; curY += cellHeight; }
+          } catch (err) { console.error("Error adding receipt image:", err); }
         }
       }
 
-      doc.save(`${lang === "de" ? "Reisekostenabrechnung" : "expense-report"}_${fromDate}_${toDate}.pdf`);
-      toast({ title: lang === "de" ? "PDF erstellt!" : "PDF generated!" });
+      doc.save(`${tt({de:"Reisekostenabrechnung", en:"expense-report", tr:"masraf-raporu", ar:"تقرير-مصاريف", ru:"отчёт-расходов"})}_${fromDate}_${toDate}.pdf`);
+      toast({ title: tt({de:"PDF erstellt!", en:"PDF generated!", tr:"PDF oluşturuldu!", ar:"تم إنشاء PDF!", ru:"PDF создан!"}) });
     } catch (err: any) {
       toast({ title: err.message || "PDF error", variant: "destructive" });
-    } finally {
-      setGenerating(false);
-    }
+    } finally { setGenerating(false); }
   };
 
   return (
@@ -261,9 +196,7 @@ const ExpenseReport = () => {
       <h1 className="text-xl md:text-2xl font-bold">{t("expense.title")}</h1>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">{t("expense.period")}</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="text-lg">{t("expense.period")}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2 min-w-0">
@@ -291,7 +224,6 @@ const ExpenseReport = () => {
       {receipts.length > 0 ? (
         <Card className="overflow-hidden">
           <CardContent className="p-0">
-            {/* Desktop table */}
             <div className="hidden md:block">
               <Table>
                 <TableHeader>
@@ -306,7 +238,7 @@ const ExpenseReport = () => {
                 <TableBody>
                   {receipts.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}</TableCell>
+                      <TableCell className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(locale)}</TableCell>
                       <TableCell className="font-mono text-right whitespace-nowrap">{r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}</TableCell>
                       <TableCell>{r.description || "–"}</TableCell>
                       <TableCell>{getCompanyName(r.company_id)}</TableCell>
@@ -314,7 +246,7 @@ const ExpenseReport = () => {
                     </TableRow>
                   ))}
                   <TableRow className="font-bold border-t-2">
-                    <TableCell>{lang === "de" ? "Gesamt" : "Total"}</TableCell>
+                    <TableCell>{totalLabel}</TableCell>
                     <TableCell className="font-mono text-right whitespace-nowrap">{totalAmount.toFixed(2)} €</TableCell>
                     <TableCell colSpan={3} />
                   </TableRow>
@@ -322,17 +254,12 @@ const ExpenseReport = () => {
               </Table>
             </div>
 
-            {/* Mobile cards */}
             <div className="md:hidden divide-y">
               {receipts.map((r) => (
                 <div key={r.id} className="px-4 py-3 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      {new Date(r.date).toLocaleDateString(lang === "de" ? "de-DE" : "en-US")}
-                    </span>
-                    <span className="font-mono text-sm font-semibold whitespace-nowrap">
-                      {r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}
-                    </span>
+                    <span className="text-sm text-muted-foreground">{new Date(r.date).toLocaleDateString(locale)}</span>
+                    <span className="font-mono text-sm font-semibold whitespace-nowrap">{r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}</span>
                   </div>
                   {r.description && <p className="text-sm truncate">{r.description}</p>}
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -342,7 +269,7 @@ const ExpenseReport = () => {
                 </div>
               ))}
               <div className="px-4 py-3 flex items-center justify-between font-bold">
-                <span>{lang === "de" ? "Gesamt" : "Total"}</span>
+                <span>{totalLabel}</span>
                 <span className="font-mono whitespace-nowrap">{totalAmount.toFixed(2)} €</span>
               </div>
             </div>
