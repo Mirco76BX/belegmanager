@@ -1,7 +1,11 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import PricingPlans from "@/components/PricingPlans";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import ContactSection from "@/components/ContactSection";
 import {
   FileText,
