@@ -16,6 +16,13 @@ const AppSidebar = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const langOrder: Language[] = ["de", "en", "tr", "ar", "ru"];
+  const langLabels: Record<Language, string> = { de: "DE", en: "EN", tr: "TR", ar: "AR", ru: "RU" };
+  const nextLang = () => {
+    const idx = langOrder.indexOf(lang);
+    setLang(langOrder[(idx + 1) % langOrder.length]);
+  };
+
   const isTaxAdvisor = subscription.tier === "tax_advisor";
 
   const navItems = [
