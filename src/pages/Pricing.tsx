@@ -147,11 +147,11 @@ const Pricing = () => {
         </button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
+      <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto items-stretch">
         {plans.map((plan) => (
           <div
             key={plan.id}
-            className={`relative rounded-xl border-2 p-6 transition-shadow ${
+            className={`relative rounded-xl border-2 p-6 transition-shadow flex flex-col ${
               plan.current
                 ? "border-primary shadow-lg ring-2 ring-primary/20"
                 : "border-border hover:shadow-md"
@@ -165,10 +165,10 @@ const Pricing = () => {
 
             <div className="flex items-center gap-3 mb-4">
               <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                plan.id === "relax" ? "bg-accent" : "bg-secondary"
+                plan.id === "relax" ? "bg-accent" : plan.id === "master" ? "bg-accent" : "bg-secondary"
               }`}>
                 <plan.icon className={`h-5 w-5 ${
-                  plan.id === "relax" ? "text-accent-foreground" : "text-secondary-foreground"
+                  plan.id === "free" ? "text-secondary-foreground" : "text-accent-foreground"
                 }`} />
               </div>
               <h2 className="text-xl font-bold text-foreground">{plan.name}</h2>
@@ -178,21 +178,22 @@ const Pricing = () => {
               <span className="text-3xl font-bold text-foreground">{plan.price}</span>
               <span className="text-muted-foreground ml-1">{plan.period}</span>
             </div>
-            {plan.hint && (
-              <p className="text-xs text-muted-foreground mb-5">
-                ({plan.hint})
-              </p>
-            )}
-            {!plan.hint && <div className="mb-6" />}
+            <div className="h-5 mb-4">
+              {plan.hint && (
+                <p className="text-xs text-muted-foreground">({plan.hint})</p>
+              )}
+            </div>
 
-            <ul className="space-y-3 mb-6">
+            <ul className="space-y-3 flex-1">
               {plan.features.map((f) => (
-                <li key={f} className="flex items-center gap-2 text-sm text-foreground">
-                  <Check className="h-4 w-4 text-accent shrink-0" />
-                  {f}
+                <li key={f} className="flex items-start gap-2 text-sm text-foreground">
+                  <Check className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+                  <span>{f}</span>
                 </li>
               ))}
             </ul>
+
+            <div className="mt-6">
 
             {/* Upgrade button for non-current paid plans */}
             {plan.priceId && !plan.current && !isPaid && (
@@ -227,6 +228,7 @@ const Pricing = () => {
                 {lang === "de" ? "Aktiver Plan" : "Current Plan"}
               </Button>
             )}
+            </div>
           </div>
         ))}
       </div>
