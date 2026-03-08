@@ -194,15 +194,36 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const { error: uploadError } = await supabase.storage.from("receipts").upload(path, file);
       if (uploadError) throw uploadError;
 
+      const parsedAmount = amount ? parseFloat(amount) : null;
+      const currency = scanResult?.currency || "EUR";
+
+      // Convert to EUR if foreign currency
+      let amountEur: number | null = null;
+      if (parsedAmount && currency !== "EUR") {
+        try {
+          const { data: convData, error: convError } = await supabase.functions.invoke("convert-currency", {
+            body: { amount: parsedAmount, currency, date: date || undefined },
+          });
+          if (!convError && convData?.amount_eur) {
+            amountEur = convData.amount_eur;
+          }
+        } catch (e) {
+          console.warn("Currency conversion failed, saving without EUR amount", e);
+        }
+      } else if (parsedAmount) {
+        amountEur = parsedAmount;
+      }
+
       const insertData: any = {
         user_id: user.id, date: date || (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`; })(),
-        amount: amount ? parseFloat(amount) : null, description: description || null,
+        amount: parsedAmount, description: description || null,
         company_id: companyId || null, file_path: path,
         receipt_type: isFuelReceipt ? "fuel" : "general",
         status: skipDetails ? "pending" : "complete",
         vat_amount: scanResult?.tax_amount ?? null,
         vat_rate: scanResult?.tax_rate ?? null,
-        currency: scanResult?.currency || "EUR",
+        currency,
+        amount_eur: amountEur,
       };
 
       if (isFuelReceipt) {
