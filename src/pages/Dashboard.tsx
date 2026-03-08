@@ -39,7 +39,7 @@ const Dashboard = () => {
       supabase.from("receipts").select("date, amount").gte("date", sixMonthsAgo),
     ]).then(([allRes, monthRes, compRes, recentRes, chartRes]) => {
       setTotalReceipts(allRes.count || 0);
-      setTotalAmount(allRes.data?.reduce((s, r) => s + (r.amount || 0), 0) || 0);
+      setTotalAmount(allRes.data?.reduce((s, r) => s + ((r as any).amount_eur ?? r.amount ?? 0), 0) || 0);
       setMonthReceipts(monthRes.data?.length || 0);
       setCompanyCount(compRes.count || 0);
       if (recentRes.data) setRecentReceipts(recentRes.data);
