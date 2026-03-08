@@ -76,7 +76,8 @@ const Pricing = () => {
       features: lang === "de"
         ? ["10 Scans", "Belegverwaltung", "Reisekostenabrechnung"]
         : ["10 Scans", "Receipt management", "Travel expense reports"],
-      current: !isRelax,
+      current: subscription.tier === "free",
+      priceId: null,
     },
     {
       id: "relax" as const,
@@ -89,6 +90,20 @@ const Pricing = () => {
         ? ["150 Scans / Jahr", "Belegverwaltung", "Reisekostenabrechnung", "Prioritäts-Support"]
         : ["150 Scans / year", "Receipt management", "Travel expense reports", "Priority support"],
       current: isRelax,
+      priceId: billingCycle === "yearly" ? TIERS.relax.yearly.price_id : TIERS.relax.monthly.price_id,
+    },
+    {
+      id: "master" as const,
+      icon: Gem,
+      name: "MASTER",
+      price: "49 €",
+      period: lang === "de" ? "/ Jahr" : "/ year",
+      hint: lang === "de" ? "~4 €/Monat" : "~4 €/month",
+      features: lang === "de"
+        ? ["Unbegrenzte Scans", "Belegverwaltung", "Reisekostenabrechnung", "Prioritäts-Support"]
+        : ["Unlimited Scans", "Receipt management", "Travel expense reports", "Priority support"],
+      current: isMaster,
+      priceId: TIERS.master.yearly.price_id,
     },
   ];
 
