@@ -160,13 +160,36 @@ const Auth = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {isForgot ? (
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">{t("auth.email")}</Label>
+                      <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? t("general.loading") : (lang === "de" ? "Link senden" : "Send link")}
+                    </Button>
+                    <div className="text-center">
+                      <button type="button" onClick={() => setMode("login")} className="text-sm font-medium text-primary hover:underline">
+                        {lang === "de" ? "Zurück zum Login" : "Back to login"}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">{t("auth.email")}</Label>
                     <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">{t("auth.password")}</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">{t("auth.password")}</Label>
+                      {isLogin && (
+                        <button type="button" onClick={() => setMode("forgot")} className="text-xs text-primary hover:underline">
+                          {t("auth.forgotPassword")}
+                        </button>
+                      )}
+                    </div>
                     <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
                   </div>
                   {!isLogin && (
@@ -179,6 +202,7 @@ const Auth = () => {
                     {isLoading ? t("general.loading") : isLogin ? t("auth.login") : t("auth.register")}
                   </Button>
                 </form>
+                )}
                 <div className="relative my-4">
                   <Separator />
                   <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
