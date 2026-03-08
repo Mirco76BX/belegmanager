@@ -214,11 +214,11 @@ const Demo = () => {
             <div className="flex-1 space-y-4 text-center md:text-left">
               <blockquote className="text-xl font-medium leading-relaxed text-foreground italic">
                 {tt({
-                  de: "„Als Steuerberater empfehle ich meinen Mandanten BelegManager, weil es den gesamten Belegprozess digitalisiert und uns beiden wertvolle Zeit spart. Die KI-gestützte Erfassung ist beeindruckend genau."",
-                  en: "\"As a tax advisor, I recommend ReceiptManager to my clients because it digitizes the entire receipt process and saves us both valuable time. The AI-powered capture is impressively accurate.\"",
-                  tr: "\"Bir vergi danışmanı olarak müşterilerime BelegManager'ı öneriyorum çünkü tüm fiş sürecini dijitalleştiriyor ve her ikimize de değerli zaman kazandırıyor.\"",
-                  ar: "\"كمستشار ضريبي، أنصح عملائي بمدير الإيصالات لأنه يرقمن عملية الإيصالات بالكامل ويوفر لنا وقتاً ثميناً.\"",
-                  ru: "\"Как налоговый консультант, я рекомендую ЧекМенеджер своим клиентам, потому что он оцифровывает весь процесс работы с чеками и экономит нам обоим ценное время.\"",
+                  de: "\u201EAls Steuerberater empfehle ich meinen Mandanten BelegManager, weil es den gesamten Belegprozess digitalisiert und uns beiden wertvolle Zeit spart. Die KI-gest\u00FCtzte Erfassung ist beeindruckend genau.\u201C",
+                  en: "\u201CAs a tax advisor, I recommend ReceiptManager to my clients because it digitizes the entire receipt process and saves us both valuable time. The AI-powered capture is impressively accurate.\u201D",
+                  tr: "\u201CBir vergi dan\u0131\u015Fman\u0131 olarak m\u00FC\u015Fterilerime BelegManager\u2019\u0131 \u00F6neriyorum \u00E7\u00FCnk\u00FC t\u00FCm fi\u015F s\u00FCrecini dijitalle\u015Ftiriyor ve her ikimize de de\u011Ferli zaman kazand\u0131r\u0131yor.\u201D",
+                  ar: "\u201Cكمستشار ضريبي، أنصح عملائي بمدير الإيصالات لأنه يرقمن عملية الإيصالات بالكامل ويوفر لنا وقتاً ثميناً.\u201D",
+                  ru: "\u201CКак налоговый консультант, я рекомендую ЧекМенеджер своим клиентам, потому что он оцифровывает весь процесс работы с чеками и экономит нам обоим ценное время.\u201D",
                 })}
               </blockquote>
               <div>
