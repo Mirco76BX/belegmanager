@@ -111,7 +111,7 @@ const ExpenseReport = () => {
   const totalLabel = tt({de:"Gesamt", en:"Total", tr:"Toplam", ar:"الإجمالي", ru:"Итого"});
 
   const exportCSV = () => {
-    if (receipts.length === 0) return;
+    if (filteredReceipts.length === 0) return;
     const headers = getTableHeaders();
     const rows = getTableRows();
     const csvContent = [
