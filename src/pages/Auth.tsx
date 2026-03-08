@@ -144,11 +144,14 @@ const Auth = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setLang(lang === "de" ? "en" : "de")}
+                    onClick={() => {
+                      const langs: Array<"de"|"en"|"tr"|"ar"|"ru"> = ["de","en","tr","ar","ru"];
+                      setLang(langs[(langs.indexOf(lang) + 1) % langs.length]);
+                    }}
                     className="gap-1.5 text-xs text-muted-foreground"
                   >
                     <Globe className="h-3.5 w-3.5" />
-                    {lang === "de" ? "EN" : "DE"}
+                    {lang.toUpperCase()}
                   </Button>
                 </div>
                 <CardDescription>

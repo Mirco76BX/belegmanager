@@ -12,12 +12,14 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [lang, setLangState] = useState<Language>(() => {
     const saved = localStorage.getItem("app-language");
-    return (saved === "en" ? "en" : "de") as Language;
+    const valid: Language[] = ["de", "en", "tr", "ar", "ru"];
+    return valid.includes(saved as Language) ? (saved as Language) : "de";
   });
 
   const setLang = useCallback((newLang: Language) => {
     setLangState(newLang);
     localStorage.setItem("app-language", newLang);
+    document.documentElement.dir = newLang === "ar" ? "rtl" : "ltr";
   }, []);
 
   const translate = useCallback((key: TranslationKey) => t(key, lang), [lang]);

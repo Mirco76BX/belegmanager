@@ -5,7 +5,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, Globe, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InviteDialog from "@/components/InviteDialog";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import type { Language } from "@/i18n/translations";
 
 const AppSidebar = () => {
   const { signOut, subscription } = useAuth();
@@ -14,6 +15,13 @@ const AppSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const langOrder: Language[] = ["de", "en", "tr", "ar", "ru"];
+  const langLabels: Record<Language, string> = { de: "DE", en: "EN", tr: "TR", ar: "AR", ru: "RU" };
+  const nextLang = () => {
+    const idx = langOrder.indexOf(lang);
+    setLang(langOrder[(idx + 1) % langOrder.length]);
+  };
 
   const isTaxAdvisor = subscription.tier === "tax_advisor";
 
@@ -108,11 +116,11 @@ const AppSidebar = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setLang(lang === "de" ? "en" : "de")}
+            onClick={nextLang}
             className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
           >
             <Globe className="h-4 w-4" />
-            {lang === "de" ? "English" : "Deutsch"}
+            {langLabels[lang]} → {langLabels[langOrder[(langOrder.indexOf(lang) + 1) % langOrder.length]]}
           </Button>
           <Button
             variant="ghost"
@@ -167,11 +175,11 @@ const AppSidebar = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => { setLang(lang === "de" ? "en" : "de"); setMobileMenuOpen(false); }}
+            onClick={() => { nextLang(); setMobileMenuOpen(false); }}
             className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
           >
             <Globe className="h-4 w-4" />
-            {lang === "de" ? "English" : "Deutsch"}
+            {langLabels[lang]} → {langLabels[langOrder[(langOrder.indexOf(lang) + 1) % langOrder.length]]}
           </Button>
           <Button
             variant="ghost"
