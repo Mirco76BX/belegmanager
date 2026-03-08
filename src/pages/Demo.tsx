@@ -415,6 +415,9 @@ const Demo = () => {
           </div>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <Link to="/impressum" className="hover:text-foreground hover:underline">Impressum</Link>
+            <Link to="/datenschutz" className="hover:text-foreground hover:underline">
+              {de ? "Datenschutz" : "Privacy"}
+            </Link>
             <Link to="/auth" className="hover:text-foreground hover:underline">
               {de ? "Anmelden" : "Sign In"}
             </Link>
