@@ -188,7 +188,7 @@ const AppSidebar = () => {
                 }`}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium">{item.labelOverride || t(item.key)}</span>
+                <span className="text-[10px] font-medium">{t(item.key)}</span>
               </button>
             );
           })}
