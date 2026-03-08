@@ -18,6 +18,8 @@ interface Receipt {
   id: string;
   date: string;
   amount: number | null;
+  currency?: string;
+  amount_eur?: number | null;
   description: string | null;
   person_met: string | null;
   organization: string | null;
@@ -94,7 +96,7 @@ const ExpenseReport = () => {
     : filterCompanyId === "none" ? receipts.filter(r => !r.company_id)
     : receipts.filter(r => r.company_id === filterCompanyId);
 
-  const totalAmount = filteredReceipts.reduce((sum, r) => sum + (r.amount || 0), 0);
+  const totalAmount = filteredReceipts.reduce((sum, r) => sum + (r.amount_eur ?? r.amount ?? 0), 0);
   const totalVat = filteredReceipts.reduce((sum, r) => sum + (r.vat_amount || 0), 0);
 
   const getTableHeaders = () => [
@@ -103,14 +105,22 @@ const ExpenseReport = () => {
   ];
 
   const getTableRows = () =>
-    filteredReceipts.map((r) => [
-      new Date(r.date).toLocaleDateString(locale),
-      r.amount != null ? `${r.amount.toFixed(2)}\u00A0€` : "–",
-      r.vat_amount != null ? `${r.vat_amount.toFixed(2)}\u00A0€` : "–",
-      r.vat_rate != null ? `${r.vat_rate}%` : "–",
-      r.description || "–", getCompanyName(r.company_id),
-      r.person_met || "–", r.meeting_purpose || "–",
-    ]);
+    filteredReceipts.map((r) => {
+      const isForex = r.currency && r.currency !== "EUR";
+      const amountStr = r.amount != null
+        ? isForex
+          ? `${r.amount.toFixed(2)}\u00A0${r.currency}${r.amount_eur != null ? ` (${r.amount_eur.toFixed(2)}\u00A0€)` : ""}`
+          : `${r.amount.toFixed(2)}\u00A0€`
+        : "–";
+      return [
+        new Date(r.date).toLocaleDateString(locale),
+        amountStr,
+        r.vat_amount != null ? `${r.vat_amount.toFixed(2)}\u00A0€` : "–",
+        r.vat_rate != null ? `${r.vat_rate}%` : "–",
+        r.description || "–", getCompanyName(r.company_id),
+        r.person_met || "–", r.meeting_purpose || "–",
+      ];
+    });
 
   const totalLabel = tt({de:"Gesamt", en:"Total", tr:"Toplam", ar:"الإجمالي", ru:"Итого"});
 

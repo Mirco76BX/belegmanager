@@ -32,14 +32,14 @@ const Dashboard = () => {
     const sixMonthsAgo = fmt(new Date(now.getFullYear(), now.getMonth() - 5, 1));
 
     Promise.all([
-      supabase.from("receipts").select("id, date, amount, description", { count: "exact" }),
+      supabase.from("receipts").select("id, date, amount, amount_eur, description", { count: "exact" }),
       supabase.from("receipts").select("id").gte("date", monthStart),
       supabase.from("companies").select("id", { count: "exact" }),
       supabase.from("receipts").select("id, date, amount, description").order("created_at", { ascending: false }).limit(5),
-      supabase.from("receipts").select("date, amount").gte("date", sixMonthsAgo),
+      supabase.from("receipts").select("date, amount, amount_eur").gte("date", sixMonthsAgo),
     ]).then(([allRes, monthRes, compRes, recentRes, chartRes]) => {
       setTotalReceipts(allRes.count || 0);
-      setTotalAmount(allRes.data?.reduce((s, r) => s + (r.amount || 0), 0) || 0);
+      setTotalAmount(allRes.data?.reduce((s, r) => s + ((r as any).amount_eur ?? r.amount ?? 0), 0) || 0);
       setMonthReceipts(monthRes.data?.length || 0);
       setCompanyCount(compRes.count || 0);
       if (recentRes.data) setRecentReceipts(recentRes.data);
@@ -51,9 +51,9 @@ const Dashboard = () => {
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
         grouped[key] = 0;
       }
-      chartRes.data?.forEach((r) => {
+      chartRes.data?.forEach((r: any) => {
         const key = r.date?.substring(0, 7);
-        if (key && key in grouped) grouped[key] += (r.amount || 0);
+        if (key && key in grouped) grouped[key] += (r.amount_eur ?? r.amount ?? 0);
       });
       setMonthlyData(
         Object.entries(grouped).map(([key, amount]) => {
