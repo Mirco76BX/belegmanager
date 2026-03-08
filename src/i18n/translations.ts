@@ -34,7 +34,7 @@ const translations = {
   "receipts.upload": { de: "Hochladen", en: "Upload", tr: "Yükle", ar: "تحميل", ru: "Загрузить" },
   "receipts.camera": { de: "Kamera", en: "Camera", tr: "Kamera", ar: "الكاميرا", ru: "Камера" },
   "receipts.date": { de: "Datum", en: "Date", tr: "Tarih", ar: "التاريخ", ru: "Дата" },
-  "receipts.amount": { de: "Betrag", en: "Amount", tr: "Tutar", ar: "المبلغ", ru: "Сумма" },
+  "receipts.amount": { de: "Betrag (inkl. MwSt.)", en: "Amount (incl. VAT)", tr: "Tutar (KDV dahil)", ar: "المبلغ (شامل الضريبة)", ru: "Сумма (с НДС)" },
   "receipts.company": { de: "Organisation", en: "Organization", tr: "Kuruluş", ar: "المنظمة", ru: "Организация" },
   "receipts.description": { de: "Beschreibung", en: "Description", tr: "Açıklama", ar: "الوصف", ru: "Описание" },
   "receipts.status": { de: "Status", en: "Status", tr: "Durum", ar: "الحالة", ru: "Статус" },
