@@ -107,15 +107,7 @@ const AppSidebar = () => {
             {lang === "de" ? "Mein Konto" : "My Account"}
           </button>
           <InviteDialog />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={nextLang}
-            className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-          >
-            <Globe className="h-4 w-4" />
-            {langLabels[lang]} → {langLabels[langOrder[(langOrder.indexOf(lang) + 1) % langOrder.length]]}
-          </Button>
+          <LanguageSwitcher showLabel className="w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground" />
           <Button
             variant="ghost"
             size="sm"
