@@ -176,7 +176,10 @@ const Auth = () => {
         <ContactSection />
       </div>
 
-      <footer className="py-4 text-center">
+      <footer className="py-4 text-center space-x-4">
+        <Link to="/demo" className="text-xs text-muted-foreground hover:text-foreground hover:underline">
+          {lang === "de" ? "Für Steuerberater" : "For Tax Advisors"}
+        </Link>
         <Link to="/impressum" state={{ from: "/auth" }} className="text-xs text-muted-foreground hover:text-foreground hover:underline">
           Impressum
         </Link>
