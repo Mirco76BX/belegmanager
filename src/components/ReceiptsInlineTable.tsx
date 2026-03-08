@@ -173,7 +173,7 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
                     <Button variant="ghost" size="sm" onClick={() => saveEdit(r.id)} disabled={saving}>
-                      <Check className="h-4 w-4 text-green-600" />
+                      <Check className="h-4 w-4 text-primary" />
                     </Button>
                     <Button variant="ghost" size="sm" onClick={cancelEdit}>
                       <X className="h-4 w-4" />
