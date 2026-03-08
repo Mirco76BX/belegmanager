@@ -169,7 +169,7 @@ const ExpenseReport = () => {
       yPos += 10;
 
       const rows = getTableRows();
-      rows.push([totalLabel, `${totalAmount.toFixed(2)} €`, `${totalVat.toFixed(2)} €`, "", "", "", "", ""]);
+      rows.push([totalLabel, `${totalAmount.toFixed(2)}\u00A0€`, `${totalVat.toFixed(2)}\u00A0€`, "", "", "", "", ""]);
 
       autoTable(doc, {
         startY: yPos, head: [getTableHeaders()], body: rows,
