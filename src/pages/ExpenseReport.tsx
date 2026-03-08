@@ -252,8 +252,10 @@ const ExpenseReport = () => {
 
       {profile && (
         <div className="text-sm text-muted-foreground">
-          <p>{profile.display_name || profile.email}</p>
-          {profile.display_name && <p>{profile.email}</p>}
+          {(profile.first_name || profile.last_name) && (
+            <p className="font-medium text-foreground">{[profile.first_name, profile.last_name].filter(Boolean).join(" ")}</p>
+          )}
+          <p>{profile.email}</p>
           {filterCompanyId !== "all" && filterCompanyId !== "none" && (
             <p className="font-medium text-foreground">
               {tt({de:"Organisation", en:"Organization", tr:"Kuruluş", ar:"المنظمة", ru:"Организация"})}: {companies.find(c => c.id === filterCompanyId)?.name}
