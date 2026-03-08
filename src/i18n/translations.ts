@@ -65,7 +65,7 @@ const translations = {
   "companies.type.other": { de: "Sonstiges", en: "Other", tr: "Diğer", ar: "أخرى", ru: "Прочее" },
 
   // Expense Report
-  "expense.title": { de: "Reisekostenabrechnung", en: "Travel Expense Report", tr: "Seyahat Masraf Raporu", ar: "تقرير مصاريف السفر", ru: "Отчёт о командировочных" },
+  "expense.title": { de: "Report", en: "Report", tr: "Rapor", ar: "تقرير", ru: "Отчёт" },
   "expense.generate": { de: "Abrechnung erstellen", en: "Generate Report", tr: "Rapor Oluştur", ar: "إنشاء التقرير", ru: "Создать отчёт" },
   "expense.period": { de: "Zeitraum", en: "Period", tr: "Dönem", ar: "الفترة", ru: "Период" },
   "expense.from": { de: "Von", en: "From", tr: "Başlangıç", ar: "من", ru: "С" },
