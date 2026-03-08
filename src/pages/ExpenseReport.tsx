@@ -121,7 +121,7 @@ const ExpenseReport = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${tt({de:"Reisekostenabrechnung", en:"expense-report", tr:"masraf-raporu", ar:"تقرير-مصاريف", ru:"отчёт-расходов"})}_${fromDate}_${toDate}.csv`;
+    a.download = `Report_${fromDate}_${toDate}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
