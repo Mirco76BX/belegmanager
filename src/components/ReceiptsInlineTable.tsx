@@ -8,6 +8,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trash2, Check, X, Eye } from "lucide-react";
 
+const PURPOSE_PRESETS = [
+  { value: "Geschäftsessen", de: "🍽️ Geschäftsessen", en: "🍽️ Business meal" },
+  { value: "Akquise", de: "🤝 Akquise", en: "🤝 Acquisition" },
+  { value: "Büromaterial", de: "📎 Büromaterial", en: "📎 Office supplies" },
+  { value: "Reisekosten", de: "✈️ Reisekosten", en: "✈️ Travel expenses" },
+  { value: "Fortbildung", de: "📚 Fortbildung", en: "📚 Training" },
+  { value: "Bewirtung", de: "🥂 Bewirtung", en: "🥂 Hospitality" },
+  { value: "Telefon/Internet", de: "📱 Telefon/Internet", en: "📱 Phone/Internet" },
+];
 interface Receipt {
   id: string;
   date: string;
@@ -160,19 +169,37 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
                       />
                     </div>
                   ) : (
-                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                      <Input
-                        value={editValues.person_met || ""}
-                        onChange={(e) => setEditValues(v => ({ ...v, person_met: e.target.value }))}
-                        className="h-9 text-sm w-[130px] bg-background shadow-sm"
-                        placeholder={tt({de:"Person…", en:"Person…", tr:"Kişi…", ar:"شخص…", ru:"Человек…"})}
-                      />
-                      <Input
-                        value={editValues.meeting_purpose || ""}
-                        onChange={(e) => setEditValues(v => ({ ...v, meeting_purpose: e.target.value }))}
-                        className="h-9 text-sm w-[130px] bg-background shadow-sm"
-                        placeholder={tt({de:"Zweck…", en:"Purpose…", tr:"Amaç…", ar:"الغرض…", ru:"Цель…"})}
-                      />
+                    <div className="flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex gap-2">
+                        <Input
+                          value={editValues.person_met || ""}
+                          onChange={(e) => setEditValues(v => ({ ...v, person_met: e.target.value }))}
+                          className="h-9 text-sm w-[130px] bg-background shadow-sm"
+                          placeholder={tt({de:"Person…", en:"Person…", tr:"Kişi…", ar:"شخص…", ru:"Человек…"})}
+                        />
+                        <Input
+                          value={editValues.meeting_purpose || ""}
+                          onChange={(e) => setEditValues(v => ({ ...v, meeting_purpose: e.target.value }))}
+                          className="h-9 text-sm w-[130px] bg-background shadow-sm"
+                          placeholder={tt({de:"Zweck…", en:"Purpose…", tr:"Amaç…", ar:"الغرض…", ru:"Цель…"})}
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {PURPOSE_PRESETS.map((p) => (
+                          <button
+                            key={p.value}
+                            type="button"
+                            onClick={() => setEditValues(v => ({ ...v, meeting_purpose: p.value }))}
+                            className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                              editValues.meeting_purpose === p.value
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
+                            }`}
+                          >
+                            {lang === "de" ? p.de : p.en}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </TableCell>

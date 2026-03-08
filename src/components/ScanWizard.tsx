@@ -272,8 +272,17 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                   {tt({de:"Erkannte Daten:", en:"Detected data:", tr:"Algılanan veriler:", ar:"البيانات المكتشفة:", ru:"Обнаруженные данные:"})}
                 </p>
                 {scanResult.vendor && <p className="text-muted-foreground text-xs">📍 {scanResult.vendor}</p>}
-                {scanResult.amount && <p className="text-muted-foreground text-xs">💰 {scanResult.amount.toFixed(2)} €</p>}
-                {scanResult.tax_amount != null && <p className="text-muted-foreground text-xs">🧾 MwSt: {scanResult.tax_amount.toFixed(2)} € {scanResult.tax_rate != null ? `(${scanResult.tax_rate}%)` : ""}</p>}
+                {scanResult.amount && (
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">💰 {scanResult.amount.toFixed(2)} € inkl. MwSt.</span>
+                    {scanResult.tax_amount != null && (
+                      <span>MwSt: {scanResult.tax_amount.toFixed(2)} €</span>
+                    )}
+                    {scanResult.tax_rate != null && (
+                      <span>Satz: {scanResult.tax_rate}%</span>
+                    )}
+                  </div>
+                )}
                 {scanResult.date && <p className="text-muted-foreground text-xs">📅 {scanResult.date}</p>}
                 {isFuelReceipt && <p className="text-muted-foreground text-xs">⛽ {tt({de:"Tankquittung erkannt", en:"Fuel receipt detected", tr:"Yakıt fişi algılandı", ar:"تم اكتشاف إيصال وقود", ru:"Обнаружен чек на топливо"})}</p>}
               </div>
@@ -285,8 +294,14 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                 <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-11 text-base" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">{tt({de:"Betrag (€)", en:"Amount (€)", tr:"Tutar (€)", ar:"المبلغ (€)", ru:"Сумма (€)"})}</Label>
+                <Label className="text-sm">{tt({de:"Betrag inkl. MwSt. (€)", en:"Amount incl. VAT (€)", tr:"KDV dahil Tutar (€)", ar:"المبلغ شامل الضريبة (€)", ru:"Сумма с НДС (€)"})}</Label>
                 <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className="h-11 text-base" />
+                {scanResult?.tax_amount != null && (
+                  <p className="text-xs text-muted-foreground">
+                    {tt({de:"MwSt.", en:"VAT", tr:"KDV", ar:"ضريبة", ru:"НДС"})}: {scanResult.tax_amount.toFixed(2)} € 
+                    {scanResult.tax_rate != null && ` (${scanResult.tax_rate}%)`}
+                  </p>
+                )}
               </div>
             </div>
 
