@@ -333,10 +333,19 @@ const Receipts = () => {
                   <span className="text-muted-foreground">{t("receipts.date")}</span>
                   <span className="font-medium">{new Date(detailReceipt.date).toLocaleDateString(locale)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t("receipts.amount")}</span>
-                  <span className="font-mono font-semibold">{formatAmount(detailReceipt.amount)}</span>
-                </div>
+                 <div className="flex justify-between text-sm">
+                   <span className="text-muted-foreground">{t("receipts.amount")}</span>
+                   <span className="font-mono font-semibold">{formatAmount(detailReceipt.amount)}</span>
+                 </div>
+                 {(detailReceipt.vat_amount != null || detailReceipt.vat_rate != null) && (
+                   <div className="flex justify-between text-sm">
+                     <span className="text-muted-foreground">MwSt.</span>
+                     <span className="font-mono">
+                       {detailReceipt.vat_amount != null ? `${detailReceipt.vat_amount.toFixed(2)} €` : "–"}
+                       {detailReceipt.vat_rate != null ? ` (${detailReceipt.vat_rate}%)` : ""}
+                     </span>
+                   </div>
+                 )}
                 {detailReceipt.description && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{t("receipts.description")}</span>
