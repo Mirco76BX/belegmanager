@@ -188,6 +188,7 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
         ))}
       </TableBody>
     </Table>
+    </div>
   );
 };
 
