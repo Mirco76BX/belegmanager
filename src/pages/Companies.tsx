@@ -108,18 +108,18 @@ const Companies = () => {
         <div className="grid gap-3">
           {companies.map((c) => (
             <Card key={c.id}>
-              <CardContent className="flex items-center justify-between py-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">{orgTypeIcons[(c.org_type as OrgType) || "company"]}</span>
-                    <p className="font-medium text-foreground">{c.name}</p>
-                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+              <CardContent className="flex items-center justify-between gap-2 py-4">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-muted-foreground shrink-0">{orgTypeIcons[(c.org_type as OrgType) || "company"]}</span>
+                    <p className="font-medium text-foreground truncate">{c.name}</p>
+                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
                       {t(`companies.type.${(c.org_type as OrgType) || "company"}` as any)}
                     </span>
                   </div>
-                  <div className="flex gap-4 text-xs text-muted-foreground mt-0.5">
+                  <div className="flex gap-4 text-xs text-muted-foreground mt-0.5 truncate">
                     {c.tax_id && <span>{t("companies.taxId")}: {c.tax_id}</span>}
-                    {c.address && <span>{c.address}</span>}
+                    {c.address && <span className="truncate">{c.address}</span>}
                   </div>
                 </div>
                 <div className="flex gap-1">
