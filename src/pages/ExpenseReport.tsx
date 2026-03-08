@@ -106,7 +106,7 @@ const ExpenseReport = () => {
     const csvContent = [
       headers.join(";"),
       ...rows.map((row) => row.map((cell) => `"${cell}"`).join(";")),
-      [totalLabel, `${totalAmount.toFixed(2)} €`, "", "", "", ""].map((c) => `"${c}"`).join(";"),
+      [totalLabel, `${totalAmount.toFixed(2)} €`, `${totalVat.toFixed(2)} €`, "", "", "", "", ""].map((c) => `"${c}"`).join(";"),
     ].join("\n");
 
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
