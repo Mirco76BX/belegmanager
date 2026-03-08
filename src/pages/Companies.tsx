@@ -44,6 +44,7 @@ const Companies = () => {
   const [taxId, setTaxId] = useState("");
   const [address, setAddress] = useState("");
   const [saving, setSaving] = useState(false);
+  const [orgType, setOrgType] = useState<OrgType>("company");
 
   const fetchCompanies = async () => {
     if (!user) return;
