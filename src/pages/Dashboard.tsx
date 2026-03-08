@@ -76,7 +76,7 @@ const Dashboard = () => {
                     </p>
                   </div>
                   <span className="font-mono text-sm font-medium whitespace-nowrap text-right min-w-[5.5rem]">
-                    {r.amount != null ? `${Number(r.amount).toFixed(2)} €` : "–"}
+                    {r.amount != null ? `${Number(r.amount).toLocaleString(getLocale(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` : "–"}
                   </span>
                 </div>
               ))}
