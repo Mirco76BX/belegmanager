@@ -59,7 +59,7 @@ const ExpenseReport = () => {
     const [receiptsRes, companiesRes, profileRes] = await Promise.all([
       supabase.from("receipts").select("*").gte("date", fromDate).lte("date", toDate).order("date", { ascending: true }),
       supabase.from("companies").select("id, name"),
-      supabase.from("profiles").select("display_name, email").eq("id", user.id).single(),
+      supabase.from("profiles").select("first_name, last_name, display_name, email").eq("id", user.id).single(),
     ]);
     if (receiptsRes.data) setReceipts(receiptsRes.data);
     if (companiesRes.data) setCompanies(companiesRes.data);
