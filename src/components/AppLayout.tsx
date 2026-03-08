@@ -1,5 +1,6 @@
 import { Outlet, Link } from "react-router-dom";
 import AppSidebar from "./AppSidebar";
+import OnboardingOverlay from "./OnboardingOverlay";
 
 const AppLayout = () => {
   return (
@@ -17,6 +18,7 @@ const AppLayout = () => {
           </Link>
         </footer>
       </div>
+      <OnboardingOverlay />
     </div>
   );
 };
