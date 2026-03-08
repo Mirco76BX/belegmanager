@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileSpreadsheet, Download } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -48,6 +49,8 @@ const ExpenseReport = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [filterCompanyId, setFilterCompanyId] = useState<string>("all");
+  const [filterMonth, setFilterMonth] = useState<string>("all");
 
   const fetchData = async () => {
     if (!user || subscription.tier === "free") return;
@@ -79,8 +82,16 @@ const ExpenseReport = () => {
   }
 
   const getCompanyName = (id: string | null) => id ? companies.find((c) => c.id === id)?.name || "–" : "–";
-  const totalAmount = receipts.reduce((sum, r) => sum + (r.amount || 0), 0);
-  const totalVat = receipts.reduce((sum, r) => sum + (r.vat_amount || 0), 0);
+
+  const filteredByCompany = filterCompanyId === "all" ? receipts
+    : filterCompanyId === "none" ? receipts.filter(r => !r.company_id)
+    : receipts.filter(r => r.company_id === filterCompanyId);
+  const filteredReceipts = filterMonth === "all" ? filteredByCompany
+    : filteredByCompany.filter(r => r.date.substring(0, 7) === filterMonth);
+  const availableMonths = Array.from(new Set(receipts.map(r => r.date.substring(0, 7)))).sort().reverse();
+
+  const totalAmount = filteredReceipts.reduce((sum, r) => sum + (r.amount || 0), 0);
+  const totalVat = filteredReceipts.reduce((sum, r) => sum + (r.vat_amount || 0), 0);
 
   const getTableHeaders = () => [
     t("receipts.date"), t("receipts.amount"), "MwSt.", "MwSt.-%", t("receipts.description"),
@@ -88,7 +99,7 @@ const ExpenseReport = () => {
   ];
 
   const getTableRows = () =>
-    receipts.map((r) => [
+    filteredReceipts.map((r) => [
       new Date(r.date).toLocaleDateString(locale),
       r.amount != null ? `${r.amount.toFixed(2)} €` : "–",
       r.vat_amount != null ? `${r.vat_amount.toFixed(2)} €` : "–",
@@ -100,7 +111,7 @@ const ExpenseReport = () => {
   const totalLabel = tt({de:"Gesamt", en:"Total", tr:"Toplam", ar:"الإجمالي", ru:"Итого"});
 
   const exportCSV = () => {
-    if (receipts.length === 0) return;
+    if (filteredReceipts.length === 0) return;
     const headers = getTableHeaders();
     const rows = getTableRows();
     const csvContent = [
@@ -119,7 +130,7 @@ const ExpenseReport = () => {
   };
 
   const generatePDF = async () => {
-    if (receipts.length === 0) {
+    if (filteredReceipts.length === 0) {
       toast({ title: tt({de:"Keine Belege im Zeitraum", en:"No receipts in period", tr:"Dönemde fiş yok", ar:"لا إيصالات في الفترة", ru:"Нет чеков за период"}), variant: "destructive" });
       return;
     }
@@ -146,7 +157,7 @@ const ExpenseReport = () => {
         footStyles: { fontStyle: "bold" }, theme: "grid",
       });
 
-      const receiptFiles = receipts.filter((r) => r.file_path && !r.file_path.toLowerCase().endsWith(".pdf"));
+      const receiptFiles = filteredReceipts.filter((r) => r.file_path && !r.file_path.toLowerCase().endsWith(".pdf"));
 
       if (receiptFiles.length > 0) {
         const colCount = 2;
@@ -214,11 +225,11 @@ const ExpenseReport = () => {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Button className="gap-2" onClick={generatePDF} disabled={generating || receipts.length === 0}>
+            <Button className="gap-2" onClick={generatePDF} disabled={generating || filteredReceipts.length === 0}>
               <Download className="h-4 w-4" />
               {generating ? t("general.loading") : "PDF"}
             </Button>
-            <Button variant="outline" className="gap-2" onClick={exportCSV} disabled={receipts.length === 0}>
+            <Button variant="outline" className="gap-2" onClick={exportCSV} disabled={filteredReceipts.length === 0}>
               <FileSpreadsheet className="h-4 w-4" />
               CSV
             </Button>
@@ -226,7 +237,37 @@ const ExpenseReport = () => {
         </CardContent>
       </Card>
 
-      {receipts.length > 0 ? (
+      {receipts.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={filterCompanyId} onValueChange={setFilterCompanyId}>
+            <SelectTrigger className="h-9 w-[200px] text-sm">
+              <SelectValue placeholder={tt({de:"Alle Organisationen", en:"All organizations", tr:"Tüm kuruluşlar", ar:"جميع المنظمات", ru:"Все организации"})} />
+            </SelectTrigger>
+            <SelectContent position="popper" sideOffset={4} className="max-h-56">
+              <SelectItem value="all">{tt({de:"Alle Organisationen", en:"All organizations", tr:"Tüm kuruluşlar", ar:"جميع المنظمات", ru:"Все организации"})}</SelectItem>
+              <SelectItem value="none">{tt({de:"Ohne Organisation", en:"No organization", tr:"Kuruluşsuz", ar:"بدون منظمة", ru:"Без организации"})}</SelectItem>
+              {companies.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterMonth} onValueChange={setFilterMonth}>
+            <SelectTrigger className="h-9 w-[180px] text-sm">
+              <SelectValue placeholder={tt({de:"Alle Monate", en:"All months", tr:"Tüm aylar", ar:"جميع الأشهر", ru:"Все месяцы"})} />
+            </SelectTrigger>
+            <SelectContent position="popper" sideOffset={4} className="max-h-56">
+              <SelectItem value="all">{tt({de:"Alle Monate", en:"All months", tr:"Tüm aylar", ar:"جميع الأشهر", ru:"Все месяцы"})}</SelectItem>
+              {availableMonths.map((m) => {
+                const [y, mo] = m.split("-");
+                const label = new Date(parseInt(y), parseInt(mo) - 1).toLocaleDateString(locale, { year: "numeric", month: "long" });
+                return <SelectItem key={m} value={m}>{label}</SelectItem>;
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {filteredReceipts.length > 0 ? (
         <Card className="overflow-hidden">
           <CardContent className="p-0">
             <div className="hidden md:block">
@@ -242,7 +283,7 @@ const ExpenseReport = () => {
                    </TableRow>
                  </TableHeader>
                  <TableBody>
-                   {receipts.map((r) => (
+                   {filteredReceipts.map((r) => (
                      <TableRow key={r.id}>
                        <TableCell className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(locale)}</TableCell>
                        <TableCell className="font-mono text-right whitespace-nowrap">{r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}</TableCell>
@@ -266,7 +307,7 @@ const ExpenseReport = () => {
             </div>
 
             <div className="md:hidden divide-y">
-              {receipts.map((r) => (
+              {filteredReceipts.map((r) => (
                 <div key={r.id} className="px-4 py-3 space-y-1">
                    <div className="flex items-center justify-between">
                      <span className="text-sm text-muted-foreground">{new Date(r.date).toLocaleDateString(locale)}</span>

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Camera, Receipt as ReceiptIcon, Trash2, Pencil, ScanLine, RefreshCw } from "lucide-react";
+import { Camera, Receipt as ReceiptIcon, Trash2, Pencil, ScanLine } from "lucide-react";
 import ScanWizard from "@/components/ScanWizard";
 import ReceiptsInlineTable from "@/components/ReceiptsInlineTable";
 
@@ -64,21 +64,7 @@ const Receipts = () => {
   const [editLicensePlate, setEditLicensePlate] = useState("");
   const [editMileage, setEditMileage] = useState("");
   const [editSaving, setEditSaving] = useState(false);
-  const [reprocessing, setReprocessing] = useState(false);
-
-  const handleReprocess = async () => {
-    setReprocessing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("reprocess-receipts");
-      if (error) throw error;
-      toast({ title: tt({de:`${data.processed} Belege aktualisiert`, en:`${data.processed} receipts updated`, tr:`${data.processed} fiş güncellendi`, ar:`تم تحديث ${data.processed} إيصالات`, ru:`${data.processed} чеков обновлено`}) });
-      fetchData();
-    } catch (e: any) {
-      toast({ title: e.message || "Error", variant: "destructive" });
-    } finally {
-      setReprocessing(false);
-    }
-  };
+  const [activeTab, setActiveTab] = useState<"general" | "fuel">("general");
 
   const fetchData = async () => {
     if (!user) return;
@@ -222,18 +208,10 @@ const Receipts = () => {
     <div className="animate-fade-in space-y-4">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-xl md:text-2xl font-bold">{t("receipts.title")}</h1>
-        <div className="flex gap-2">
-          {receipts.some(r => r.vat_amount == null && r.file_path) && (
-            <Button variant="outline" size="sm" className="gap-2" onClick={handleReprocess} disabled={reprocessing}>
-              <RefreshCw className={`h-4 w-4 ${reprocessing ? "animate-spin" : ""}`} />
-              <span className="hidden sm:inline">{tt({de:"MwSt. nachlesen", en:"Extract VAT", tr:"KDV çıkar", ar:"استخراج الضريبة", ru:"Извлечь НДС"})}</span>
-            </Button>
-          )}
-          <Button className="gap-2" onClick={() => setScanOpen(true)}>
-            <ScanLine className="h-4 w-4" />
-            {t("receipts.scan")}
-          </Button>
-        </div>
+        <Button className="gap-2" onClick={() => setScanOpen(true)}>
+          <ScanLine className="h-4 w-4" />
+          {t("receipts.scan")}
+        </Button>
       </div>
 
       {receipts.length > 0 && (
@@ -279,49 +257,68 @@ const Receipts = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {/* General Receipts */}
-          {generalReceipts.length > 0 && (
-            <div className="space-y-2">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                🧾 {tt({de:"Belege", en:"Receipts", tr:"Fişler", ar:"الإيصالات", ru:"Чеки"})}
-                <span className="text-sm font-normal text-muted-foreground">({generalReceipts.length})</span>
-              </h2>
-              <Card className="hidden md:block">
-                <CardContent className="p-0">
-                  <ReceiptsInlineTable
-                    receipts={generalReceipts}
-                    companies={companies}
-                    onDelete={handleDelete}
-                    onOpenDetail={openDetail}
-                    onSaved={fetchData}
-                  />
-                </CardContent>
-              </Card>
-              {renderMobileCards(generalReceipts)}
-            </div>
-          )}
+        <div className="space-y-4">
+          {/* Tabs */}
+          <div className="flex gap-1 rounded-lg bg-muted p-1">
+            <button
+              onClick={() => setActiveTab("general")}
+              className={`flex-1 flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                activeTab === "general" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              🧾 {tt({de:"Belege", en:"Receipts", tr:"Fişler", ar:"الإيصالات", ru:"Чеки"})}
+              <span className="text-xs text-muted-foreground">({generalReceipts.length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("fuel")}
+              className={`flex-1 flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                activeTab === "fuel" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              ⛽ {tt({de:"Tankquittungen", en:"Fuel Receipts", tr:"Yakıt Fişleri", ar:"إيصالات الوقود", ru:"Чеки на топливо"})}
+              <span className="text-xs text-muted-foreground">({fuelReceipts.length})</span>
+            </button>
+          </div>
 
-          {/* Fuel Receipts */}
-          {fuelReceipts.length > 0 && (
-            <div className="space-y-2">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                ⛽ {tt({de:"Tankquittungen", en:"Fuel Receipts", tr:"Yakıt Fişleri", ar:"إيصالات الوقود", ru:"Чеки на топливо"})}
-                <span className="text-sm font-normal text-muted-foreground">({fuelReceipts.length})</span>
-              </h2>
-              <Card className="hidden md:block">
-                <CardContent className="p-0">
-                  <ReceiptsInlineTable
-                    receipts={fuelReceipts}
-                    companies={companies}
-                    onDelete={handleDelete}
-                    onOpenDetail={openDetail}
-                    onSaved={fetchData}
-                  />
-                </CardContent>
-              </Card>
-              {renderMobileCards(fuelReceipts)}
-            </div>
+          {/* Active tab content */}
+          {activeTab === "general" ? (
+            generalReceipts.length > 0 ? (
+              <>
+                <Card className="hidden md:block">
+                  <CardContent className="p-0">
+                    <ReceiptsInlineTable
+                      receipts={generalReceipts}
+                      companies={companies}
+                      onDelete={handleDelete}
+                      onOpenDetail={openDetail}
+                      onSaved={fetchData}
+                    />
+                  </CardContent>
+                </Card>
+                {renderMobileCards(generalReceipts)}
+              </>
+            ) : (
+              <Card><CardContent className="py-8 text-center text-muted-foreground">{tt({de:"Keine Belege vorhanden", en:"No receipts", tr:"Fiş yok", ar:"لا إيصالات", ru:"Нет чеков"})}</CardContent></Card>
+            )
+          ) : (
+            fuelReceipts.length > 0 ? (
+              <>
+                <Card className="hidden md:block">
+                  <CardContent className="p-0">
+                    <ReceiptsInlineTable
+                      receipts={fuelReceipts}
+                      companies={companies}
+                      onDelete={handleDelete}
+                      onOpenDetail={openDetail}
+                      onSaved={fetchData}
+                    />
+                  </CardContent>
+                </Card>
+                {renderMobileCards(fuelReceipts)}
+              </>
+            ) : (
+              <Card><CardContent className="py-8 text-center text-muted-foreground">{tt({de:"Keine Tankquittungen vorhanden", en:"No fuel receipts", tr:"Yakıt fişi yok", ar:"لا إيصالات وقود", ru:"Нет чеков на топливо"})}</CardContent></Card>
+            )
           )}
         </div>
       )}
