@@ -307,7 +307,7 @@ const ExpenseReport = () => {
             </div>
 
             <div className="md:hidden divide-y">
-              {receipts.map((r) => (
+              {filteredReceipts.map((r) => (
                 <div key={r.id} className="px-4 py-3 space-y-1">
                    <div className="flex items-center justify-between">
                      <span className="text-sm text-muted-foreground">{new Date(r.date).toLocaleDateString(locale)}</span>
