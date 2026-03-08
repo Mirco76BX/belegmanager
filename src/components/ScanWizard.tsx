@@ -390,8 +390,42 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
               <Input value={organization} onChange={(e) => setOrganization(e.target.value)} className="h-11 text-base" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm">{lang === "de" ? "Zweck des Meetings" : "Meeting Purpose"}</Label>
-              <Input value={meetingPurpose} onChange={(e) => setMeetingPurpose(e.target.value)} className="h-11 text-base" />
+              <Label className="text-sm">{lang === "de" ? "Zweck" : "Purpose"}</Label>
+              <Select
+                value={PURPOSE_PRESETS.some(p => p.value === meetingPurpose) ? meetingPurpose : (meetingPurpose ? "custom" : "")}
+                onValueChange={(val) => {
+                  if (val === "custom") {
+                    setMeetingPurpose("");
+                    setShowCustomPurpose(true);
+                  } else {
+                    setMeetingPurpose(val);
+                    setShowCustomPurpose(false);
+                  }
+                }}
+              >
+                <SelectTrigger className="h-11 text-base">
+                  <SelectValue placeholder={lang === "de" ? "Zweck wählen..." : "Select purpose..."} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4} className="max-h-56">
+                  {PURPOSE_PRESETS.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>
+                      {lang === "de" ? p.labelDe : p.labelEn}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="custom">
+                    {lang === "de" ? "✏️ Eigener Zweck..." : "✏️ Custom purpose..."}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {(showCustomPurpose || (!PURPOSE_PRESETS.some(p => p.value === meetingPurpose) && meetingPurpose !== "")) && (
+                <Input
+                  value={meetingPurpose}
+                  onChange={(e) => setMeetingPurpose(e.target.value)}
+                  placeholder={lang === "de" ? "Zweck eingeben..." : "Enter purpose..."}
+                  className="h-11 text-base mt-2"
+                  autoFocus
+                />
+              )}
             </div>
 
             <Button
