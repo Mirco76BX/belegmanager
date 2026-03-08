@@ -62,13 +62,7 @@ const Demo = () => {
             <span className="text-lg font-bold text-foreground">BelegManager</span>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => {
-              const langs: Array<"de"|"en"|"tr"|"ar"|"ru"> = ["de","en","tr","ar","ru"];
-              setLang(langs[(langs.indexOf(lang) + 1) % langs.length]);
-            }} className="gap-1.5 text-xs text-muted-foreground">
-              <Globe className="h-3.5 w-3.5" />
-              {lang.toUpperCase()}
-            </Button>
+            <LanguageSwitcher className="text-xs text-muted-foreground" />
             <Link to="/auth">
               <Button size="sm">
                 {tt({de:"Jetzt starten", en:"Get Started", tr:"Hemen başla", ar:"ابدأ الآن", ru:"Начать"})}
