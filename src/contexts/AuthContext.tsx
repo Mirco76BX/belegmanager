@@ -71,19 +71,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading: true,
   });
 
-  const checkSubscription = async () => {
+  const checkSubscription = async (userId?: string) => {
+    const uid = userId || user?.id;
+    if (!uid) return;
     try {
       // First check if user is a tax advisor via profile
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile } = await supabase
         .from("profiles")
         .select("is_tax_advisor")
-        .eq("id", user?.id ?? "")
+        .eq("id", uid)
         .maybeSingle();
 
-      console.log("[Auth] checkSubscription profile:", { userId: user?.id, profile, profileError });
-
       if (profile?.is_tax_advisor) {
-        console.log("[Auth] User is tax advisor, setting tier to tax_advisor");
         setSubscription({
           subscribed: true,
           productId: null,
@@ -116,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       setLoading(false);
       if (session?.user) {
-        setTimeout(() => checkSubscription(), 0);
+        setTimeout(() => checkSubscription(session.user.id), 0);
       } else {
         setSubscription({ subscribed: false, productId: null, subscriptionEnd: null, tier: "free", loading: false });
       }
@@ -131,7 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      if (session?.user) checkSubscription();
+      if (session?.user) checkSubscription(session.user.id);
     });
 
     // Proactively refresh the session every 10 minutes to prevent token expiry
