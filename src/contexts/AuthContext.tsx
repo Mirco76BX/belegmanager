@@ -130,7 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      if (session?.user) checkSubscription();
+      if (session?.user) checkSubscription(session.user.id);
     });
 
     // Proactively refresh the session every 10 minutes to prevent token expiry
