@@ -9,8 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, Plus, Trash2, Eye, ArrowLeft, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Users, Plus, Trash2, Eye, ArrowLeft, Clock, CheckCircle2, XCircle, Download, FileText, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 
 interface ClientProfile {
   id: string;
@@ -24,9 +26,13 @@ interface ClientReceipt {
   id: string;
   date: string;
   amount: number | null;
+  amount_eur: number | null;
   description: string | null;
   organization: string | null;
   receipt_type: string;
+  accounting_status: string;
+  currency: string;
+  vat_amount: number | null;
 }
 
 interface Invitation {
@@ -35,6 +41,14 @@ interface Invitation {
   status: string;
   created_at: string;
 }
+
+type AccountingStatus = "neu" | "geprüft" | "verbucht";
+
+const STATUS_OPTIONS: { value: AccountingStatus; labelKey: { de: string; en: string; tr: string; ar: string; ru: string }; color: string }[] = [
+  { value: "neu", labelKey: { de: "Neu", en: "New", tr: "Yeni", ar: "جديد", ru: "Новый" }, color: "border-warning/50 text-warning" },
+  { value: "geprüft", labelKey: { de: "Geprüft", en: "Checked", tr: "Kontrol Edildi", ar: "تم الفحص", ru: "Проверено" }, color: "border-primary/50 text-primary" },
+  { value: "verbucht", labelKey: { de: "Verbucht", en: "Booked", tr: "Kaydedildi", ar: "تم الحجز", ru: "Проведено" }, color: "border-success/50 text-success" },
+];
 
 const Clients = () => {
   const { tt, lang } = useLanguage();
@@ -52,6 +66,7 @@ const Clients = () => {
   const [viewingClient, setViewingClient] = useState<ClientProfile | null>(null);
   const [clientReceipts, setClientReceipts] = useState<ClientReceipt[]>([]);
   const [receiptsLoading, setReceiptsLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const isTaxAdvisor = subscription.tier === "tax_advisor";
 
@@ -107,7 +122,6 @@ const Clients = () => {
       return;
     }
 
-    // Check if already linked or pending
     const existing = invitations.find(i => i.client_email === trimmedEmail && i.status === "pending");
     if (existing) {
       toast({
@@ -118,7 +132,6 @@ const Clients = () => {
       return;
     }
 
-    // Optionally resolve client_id if user exists
     const { data: profile } = await supabase
       .from("profiles")
       .select("id")
@@ -161,14 +174,57 @@ const Clients = () => {
   const viewReceipts = async (client: ClientProfile) => {
     setViewingClient(client);
     setReceiptsLoading(true);
+    setStatusFilter("all");
     const { data } = await supabase
       .from("receipts")
-      .select("id, date, amount, description, organization, receipt_type")
+      .select("id, date, amount, amount_eur, description, organization, receipt_type, accounting_status, currency, vat_amount")
       .eq("user_id", client.id)
-      .order("date", { ascending: false })
-      .limit(50);
-    setClientReceipts(data || []);
+      .order("date", { ascending: false });
+    setClientReceipts((data as ClientReceipt[]) || []);
     setReceiptsLoading(false);
+  };
+
+  const handleStatusChange = async (receiptId: string, newStatus: AccountingStatus) => {
+    const { error } = await supabase.rpc("update_receipt_accounting_status", {
+      _receipt_id: receiptId,
+      _status: newStatus,
+    });
+    if (error) {
+      sonnerToast.error(error.message);
+    } else {
+      setClientReceipts((prev) =>
+        prev.map((r) => (r.id === receiptId ? { ...r, accounting_status: newStatus } : r))
+      );
+    }
+  };
+
+  const filteredReceipts = statusFilter === "all"
+    ? clientReceipts
+    : clientReceipts.filter((r) => r.accounting_status === statusFilter);
+
+  const handleExportCSV = () => {
+    if (filteredReceipts.length === 0) return;
+    const headers = ["Datum", "Beschreibung", "Organisation", "Betrag", "Betrag EUR", "MwSt.", "Währung", "Typ", "Status"];
+    const rows = filteredReceipts.map((r) => [
+      r.date,
+      `"${(r.description || "").replace(/"/g, '""')}"`,
+      `"${(r.organization || "").replace(/"/g, '""')}"`,
+      r.amount?.toString() || "",
+      r.amount_eur?.toString() || "",
+      r.vat_amount?.toString() || "",
+      r.currency,
+      r.receipt_type,
+      r.accounting_status,
+    ]);
+    const csv = [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `belege_${clientName(viewingClient!)}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    sonnerToast.success(tt({ de: "Export erstellt", en: "Export created", tr: "Dışa aktarma oluşturuldu", ar: "تم إنشاء التصدير", ru: "Экспорт создан" }));
   };
 
   if (!isTaxAdvisor) {
@@ -186,19 +242,65 @@ const Clients = () => {
   const clientName = (c: ClientProfile) =>
     [c.first_name, c.last_name].filter(Boolean).join(" ") || c.display_name || c.email;
 
+  // Client receipt detail view
   if (viewingClient) {
+    const statusLabel = (s: string) => {
+      const opt = STATUS_OPTIONS.find((o) => o.value === s);
+      return opt ? tt(opt.labelKey as any) : s;
+    };
+
     return (
       <div className="animate-fade-in space-y-4">
-        <Button variant="ghost" size="sm" className="gap-2" onClick={() => setViewingClient(null)}>
-          <ArrowLeft className="h-4 w-4" />
-          {tt({ de: "Zurück", en: "Back", tr: "Geri", ar: "رجوع", ru: "Назад" })}
-        </Button>
-        <h1 className="text-xl md:text-2xl font-bold">
-          {tt({ de: "Belege von", en: "Receipts from", tr: "Fişler:", ar: "إيصالات من", ru: "Чеки от" })} {clientName(viewingClient)}
-        </h1>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="gap-2" onClick={() => setViewingClient(null)}>
+              <ArrowLeft className="h-4 w-4" />
+              {tt({ de: "Zurück", en: "Back", tr: "Geri", ar: "رجوع", ru: "Назад" })}
+            </Button>
+            <h1 className="text-xl md:text-2xl font-bold">
+              {clientName(viewingClient)}
+            </h1>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Status filter */}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px] h-9">
+                <Filter className="h-3.5 w-3.5 mr-1.5" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{tt({ de: "Alle", en: "All", tr: "Tümü", ar: "الكل", ru: "Все" })}</SelectItem>
+                {STATUS_OPTIONS.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>{tt(s.labelKey as any)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" className="gap-2" onClick={handleExportCSV} disabled={filteredReceipts.length === 0}>
+              <Download className="h-4 w-4" />
+              CSV
+            </Button>
+          </div>
+        </div>
+
+        {/* Status summary */}
+        <div className="flex gap-2 flex-wrap">
+          {STATUS_OPTIONS.map((s) => {
+            const count = clientReceipts.filter((r) => r.accounting_status === s.value).length;
+            return (
+              <button
+                key={s.value}
+                onClick={() => setStatusFilter(statusFilter === s.value ? "all" : s.value)}
+                className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${statusFilter === s.value ? s.color + " bg-muted font-medium" : "border-border text-muted-foreground hover:bg-muted/50"}`}
+              >
+                {tt(s.labelKey as any)}: {count}
+              </button>
+            );
+          })}
+        </div>
+
         {receiptsLoading ? (
           <p className="text-muted-foreground">{tt({ de: "Laden...", en: "Loading...", tr: "Yükleniyor...", ar: "جارٍ التحميل...", ru: "Загрузка..." })}</p>
-        ) : clientReceipts.length === 0 ? (
+        ) : filteredReceipts.length === 0 ? (
           <Card><CardContent className="py-12 text-center text-muted-foreground">{tt({ de: "Keine Belege vorhanden", en: "No receipts found", tr: "Fiş bulunamadı", ar: "لم يتم العثور على إيصالات", ru: "Чеков не найдено" })}</CardContent></Card>
         ) : (
           <Card>
@@ -210,16 +312,34 @@ const Clients = () => {
                     <TableHead>{tt({ de: "Beschreibung", en: "Description", tr: "Açıklama", ar: "الوصف", ru: "Описание" })}</TableHead>
                     <TableHead>{tt({ de: "Organisation", en: "Organization", tr: "Kuruluş", ar: "المنظمة", ru: "Организация" })}</TableHead>
                     <TableHead className="text-right">{tt({ de: "Betrag", en: "Amount", tr: "Tutar", ar: "المبلغ", ru: "Сумма" })}</TableHead>
+                    <TableHead>{tt({ de: "Status", en: "Status", tr: "Durum", ar: "الحالة", ru: "Статус" })}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {clientReceipts.map((r) => (
+                  {filteredReceipts.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(locale)}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{r.description || "–"}</TableCell>
                       <TableCell>{r.organization || "–"}</TableCell>
                       <TableCell className="text-right font-mono whitespace-nowrap">
-                        {r.amount != null ? `${Number(r.amount).toLocaleString(locale, { minimumFractionDigits: 2 })} €` : "–"}
+                        {r.amount != null ? `${Number(r.amount_eur ?? r.amount).toLocaleString(locale, { minimumFractionDigits: 2 })} €` : "–"}
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={r.accounting_status}
+                          onValueChange={(v) => handleStatusChange(r.id, v as AccountingStatus)}
+                        >
+                          <SelectTrigger className="h-7 w-[110px] text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {STATUS_OPTIONS.map((s) => (
+                              <SelectItem key={s.value} value={s.value}>
+                                {tt(s.labelKey as any)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -244,7 +364,6 @@ const Clients = () => {
         </Button>
       </div>
 
-      {/* Pending invitations */}
       {pendingInvitations.length > 0 && (
         <div className="space-y-2">
           <h2 className="text-sm font-medium text-muted-foreground">
@@ -269,7 +388,6 @@ const Clients = () => {
         </div>
       )}
 
-      {/* Active clients */}
       {loading ? (
         <p className="text-muted-foreground">{tt({ de: "Laden...", en: "Loading...", tr: "Yükleniyor...", ar: "جارٍ التحميل...", ru: "Загрузка..." })}</p>
       ) : clients.length === 0 && pendingInvitations.length === 0 ? (
