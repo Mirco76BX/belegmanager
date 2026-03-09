@@ -1,6 +1,6 @@
 import { TIERS } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { Check, Crown, Zap, Gem } from "lucide-react";
+import { Check, Crown, Zap, Gem, Briefcase } from "lucide-react";
 import { useState } from "react";
 
 type BillingCycle = "monthly" | "yearly";
@@ -54,6 +54,7 @@ const PricingPlans = ({ currentTier, renderAction, compact }: PricingPlansProps)
         tt({de:"Belegverwaltung", en:"Receipt management", tr:"Fiş yönetimi", ar:"إدارة الإيصالات", ru:"Управление чеками"}),
         tt({de:"Reisekosten\u00ADabrechnung", en:"Expense reports", tr:"Masraf raporu", ar:"تقرير المصاريف", ru:"Отчёт о расходах"}),
         tt({de:"Prioritäts\u00ADSupport", en:"Priority support", tr:"Öncelikli destek", ar:"دعم ذو أولوية", ru:"Приоритетная поддержка"}),
+        tt({de:"Branchen-Admin-Zugang", en:"Industry admin access", tr:"Sektör yönetici erişimi", ar:"وصول إداري للصناعة", ru:"Отраслевой админ-доступ"}),
       ],
       priceId: billingCycle === "yearly" ? TIERS.master.yearly.price_id : TIERS.master.monthly.price_id,
     },
@@ -114,6 +115,24 @@ const PricingPlans = ({ currentTier, renderAction, compact }: PricingPlansProps)
             </div>
           );
         })}
+      </div>
+
+      {/* Industry admin hint */}
+      <div className="max-w-4xl mx-auto rounded-xl border border-dashed border-border bg-muted/30 p-4 flex items-center gap-3">
+        <Briefcase className="h-5 w-5 text-primary shrink-0" />
+        <p className="text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">
+            {tt({de:"Branchen-Admin-Zugang", en:"Industry Admin Access", tr:"Sektör Yönetici Erişimi", ar:"وصول إداري للصناعة", ru:"Отраслевой админ-доступ"})}
+          </span>
+          {" – "}
+          {tt({
+            de: "Im MASTER-Plan können Sie als Steuerberater oder Fuhrunternehmer Mandanten, Mitarbeiter und Fahrzeuge zentral verwalten.",
+            en: "With the MASTER plan, tax advisors and fleet managers can centrally manage clients, employees, and vehicles.",
+            tr: "MASTER planıyla vergi danışmanları ve filo yöneticileri müşterileri, çalışanları ve araçları merkezi olarak yönetebilir.",
+            ar: "مع خطة MASTER، يمكن للمستشارين الضريبيين ومديري الأساطيل إدارة العملاء والموظفين والمركبات مركزياً.",
+            ru: "В тарифе MASTER налоговые консультанты и управляющие автопарком могут централизованно управлять клиентами, сотрудниками и транспортом.",
+          })}
+        </p>
       </div>
     </div>
   );
