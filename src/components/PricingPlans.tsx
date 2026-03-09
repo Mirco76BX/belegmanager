@@ -54,6 +54,7 @@ const PricingPlans = ({ currentTier, renderAction, compact }: PricingPlansProps)
         tt({de:"Belegverwaltung", en:"Receipt management", tr:"Fiş yönetimi", ar:"إدارة الإيصالات", ru:"Управление чеками"}),
         tt({de:"Reisekosten\u00ADabrechnung", en:"Expense reports", tr:"Masraf raporu", ar:"تقرير المصاريف", ru:"Отчёт о расходах"}),
         tt({de:"Prioritäts\u00ADSupport", en:"Priority support", tr:"Öncelikli destek", ar:"دعم ذو أولوية", ru:"Приоритетная поддержка"}),
+        tt({de:"Branchen-Admin-Zugang", en:"Industry admin access", tr:"Sektör yönetici erişimi", ar:"وصول إداري للصناعة", ru:"Отраслевой админ-доступ"}),
       ],
       priceId: billingCycle === "yearly" ? TIERS.master.yearly.price_id : TIERS.master.monthly.price_id,
     },
