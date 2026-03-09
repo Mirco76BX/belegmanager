@@ -71,19 +71,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading: true,
   });
 
-  const checkSubscription = async () => {
+  const checkSubscription = async (userId?: string) => {
+    const uid = userId || user?.id;
+    if (!uid) return;
     try {
       // First check if user is a tax advisor via profile
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile } = await supabase
         .from("profiles")
         .select("is_tax_advisor")
-        .eq("id", user?.id ?? "")
+        .eq("id", uid)
         .maybeSingle();
 
-      console.log("[Auth] checkSubscription profile:", { userId: user?.id, profile, profileError });
-
       if (profile?.is_tax_advisor) {
-        console.log("[Auth] User is tax advisor, setting tier to tax_advisor");
         setSubscription({
           subscribed: true,
           productId: null,
