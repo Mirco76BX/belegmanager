@@ -116,6 +116,24 @@ const PricingPlans = ({ currentTier, renderAction, compact }: PricingPlansProps)
           );
         })}
       </div>
+
+      {/* Industry admin hint */}
+      <div className="max-w-4xl mx-auto rounded-xl border border-dashed border-border bg-muted/30 p-4 flex items-center gap-3">
+        <Briefcase className="h-5 w-5 text-primary shrink-0" />
+        <p className="text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">
+            {tt({de:"Branchen-Admin-Zugang", en:"Industry Admin Access", tr:"Sektör Yönetici Erişimi", ar:"وصول إداري للصناعة", ru:"Отраслевой админ-доступ"})}
+          </span>
+          {" – "}
+          {tt({
+            de: "Im MASTER-Plan können Sie als Steuerberater oder Fuhrunternehmer Mandanten, Mitarbeiter und Fahrzeuge zentral verwalten.",
+            en: "With the MASTER plan, tax advisors and fleet managers can centrally manage clients, employees, and vehicles.",
+            tr: "MASTER planıyla vergi danışmanları ve filo yöneticileri müşterileri, çalışanları ve araçları merkezi olarak yönetebilir.",
+            ar: "مع خطة MASTER، يمكن للمستشارين الضريبيين ومديري الأساطيل إدارة العملاء والموظفين والمركبات مركزياً.",
+            ru: "В тарифе MASTER налоговые консультанты и управляющие автопарком могут централизованно управлять клиентами, сотрудниками и транспортом.",
+          })}
+        </p>
+      </div>
     </div>
   );
 };
