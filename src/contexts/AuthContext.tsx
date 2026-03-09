@@ -115,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       setLoading(false);
       if (session?.user) {
-        setTimeout(() => checkSubscription(), 0);
+        setTimeout(() => checkSubscription(session.user.id), 0);
       } else {
         setSubscription({ subscribed: false, productId: null, subscriptionEnd: null, tier: "free", loading: false });
       }
