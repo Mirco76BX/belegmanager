@@ -273,9 +273,13 @@ const Demo = () => {
                   });
                   if (error) throw error;
                   if (data.user) {
-                    await supabase.from("profiles").update({
-                      is_tax_advisor: true, kanzlei: regForm.kanzlei.trim(), display_name: regForm.name.trim(),
-                    }).eq("id", data.user.id);
+                    await supabase.from("profiles").upsert({
+                      id: data.user.id,
+                      email: regForm.email.trim(),
+                      is_tax_advisor: true,
+                      kanzlei: regForm.kanzlei.trim(),
+                      display_name: regForm.name.trim(),
+                    }, { onConflict: "id" });
                   }
                   setRegDone(true);
                 } catch (err: any) { setRegError(err.message); }
