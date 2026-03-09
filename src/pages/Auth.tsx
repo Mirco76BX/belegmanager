@@ -17,6 +17,7 @@ import testimonial1Img from "@/assets/testimonial-1.jpg";
 import testimonial2Img from "@/assets/testimonial-2.jpg";
 import testimonial3Img from "@/assets/testimonial-3.jpg";
 import PricingPlans from "@/components/PricingPlans";
+import IndustrySolutions from "@/components/IndustrySolutions";
 import ContactSection from "@/components/ContactSection";
 
 const Auth = () => {
