@@ -249,8 +249,15 @@ const Auth = () => {
         </div>
       </div>
 
+      {/* Industry Solutions */}
+      <div className="border-t border-border px-4 py-16">
+        <div className="mx-auto max-w-5xl">
+          <IndustrySolutions />
+        </div>
+      </div>
+
       {/* Testimonials */}
-      <div className="px-4 py-16">
+      <div className="border-t border-border bg-muted/30 px-4 py-16">
         <div className="mx-auto max-w-5xl">
           <h2 className="mb-4 text-center text-3xl font-bold text-foreground">
             {tt({de:"Das sagen unsere Nutzer", en:"What our users say", tr:"Kullanıcılarımız ne diyor", ar:"ماذا يقول مستخدمونا", ru:"Что говорят наши пользователи"})}
