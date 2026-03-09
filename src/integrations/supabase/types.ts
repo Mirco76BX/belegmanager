@@ -269,6 +269,7 @@ export type Database = {
       }
       receipts: {
         Row: {
+          accounting_status: string
           amount: number | null
           amount_eur: number | null
           company_id: string | null
@@ -291,6 +292,7 @@ export type Database = {
           vat_rate: number | null
         }
         Insert: {
+          accounting_status?: string
           amount?: number | null
           amount_eur?: number | null
           company_id?: string | null
@@ -313,6 +315,7 @@ export type Database = {
           vat_rate?: number | null
         }
         Update: {
+          accounting_status?: string
           amount?: number | null
           amount_eur?: number | null
           company_id?: string | null
@@ -399,6 +402,10 @@ export type Database = {
         Returns: boolean
       }
       is_tax_advisor: { Args: { _user_id: string }; Returns: boolean }
+      update_receipt_accounting_status: {
+        Args: { _receipt_id: string; _status: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"

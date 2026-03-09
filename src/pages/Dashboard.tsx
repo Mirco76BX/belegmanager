@@ -5,6 +5,7 @@ import { useLanguage, getLocale } from "@/i18n/LanguageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Receipt, Building2, FileSpreadsheet, TrendingUp } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import AdvisorDashboard from "@/components/AdvisorDashboard";
 
 interface MonthlyData {
   month: string;
@@ -13,7 +14,7 @@ interface MonthlyData {
 
 const Dashboard = () => {
   const { t, tt, lang } = useLanguage();
-  const { user } = useAuth();
+  const { user, subscription } = useAuth();
   const locale = getLocale(lang);
   const [totalReceipts, setTotalReceipts] = useState(0);
   const [monthReceipts, setMonthReceipts] = useState(0);
@@ -22,13 +23,13 @@ const Dashboard = () => {
   const [recentReceipts, setRecentReceipts] = useState<any[]>([]);
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
 
+  const isTaxAdvisor = subscription.tier === "tax_advisor";
+
   useEffect(() => {
-    if (!user) return;
+    if (!user || isTaxAdvisor) return;
     const now = new Date();
     const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     const monthStart = fmt(new Date(now.getFullYear(), now.getMonth(), 1));
-
-    // 6 months ago
     const sixMonthsAgo = fmt(new Date(now.getFullYear(), now.getMonth() - 5, 1));
 
     Promise.all([
@@ -44,7 +45,6 @@ const Dashboard = () => {
       setCompanyCount(compRes.count || 0);
       if (recentRes.data) setRecentReceipts(recentRes.data);
 
-      // Aggregate by month
       const grouped: Record<string, number> = {};
       for (let i = 5; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -63,7 +63,11 @@ const Dashboard = () => {
         })
       );
     });
-  }, [user]);
+  }, [user, isTaxAdvisor]);
+
+  if (isTaxAdvisor) {
+    return <AdvisorDashboard />;
+  }
 
   const stats = [
     { key: "dashboard.totalReceipts" as const, value: String(totalReceipts), icon: Receipt, color: "text-primary" },
@@ -90,7 +94,6 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Monthly expenses chart */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">
