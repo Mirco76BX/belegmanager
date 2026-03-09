@@ -1,6 +1,6 @@
 import { TIERS } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { Check, Crown, Zap, Gem } from "lucide-react";
+import { Check, Crown, Zap, Gem, Briefcase } from "lucide-react";
 import { useState } from "react";
 
 type BillingCycle = "monthly" | "yearly";
