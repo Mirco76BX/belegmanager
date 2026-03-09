@@ -5,6 +5,7 @@ import { useLanguage, getLocale } from "@/i18n/LanguageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Receipt, Building2, FileSpreadsheet, TrendingUp } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import AdvisorDashboard from "@/components/AdvisorDashboard";
 
 interface MonthlyData {
   month: string;
@@ -13,7 +14,13 @@ interface MonthlyData {
 
 const Dashboard = () => {
   const { t, tt, lang } = useLanguage();
-  const { user } = useAuth();
+  const { user, subscription } = useAuth();
+  const locale = getLocale(lang);
+
+  // Tax advisors get their own dashboard
+  if (subscription.tier === "tax_advisor") {
+    return <AdvisorDashboard />;
+  }
   const locale = getLocale(lang);
   const [totalReceipts, setTotalReceipts] = useState(0);
   const [monthReceipts, setMonthReceipts] = useState(0);
