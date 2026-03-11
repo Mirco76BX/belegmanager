@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Camera, Upload, Loader2, Check, SkipForward, ArrowRight, Plus, AlertTriangle } from "lucide-react";
+import { Camera, Upload, Loader2, Check, SkipForward, ArrowRight, Plus, AlertTriangle, Info } from "lucide-react";
+import { TAX_CATEGORIES, getSmartGuessVat, getRequiredFields, guessTaxCategoryFromScan } from "@/lib/taxCategories";
 
 const PURPOSE_PRESETS = [
   { value: "Geschäftsessen", de: "🍽️ Geschäftsessen", en: "🍽️ Business meal", tr: "🍽️ İş yemeği", ar: "🍽️ وجبة عمل", ru: "🍽️ Деловой обед" },
@@ -23,6 +24,14 @@ const PURPOSE_PRESETS = [
   { value: "Telefon/Internet", de: "📱 Telefon/Internet", en: "📱 Phone/Internet", tr: "📱 Telefon/İnternet", ar: "📱 هاتف/إنترنت", ru: "📱 Телефон/Интернет" },
 ];
 
+interface ConfidenceScores {
+  date?: string;
+  amount?: string;
+  tax_amount?: string;
+  tax_rate?: string;
+  vendor?: string;
+}
+
 interface ScanResult {
   date: string | null;
   amount: number | null;
@@ -33,6 +42,10 @@ interface ScanResult {
   tax_rate: number | null;
   items: string[];
   is_fuel_receipt?: boolean;
+  suggested_tax_category?: string | null;
+  confidence?: ConfidenceScores;
+  is_handwritten?: boolean;
+  multiple_receipts_detected?: boolean;
 }
 
 interface Company {
@@ -48,6 +61,28 @@ interface ScanWizardProps {
   defaultCompanyId: string | null;
   onCompaniesChanged?: () => void;
 }
+
+const confidenceColor = (level?: string) => {
+  if (!level || level === "high") return "";
+  if (level === "medium") return "ring-2 ring-warning/50 bg-warning/5";
+  return "ring-2 ring-destructive/50 bg-destructive/5";
+};
+
+const confidenceBadge = (level?: string, lang?: string) => {
+  if (!level || level === "high") return null;
+  const labels = {
+    medium: { de: "Unsicher", en: "Uncertain" },
+    low: { de: "Prüfen!", en: "Check!" },
+  };
+  const l = labels[level as keyof typeof labels];
+  return (
+    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+      level === "medium" ? "bg-warning/20 text-warning" : "bg-destructive/20 text-destructive"
+    }`}>
+      ⚠️ {lang === "de" ? l?.de : l?.en}
+    </span>
+  );
+};
 
 const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCompaniesChanged }: ScanWizardProps) => {
   const { user, subscription } = useAuth();
@@ -78,6 +113,9 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const [licensePlate, setLicensePlate] = useState("");
   const [mileage, setMileage] = useState("");
   const [mileageWarning, setMileageWarning] = useState<string | null>(null);
+  const [taxCategory, setTaxCategory] = useState<string>("");
+  const [vatRate, setVatRate] = useState<string>("");
+  const [vatAmount, setVatAmount] = useState<string>("");
 
   const [showNewCompany, setShowNewCompany] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState("");
@@ -96,8 +134,8 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       setShowCustomPurpose(false); setShowNewCompany(false); setNewCompanyName("");
       setLimitReached(false); setIsFuelReceipt(false);
       setLicensePlate(""); setMileage(""); setMileageWarning(null);
+      setTaxCategory(""); setVatRate(""); setVatAmount("");
 
-      // Load saved vehicles
       supabase.from("vehicles").select("license_plate, name").order("license_plate")
         .then(({ data }) => { if (data) setSavedVehicles(data); });
 
@@ -111,18 +149,32 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
     }
   }, [open, defaultCompanyId, user, subscription.tier]);
 
+  // When tax category changes, apply Smart Guess VAT if no OCR value
+  useEffect(() => {
+    if (taxCategory && !scanResult?.tax_rate) {
+      const guessedRate = getSmartGuessVat(taxCategory);
+      if (guessedRate !== null) {
+        setVatRate(String(guessedRate));
+        // Also compute estimated VAT amount from amount
+        const amt = parseFloat(amount);
+        if (!isNaN(amt) && guessedRate > 0) {
+          const estimated = amt - (amt / (1 + guessedRate / 100));
+          setVatAmount(estimated.toFixed(2));
+        }
+      }
+    }
+  }, [taxCategory]);
+
   const handleFileSelected = async (selectedFile: File) => {
     setStep("scanning");
 
     try {
-      // Read file as data URL
       const base64 = await new Promise<string>((resolve) => {
         const r = new FileReader();
         r.onloadend = () => resolve(r.result as string);
         r.readAsDataURL(selectedFile);
       });
 
-      // Auto-crop background around the document
       const croppedBase64 = await autoCropImage(base64);
       const croppedFile = dataUrlToFile(croppedBase64, selectedFile.name);
       setFile(croppedFile);
@@ -135,14 +187,46 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       if (data.date) setDate(data.date);
       if (data.amount) setAmount(String(data.amount));
       if (data.description || data.vendor) setDescription([data.vendor, data.description].filter(Boolean).join(" – "));
+      if (data.tax_amount != null) setVatAmount(String(data.tax_amount));
+      if (data.tax_rate != null) setVatRate(String(data.tax_rate));
+
+      // Auto-detect tax category
+      const suggestedCat = data.suggested_tax_category || guessTaxCategoryFromScan(data.vendor, data.description, !!data.is_fuel_receipt);
+      if (suggestedCat) setTaxCategory(suggestedCat);
+
       if (data.is_fuel_receipt) {
         setIsFuelReceipt(true);
         setMeetingPurpose("Tanken");
+        if (!suggestedCat) setTaxCategory("tankkosten");
       }
+
+      // Notify about multiple receipts
+      if (data.multiple_receipts_detected) {
+        toast({
+          title: tt({ de: "Mehrere Belege erkannt!", en: "Multiple receipts detected!" }),
+          description: tt({
+            de: "Es wurden möglicherweise mehrere Belege im Bild erkannt. Bitte prüfe die erkannten Daten.",
+            en: "Multiple receipts may have been detected in the image. Please verify the extracted data.",
+          }),
+          variant: "destructive",
+        });
+      }
+
+      // Notify about handwritten receipt
+      if (data.is_handwritten) {
+        toast({
+          title: tt({ de: "Handschriftlicher Beleg", en: "Handwritten receipt" }),
+          description: tt({
+            de: "Dieser Beleg scheint handschriftlich zu sein. Bitte überprüfe die rot markierten Felder besonders sorgfältig.",
+            en: "This receipt appears to be handwritten. Please carefully check fields marked in red.",
+          }),
+        });
+      }
+
       setStep("company");
     } catch (err: any) {
       console.error("Scan error:", err);
-      toast({ title: tt({de:"Scan fehlgeschlagen. Daten manuell eingeben.", en:"Scan failed. Enter data manually.", tr:"Tarama başarısız. Verileri manuel girin.", ar:"فشل المسح. أدخل البيانات يدوياً.", ru:"Сканирование не удалось. Введите данные вручную."}), variant: "destructive" });
+      toast({ title: tt({de:"Scan fehlgeschlagen. Daten manuell eingeben.", en:"Scan failed. Enter data manually."}), variant: "destructive" });
       const now = new Date(); setDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`);
       setStep("company");
     }
@@ -158,7 +242,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       setCompanyId(data.id);
       setShowNewCompany(false); setNewCompanyName("");
       onCompaniesChanged?.();
-      toast({ title: tt({de:"Organisation erstellt!", en:"Organization created!", tr:"Kuruluş oluşturuldu!", ar:"تم إنشاء المنظمة!", ru:"Организация создана!"}) });
+      toast({ title: tt({de:"Organisation erstellt!", en:"Organization created!"}) });
     } catch (err: any) { toast({ title: err.message, variant: "destructive" }); }
     finally { setCreatingCompany(false); }
   };
@@ -182,16 +266,43 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         tt({
           de: `Achtung: Der km-Stand (${kmVal.toLocaleString()}) ist niedriger als der letzte erfasste Stand (${data[0].mileage.toLocaleString()} km) für ${plate.trim()}.`,
           en: `Warning: Mileage (${kmVal.toLocaleString()}) is lower than the last recorded value (${data[0].mileage.toLocaleString()} km) for ${plate.trim()}.`,
-          tr: `Uyarı: Kilometre (${kmVal.toLocaleString()}) ${plate.trim()} için son kayıtlı değerden (${data[0].mileage.toLocaleString()} km) düşük.`,
-          ar: `تحذير: المسافة (${kmVal.toLocaleString()}) أقل من آخر قيمة مسجلة (${data[0].mileage.toLocaleString()} كم) لـ ${plate.trim()}.`,
-          ru: `Внимание: Пробег (${kmVal.toLocaleString()}) ниже последнего зафиксированного значения (${data[0].mileage.toLocaleString()} км) для ${plate.trim()}.`,
         })
       );
     }
   };
 
+  const requiredFields = getRequiredFields(taxCategory);
+  const isBewirtung = taxCategory === "bewirtung";
+
+  const validateRequiredFields = (): boolean => {
+    if (!isBewirtung) return true;
+    const missing: string[] = [];
+    if (requiredFields.includes("person_met") && !personMet.trim()) {
+      missing.push(tt({ de: "Teilnehmer", en: "Participants" }));
+    }
+    if (requiredFields.includes("meeting_purpose") && !meetingPurpose.trim()) {
+      missing.push(tt({ de: "Anlass der Bewirtung", en: "Purpose of entertainment" }));
+    }
+    if (missing.length > 0) {
+      toast({
+        title: tt({ de: "Pflichtfelder fehlen", en: "Required fields missing" }),
+        description: tt({
+          de: `Gemäß § 4 Abs. 5 EStG sind folgende Angaben Pflicht: ${missing.join(", ")}`,
+          en: `According to § 4 Abs. 5 EStG, the following fields are required: ${missing.join(", ")}`,
+        }),
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleSave = async (skipDetails = false) => {
     if (!user || !file) return;
+
+    // Validate required fields for Bewirtung (only when not skipping)
+    if (!skipDetails && !validateRequiredFields()) return;
+
     setSaving(true);
     try {
       const ext = file.name.split(".").pop() || "jpg";
@@ -202,7 +313,6 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const parsedAmount = amount ? parseFloat(amount) : null;
       const currency = scanResult?.currency || "EUR";
 
-      // Convert to EUR if foreign currency
       let amountEur: number | null = null;
       if (parsedAmount && currency !== "EUR") {
         try {
@@ -219,16 +329,20 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         amountEur = parsedAmount;
       }
 
+      const finalVatRate = vatRate ? parseFloat(vatRate) : (scanResult?.tax_rate ?? null);
+      const finalVatAmount = vatAmount ? parseFloat(vatAmount) : (scanResult?.tax_amount ?? null);
+
       const insertData: any = {
         user_id: user.id, date: date || (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`; })(),
         amount: parsedAmount, description: description || null,
         company_id: companyId || null, file_path: path,
         receipt_type: isFuelReceipt ? "fuel" : "general",
         status: skipDetails ? "pending" : "complete",
-        vat_amount: scanResult?.tax_amount ?? null,
-        vat_rate: scanResult?.tax_rate ?? null,
+        vat_amount: finalVatAmount,
+        vat_rate: finalVatRate,
         currency,
         amount_eur: amountEur,
+        tax_category: taxCategory || null,
       };
 
       if (isFuelReceipt) {
@@ -244,21 +358,23 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const { error } = await supabase.from("receipts").insert(insertData);
       if (error) throw error;
 
-      toast({ title: tt({de:"Beleg gespeichert!", en:"Receipt saved!", tr:"Fiş kaydedildi!", ar:"تم حفظ الإيصال!", ru:"Чек сохранён!"}) });
+      toast({ title: tt({de:"Beleg gespeichert!", en:"Receipt saved!"}) });
       onSaved(); onClose();
     } catch (err: any) { toast({ title: err.message, variant: "destructive" }); }
     finally { setSaving(false); }
   };
+
+  const conf = scanResult?.confidence;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {step === "upload" && tt({de:"Beleg scannen", en:"Scan Receipt", tr:"Fiş Tara", ar:"مسح الإيصال", ru:"Сканировать чек"})}
-            {step === "scanning" && tt({de:"Wird gescannt...", en:"Scanning...", tr:"Taranıyor...", ar:"جارٍ المسح...", ru:"Сканирование..."})}
-            {step === "company" && tt({de:"Zuordnung", en:"Assignment", tr:"Atama", ar:"التعيين", ru:"Назначение"})}
-            {step === "details" && tt({de:"Weitere Details", en:"Additional Details", tr:"Ek Detaylar", ar:"تفاصيل إضافية", ru:"Дополнительные данные"})}
+            {step === "upload" && tt({de:"Beleg scannen", en:"Scan Receipt"})}
+            {step === "scanning" && tt({de:"Wird gescannt...", en:"Scanning..."})}
+            {step === "company" && tt({de:"Zuordnung", en:"Assignment"})}
+            {step === "details" && tt({de:"Weitere Details", en:"Additional Details"})}
           </DialogTitle>
         </DialogHeader>
 
@@ -266,23 +382,20 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
           <div className="flex flex-col items-center gap-4 py-6 text-center">
             <AlertTriangle className="h-10 w-10 text-destructive" />
             <h3 className="font-semibold text-foreground">
-              {tt({de:"Scan-Limit erreicht", en:"Scan limit reached", tr:"Tarama limiti doldu", ar:"تم الوصول لحد المسح", ru:"Лимит сканирований достигнут"})}
+              {tt({de:"Scan-Limit erreicht", en:"Scan limit reached"})}
             </h3>
             <p className="text-sm text-muted-foreground max-w-xs">
               {tt({
                 de:`Du hast ${scanCount} von ${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} Scans verwendet. Upgrade deinen Plan für mehr Scans.`,
                 en:`You've used ${scanCount} of ${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} scans. Upgrade your plan for more scans.`,
-                tr:`${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} taramadan ${scanCount} tanesini kullandınız. Daha fazlası için planınızı yükseltin.`,
-                ar:`لقد استخدمت ${scanCount} من ${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} عملية مسح. قم بترقية خطتك للمزيد.`,
-                ru:`Вы использовали ${scanCount} из ${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} сканирований. Обновите план для большего.`,
               })}
             </p>
             <div className="flex gap-2">
               <Button variant="outline" onClick={onClose}>
-                {tt({de:"Schließen", en:"Close", tr:"Kapat", ar:"إغلاق", ru:"Закрыть"})}
+                {tt({de:"Schließen", en:"Close"})}
               </Button>
               <Button onClick={() => { onClose(); navigate("/pricing"); }}>
-                {tt({de:"Jetzt upgraden", en:"Upgrade Now", tr:"Şimdi Yükselt", ar:"ترقية الآن", ru:"Обновить сейчас"})}
+                {tt({de:"Jetzt upgraden", en:"Upgrade Now"})}
               </Button>
             </div>
           </div>
@@ -296,16 +409,16 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
               </p>
             )}
             <p className="text-sm text-muted-foreground">
-              {tt({de:"Fotografiere deinen Beleg oder lade ein Bild/PDF hoch.", en:"Take a photo of your receipt or upload an image/PDF.", tr:"Fişinizin fotoğrafını çekin veya bir görüntü/PDF yükleyin.", ar:"التقط صورة لإيصالك أو ارفع صورة/ملف PDF.", ru:"Сфотографируйте чек или загрузите изображение/PDF."})}
+              {tt({de:"Fotografiere deinen Beleg oder lade ein Bild/PDF hoch.", en:"Take a photo of your receipt or upload an image/PDF."})}
             </p>
             <div className="grid grid-cols-2 gap-3">
               <Button variant="outline" className="h-28 flex-col gap-2" onClick={() => cameraInputRef.current?.click()}>
                 <Camera className="h-8 w-8 text-primary" />
-                <span className="text-sm">{tt({de:"Kamera", en:"Camera", tr:"Kamera", ar:"الكاميرا", ru:"Камера"})}</span>
+                <span className="text-sm">{tt({de:"Kamera", en:"Camera"})}</span>
               </Button>
               <Button variant="outline" className="h-28 flex-col gap-2" onClick={() => fileInputRef.current?.click()}>
                 <Upload className="h-8 w-8 text-primary" />
-                <span className="text-sm">{tt({de:"Datei wählen", en:"Choose File", tr:"Dosya seç", ar:"اختر ملف", ru:"Выбрать файл"})}</span>
+                <span className="text-sm">{tt({de:"Datei wählen", en:"Choose File"})}</span>
               </Button>
             </div>
             <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelected(f); }} />
@@ -318,7 +431,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
             {preview && <img src={preview} alt="Receipt" className="max-h-40 rounded-lg border object-contain" />}
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">
-              {tt({de:"KI liest Beleg aus...", en:"AI reading receipt...", tr:"Yapay zeka fişi okuyor...", ar:"الذكاء الاصطناعي يقرأ الإيصال...", ru:"ИИ считывает чек..."})}
+              {tt({de:"KI liest Beleg aus...", en:"AI reading receipt..."})}
             </p>
           </div>
         )}
@@ -326,78 +439,165 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         {step === "company" && (
           <div className="space-y-3">
             {preview && <img src={preview} alt="Receipt" className="max-h-24 w-full rounded-lg border object-contain" />}
+
+            {/* Handwritten / multi-receipt warnings */}
+            {scanResult?.is_handwritten && (
+              <div className="flex items-start gap-2 rounded-md bg-warning/10 border border-warning/30 p-2.5">
+                <Info className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                <p className="text-xs text-warning">
+                  {tt({ de: "Handschriftlicher Beleg erkannt – bitte Daten sorgfältig prüfen.", en: "Handwritten receipt detected – please verify data carefully." })}
+                </p>
+              </div>
+            )}
+            {scanResult?.multiple_receipts_detected && (
+              <div className="flex items-start gap-2 rounded-md bg-destructive/10 border border-destructive/30 p-2.5">
+                <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                <p className="text-xs text-destructive">
+                  {tt({ de: "Mehrere Belege im Bild erkannt! Bitte nur einen Beleg pro Scan hochladen.", en: "Multiple receipts detected! Please upload only one receipt per scan." })}
+                </p>
+              </div>
+            )}
+
             {scanResult && (
               <div className="rounded-md bg-muted/50 p-2.5 text-sm space-y-0.5">
                 <p className="font-medium text-foreground text-xs">
-                  {tt({de:"Erkannte Daten:", en:"Detected data:", tr:"Algılanan veriler:", ar:"البيانات المكتشفة:", ru:"Обнаруженные данные:"})}
+                  {tt({de:"Erkannte Daten:", en:"Detected data:"})}
                 </p>
-                {scanResult.vendor && <p className="text-muted-foreground text-xs">📍 {scanResult.vendor}</p>}
+                {scanResult.vendor && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span>📍 {scanResult.vendor}</span>
+                    {confidenceBadge(conf?.vendor, lang)}
+                  </div>
+                )}
                 {scanResult.amount && (
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                     <span className="font-semibold text-foreground">💰 {scanResult.amount.toFixed(2)} {scanResult.currency || "EUR"} inkl. MwSt.</span>
+                    {confidenceBadge(conf?.amount, lang)}
                     {scanResult.tax_amount != null && (
-                      <span>MwSt: {scanResult.tax_amount.toFixed(2)} {scanResult.currency || "EUR"}</span>
+                      <span className="flex items-center gap-1">
+                        MwSt: {scanResult.tax_amount.toFixed(2)} {scanResult.currency || "EUR"}
+                        {confidenceBadge(conf?.tax_amount, lang)}
+                      </span>
                     )}
                     {scanResult.tax_rate != null && (
-                      <span>Satz: {scanResult.tax_rate}%</span>
+                      <span className="flex items-center gap-1">
+                        Satz: {scanResult.tax_rate}%
+                        {confidenceBadge(conf?.tax_rate, lang)}
+                      </span>
                     )}
                   </div>
                 )}
-                {scanResult.date && <p className="text-muted-foreground text-xs">📅 {scanResult.date}</p>}
-                {isFuelReceipt && <p className="text-muted-foreground text-xs">⛽ {tt({de:"Tankquittung erkannt", en:"Fuel receipt detected", tr:"Yakıt fişi algılandı", ar:"تم اكتشاف إيصال وقود", ru:"Обнаружен чек на топливо"})}</p>}
+                {scanResult.date && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span>📅 {scanResult.date}</span>
+                    {confidenceBadge(conf?.date, lang)}
+                  </div>
+                )}
+                {isFuelReceipt && <p className="text-muted-foreground text-xs">⛽ {tt({de:"Tankquittung erkannt", en:"Fuel receipt detected"})}</p>}
               </div>
             )}
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-sm">{tt({de:"Datum", en:"Date", tr:"Tarih", ar:"التاريخ", ru:"Дата"})}</Label>
-                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-11 text-base" />
+                <div className="flex items-center gap-1.5">
+                  <Label className="text-sm">{tt({de:"Datum", en:"Date"})}</Label>
+                  {confidenceBadge(conf?.date, lang)}
+                </div>
+                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={`h-11 text-base ${confidenceColor(conf?.date)}`} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">{tt({de:"Betrag inkl. MwSt. (€)", en:"Amount incl. VAT (€)", tr:"KDV dahil Tutar (€)", ar:"المبلغ شامل الضريبة (€)", ru:"Сумма с НДС (€)"})}</Label>
-                <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className="h-11 text-base" />
-                {scanResult?.tax_amount != null && (
-                  <p className="text-xs text-muted-foreground">
-                    {tt({de:"MwSt.", en:"VAT", tr:"KDV", ar:"ضريبة", ru:"НДС"})}: {scanResult.tax_amount.toFixed(2)} € 
-                    {scanResult.tax_rate != null && ` (${scanResult.tax_rate}%)`}
-                  </p>
-                )}
+                <div className="flex items-center gap-1.5">
+                  <Label className="text-sm">{tt({de:"Betrag inkl. MwSt. (€)", en:"Amount incl. VAT (€)"})}</Label>
+                  {confidenceBadge(conf?.amount, lang)}
+                </div>
+                <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className={`h-11 text-base ${confidenceColor(conf?.amount)}`} />
+              </div>
+            </div>
+
+            {/* VAT fields with Smart Guess */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Label className="text-sm">{tt({de:"MwSt.-Satz (%)", en:"VAT Rate (%)"})}</Label>
+                  {confidenceBadge(conf?.tax_rate, lang)}
+                  {taxCategory && !scanResult?.tax_rate && vatRate && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                      {tt({de:"Smart Guess", en:"Smart Guess"})}
+                    </span>
+                  )}
+                </div>
+                <Input type="number" step="0.01" value={vatRate} onChange={(e) => setVatRate(e.target.value)} placeholder="19" className={`h-11 text-base ${confidenceColor(conf?.tax_rate)}`} />
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Label className="text-sm">{tt({de:"MwSt.-Betrag (€)", en:"VAT Amount (€)"})}</Label>
+                  {confidenceBadge(conf?.tax_amount, lang)}
+                </div>
+                <Input type="number" step="0.01" value={vatAmount} onChange={(e) => setVatAmount(e.target.value)} placeholder="0.00" className={`h-11 text-base ${confidenceColor(conf?.tax_amount)}`} />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-sm">{tt({de:"Beschreibung", en:"Description", tr:"Açıklama", ar:"الوصف", ru:"Описание"})}</Label>
+              <Label className="text-sm">{tt({de:"Beschreibung", en:"Description"})}</Label>
               <Input value={description} onChange={(e) => setDescription(e.target.value)} className="h-11 text-base" />
             </div>
 
+            {/* Tax Category Selection */}
             <div className="space-y-1.5">
-              <Label className="text-sm">{tt({de:"Organisation zuordnen", en:"Assign Organization", tr:"Kuruluş Ata", ar:"تعيين المنظمة", ru:"Назначить организацию"})}</Label>
+              <Label className="text-sm font-medium">{tt({de:"Steuerliche Kategorie", en:"Tax Category"})}</Label>
+              <Select value={taxCategory} onValueChange={setTaxCategory}>
+                <SelectTrigger className="h-11 text-base">
+                  <SelectValue placeholder={tt({de:"Kategorie wählen...", en:"Select category..."})} />
+                </SelectTrigger>
+                <SelectContent position="popper" sideOffset={4} className="max-h-56">
+                  {TAX_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.icon} {lang === "de" ? cat.label.de : cat.label.en}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {isBewirtung && (
+                <div className="flex items-start gap-2 rounded-md bg-primary/5 border border-primary/20 p-2 mt-1">
+                  <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <p className="text-xs text-primary">
+                    {tt({
+                      de: "Bei Bewirtungskosten sind gemäß § 4 Abs. 5 EStG Angaben zu Teilnehmern und Anlass der Bewirtung Pflicht.",
+                      en: "For entertainment expenses, German tax law (§ 4 Abs. 5 EStG) requires details about participants and purpose.",
+                    })}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm">{tt({de:"Organisation zuordnen", en:"Assign Organization"})}</Label>
               {!showNewCompany ? (
                 <div className="flex items-end gap-2">
                   <Select value={companyId} onValueChange={setCompanyId}>
                     <SelectTrigger className="h-11 flex-1 text-base">
-                      <SelectValue placeholder={tt({de:"Organisation wählen...", en:"Select organization...", tr:"Kuruluş seçin...", ar:"اختر المنظمة...", ru:"Выберите организацию..."})} />
+                      <SelectValue placeholder={tt({de:"Organisation wählen...", en:"Select organization..."})} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="max-h-48">
                       {localCompanies.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
                     </SelectContent>
                   </Select>
                   <Button type="button" variant="outline" size="icon" className="h-11 w-11 shrink-0" onClick={() => setShowNewCompany(true)}
-                    title={tt({de:"Neue Organisation", en:"New organization", tr:"Yeni kuruluş", ar:"منظمة جديدة", ru:"Новая организация"})}>
+                    title={tt({de:"Neue Organisation", en:"New organization"})}>
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
               ) : (
                 <div className="flex items-end gap-2">
                   <Input value={newCompanyName} onChange={(e) => setNewCompanyName(e.target.value)}
-                    placeholder={tt({de:"Name der Organisation...", en:"Organization name...", tr:"Kuruluş adı...", ar:"اسم المنظمة...", ru:"Название организации..."})}
+                    placeholder={tt({de:"Name der Organisation...", en:"Organization name..."})}
                     className="h-11 flex-1 text-base" autoFocus
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreateCompany(); } }} />
                   <Button type="button" size="icon" className="h-11 w-11 shrink-0" onClick={handleCreateCompany} disabled={creatingCompany || !newCompanyName.trim()}>
                     {creatingCompany ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                   </Button>
                   <Button type="button" variant="ghost" className="h-11 px-3 text-sm text-muted-foreground" onClick={() => { setShowNewCompany(false); setNewCompanyName(""); }}>
-                    {tt({de:"Abbrechen", en:"Cancel", tr:"İptal", ar:"إلغاء", ru:"Отмена"})}
+                    {tt({de:"Abbrechen", en:"Cancel"})}
                   </Button>
                 </div>
               )}
@@ -406,11 +606,11 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
             <div className="flex gap-2 pt-1">
               <Button variant="outline" className="flex-1 gap-2 h-11" onClick={() => handleSave(true)} disabled={saving}>
                 <SkipForward className="h-4 w-4" />
-                {tt({de:"Speichern & Skip", en:"Save & Skip", tr:"Kaydet & Atla", ar:"حفظ وتخطي", ru:"Сохранить и пропустить"})}
+                {tt({de:"Speichern & Skip", en:"Save & Skip"})}
               </Button>
               <Button className="flex-1 gap-2 h-11" onClick={() => setStep("details")}>
                 <ArrowRight className="h-4 w-4" />
-                {tt({de:"Weiter", en:"Next", tr:"İleri", ar:"التالي", ru:"Далее"})}
+                {tt({de:"Weiter", en:"Next"})}
               </Button>
             </div>
           </div>
@@ -421,7 +621,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
             {isFuelReceipt ? (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">{tt({de:"Kennzeichen", en:"License Plate", tr:"Plaka", ar:"لوحة الترخيص", ru:"Номерной знак"})}</Label>
+                  <Label className="text-sm">{tt({de:"Kennzeichen", en:"License Plate"})}</Label>
                   {savedVehicles.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-1.5">
                       {savedVehicles.map((v) => (
@@ -440,11 +640,11 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                       ))}
                     </div>
                   )}
-                  <Input value={licensePlate} onChange={(e) => { setLicensePlate(e.target.value); if (mileage) checkMileage(e.target.value, mileage); }} placeholder={tt({de:"z.B. B-AB 1234", en:"e.g. B-AB 1234", tr:"ör. 34 ABC 123", ar:"مثال: B-AB 1234", ru:"напр. B-AB 1234"})} className="h-11 text-base uppercase font-mono" />
+                  <Input value={licensePlate} onChange={(e) => { setLicensePlate(e.target.value); if (mileage) checkMileage(e.target.value, mileage); }} placeholder={tt({de:"z.B. B-AB 1234", en:"e.g. B-AB 1234"})} className="h-11 text-base uppercase font-mono" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">{tt({de:"Kilometerstand", en:"Mileage", tr:"Kilometre", ar:"عداد المسافات", ru:"Пробег"})}</Label>
-                  <Input type="number" value={mileage} onChange={(e) => { setMileage(e.target.value); checkMileage(licensePlate, e.target.value); }} placeholder={tt({de:"z.B. 45230", en:"e.g. 45230", tr:"ör. 45230", ar:"مثال: 45230", ru:"напр. 45230"})} className="h-11 text-base" />
+                  <Label className="text-sm">{tt({de:"Kilometerstand", en:"Mileage"})}</Label>
+                  <Input type="number" value={mileage} onChange={(e) => { setMileage(e.target.value); checkMileage(licensePlate, e.target.value); }} placeholder={tt({de:"z.B. 45230", en:"e.g. 45230"})} className="h-11 text-base" />
                   {mileageWarning && (
                     <div className="flex items-start gap-2 rounded-md bg-destructive/10 border border-destructive/30 p-2.5 mt-1.5">
                       <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
@@ -452,21 +652,30 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                     </div>
                   )}
                 </div>
-
-
               </>
             ) : (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">{tt({de:"Getroffene Person", en:"Person Met", tr:"Görüşülen Kişi", ar:"الشخص الملتقى", ru:"Встреча с"})}</Label>
-                  <Input value={personMet} onChange={(e) => setPersonMet(e.target.value)} className="h-11 text-base" />
+                  <Label className={`text-sm ${isBewirtung ? "font-semibold text-foreground" : ""}`}>
+                    {tt({de:"Getroffene Person / Teilnehmer", en:"Person Met / Participants"})}
+                    {isBewirtung && <span className="text-destructive ml-1">*</span>}
+                  </Label>
+                  <Input
+                    value={personMet}
+                    onChange={(e) => setPersonMet(e.target.value)}
+                    className={`h-11 text-base ${isBewirtung && !personMet.trim() ? "ring-2 ring-destructive/50" : ""}`}
+                    placeholder={isBewirtung ? tt({de:"Pflichtfeld bei Bewirtung", en:"Required for entertainment"}) : ""}
+                  />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">{tt({de:"Unternehmung/Organisation", en:"Organization", tr:"İşletme/Kuruluş", ar:"المؤسسة/المنظمة", ru:"Предприятие/Организация"})}</Label>
+                  <Label className="text-sm">{tt({de:"Unternehmung/Organisation", en:"Organization"})}</Label>
                   <Input value={organization} onChange={(e) => setOrganization(e.target.value)} className="h-11 text-base" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm">{tt({de:"Zweck", en:"Purpose", tr:"Amaç", ar:"الغرض", ru:"Цель"})}</Label>
+                  <Label className={`text-sm ${isBewirtung ? "font-semibold text-foreground" : ""}`}>
+                    {isBewirtung ? tt({de:"Anlass der Bewirtung", en:"Purpose of Entertainment"}) : tt({de:"Zweck", en:"Purpose"})}
+                    {isBewirtung && <span className="text-destructive ml-1">*</span>}
+                  </Label>
                   <Select
                     value={PURPOSE_PRESETS.some(p => p.value === meetingPurpose) ? meetingPurpose : (meetingPurpose ? "custom" : "")}
                     onValueChange={(val) => {
@@ -474,8 +683,8 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                       else { setMeetingPurpose(val); setShowCustomPurpose(false); }
                     }}
                   >
-                    <SelectTrigger className="h-11 text-base">
-                      <SelectValue placeholder={tt({de:"Zweck wählen...", en:"Select purpose...", tr:"Amaç seçin...", ar:"اختر الغرض...", ru:"Выберите цель..."})} />
+                    <SelectTrigger className={`h-11 text-base ${isBewirtung && !meetingPurpose.trim() ? "ring-2 ring-destructive/50" : ""}`}>
+                      <SelectValue placeholder={tt({de:"Zweck wählen...", en:"Select purpose..."})} />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={4} className="max-h-56">
                       {PURPOSE_PRESETS.map((p) => (
@@ -484,14 +693,14 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                         </SelectItem>
                       ))}
                       <SelectItem value="custom">
-                        {tt({de:"✏️ Eigener Zweck...", en:"✏️ Custom purpose...", tr:"✏️ Özel amaç...", ar:"✏️ غرض مخصص...", ru:"✏️ Своя цель..."})}
+                        {tt({de:"✏️ Eigener Zweck...", en:"✏️ Custom purpose..."})}
                       </SelectItem>
                     </SelectContent>
                   </Select>
                   {(showCustomPurpose || (!PURPOSE_PRESETS.some(p => p.value === meetingPurpose) && meetingPurpose !== "")) && (
                     <Input value={meetingPurpose} onChange={(e) => setMeetingPurpose(e.target.value)}
-                      placeholder={tt({de:"Zweck eingeben...", en:"Enter purpose...", tr:"Amaç girin...", ar:"أدخل الغرض...", ru:"Введите цель..."})}
-                      className="h-11 text-base mt-2" autoFocus />
+                      placeholder={isBewirtung ? tt({de:"Anlass eingeben (Pflicht)...", en:"Enter purpose (required)..."}) : tt({de:"Zweck eingeben...", en:"Enter purpose..."})}
+                      className={`h-11 text-base mt-2 ${isBewirtung && !meetingPurpose.trim() ? "ring-2 ring-destructive/50" : ""}`} autoFocus />
                   )}
                 </div>
               </>
@@ -500,8 +709,8 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
             <Button className="w-full gap-2" onClick={() => handleSave(false)} disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               {saving
-                ? tt({de:"Speichern...", en:"Saving...", tr:"Kaydediliyor...", ar:"جارٍ الحفظ...", ru:"Сохранение..."})
-                : tt({de:"Beleg speichern", en:"Save Receipt", tr:"Fişi kaydet", ar:"حفظ الإيصال", ru:"Сохранить чек"})}
+                ? tt({de:"Speichern...", en:"Saving..."})
+                : tt({de:"Beleg speichern", en:"Save Receipt"})}
             </Button>
           </div>
         )}
