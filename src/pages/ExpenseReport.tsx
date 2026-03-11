@@ -28,6 +28,9 @@ interface Receipt {
   company_id: string | null;
   vat_amount: number | null;
   vat_rate: number | null;
+  status?: string;
+  tax_category?: string | null;
+  accounting_status?: string;
 }
 
 interface Company {
