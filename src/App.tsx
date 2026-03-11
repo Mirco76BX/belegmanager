@@ -18,6 +18,7 @@ import Pricing from "@/pages/Pricing";
 import Account from "@/pages/Account";
 import Impressum from "@/pages/Impressum";
 import Clients from "@/pages/Clients";
+import Fahrtkosten from "@/pages/Fahrtkosten";
 import Datenschutz from "@/pages/Datenschutz";
 import Demo from "@/pages/Demo";
 import ResetPassword from "@/pages/ResetPassword";
@@ -66,6 +67,7 @@ const App = () => (
                 <Route path="/receipts" element={<Receipts />} />
                 <Route path="/companies" element={<Companies />} />
                 <Route path="/expense-report" element={<ExpenseReport />} />
+                <Route path="/fahrtkosten" element={<Fahrtkosten />} />
                 <Route path="/admin/users" element={<AdminUsers />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/clients" element={<Clients />} />

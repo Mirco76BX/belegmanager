@@ -28,6 +28,9 @@ interface Receipt {
   company_id: string | null;
   vat_amount: number | null;
   vat_rate: number | null;
+  status?: string;
+  tax_category?: string | null;
+  accounting_status?: string;
 }
 
 interface Company {
@@ -92,6 +95,24 @@ const ExpenseReport = () => {
 
   const getCompanyName = (id: string | null) => id ? companies.find((c) => c.id === id)?.name || "–" : "–";
 
+  // Receipt completeness status
+  const getReceiptStatus = (r: Receipt): "incomplete" | "ready" | "exported" => {
+    if (r.accounting_status === "verbucht" || r.accounting_status === "exported") return "exported";
+    if (!r.amount || !r.date || !r.description) return "incomplete";
+    if (r.tax_category === "bewirtung" && (!r.person_met || !r.meeting_purpose)) return "incomplete";
+    return "ready";
+  };
+
+  const statusLabel = (s: "incomplete" | "ready" | "exported") => {
+    const map = {
+      incomplete: { de: "Unvollständig", en: "Incomplete", cls: "bg-destructive/10 text-destructive" },
+      ready: { de: "Bereit", en: "Ready", cls: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
+      exported: { de: "Exportiert", en: "Exported", cls: "bg-muted text-muted-foreground" },
+    };
+    const m = map[s];
+    return <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${m.cls}`}>{lang === "de" ? m.de : m.en}</span>;
+  };
+
   const filteredReceipts = filterCompanyId === "all" ? receipts
     : filterCompanyId === "none" ? receipts.filter(r => !r.company_id)
     : receipts.filter(r => r.company_id === filterCompanyId);
@@ -99,9 +120,14 @@ const ExpenseReport = () => {
   const totalAmount = filteredReceipts.reduce((sum, r) => sum + (r.amount_eur ?? r.amount ?? 0), 0);
   const totalVat = filteredReceipts.reduce((sum, r) => sum + (r.vat_amount || 0), 0);
 
+  // Status summary
+  const statusCounts = { incomplete: 0, ready: 0, exported: 0 };
+  filteredReceipts.forEach(r => { statusCounts[getReceiptStatus(r)]++; });
+
   const getTableHeaders = () => [
     t("receipts.date"), t("receipts.amount"), "MwSt.", "MwSt.-%", t("receipts.description"),
     t("receipts.company"), t("receipts.person"), tt({de:"Zweck", en:"Purpose", tr:"Amaç", ar:"الغرض", ru:"Цель"}),
+    "Status",
   ];
 
   const getTableRows = () =>
@@ -112,6 +138,10 @@ const ExpenseReport = () => {
           ? `${r.amount.toFixed(2)}\u00A0${r.currency}${r.amount_eur != null ? ` (${r.amount_eur.toFixed(2)}\u00A0€)` : ""}`
           : `${r.amount.toFixed(2)}\u00A0€`
         : "–";
+      const s = getReceiptStatus(r);
+      const sLabel = s === "incomplete" ? (lang === "de" ? "Unvollständig" : "Incomplete")
+        : s === "ready" ? (lang === "de" ? "Bereit" : "Ready")
+        : (lang === "de" ? "Exportiert" : "Exported");
       return [
         new Date(r.date).toLocaleDateString(locale),
         amountStr,
@@ -119,6 +149,7 @@ const ExpenseReport = () => {
         r.vat_rate != null ? `${r.vat_rate}%` : "–",
         r.description || "–", getCompanyName(r.company_id),
         r.person_met || "–", r.meeting_purpose || "–",
+        sLabel,
       ];
     });
 
@@ -142,7 +173,7 @@ const ExpenseReport = () => {
       ...metaLines,
       headers.join(";"),
       ...rows.map((row) => row.map((cell) => `"${cell}"`).join(";")),
-      [totalLabel, `${totalAmount.toFixed(2)}\u00A0€`, `${totalVat.toFixed(2)}\u00A0€`, "", "", "", "", ""].map((c) => `"${c}"`).join(";"),
+      [totalLabel, `${totalAmount.toFixed(2)}\u00A0€`, `${totalVat.toFixed(2)}\u00A0€`, "", "", "", "", "", ""].map((c) => `"${c}"`).join(";"),
     ].join("\n");
 
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
@@ -152,6 +183,54 @@ const ExpenseReport = () => {
     a.download = `Report_${fromDate}_${toDate}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // DATEV-compatible CSV export
+  const exportDATEV = () => {
+    if (filteredReceipts.length === 0) return;
+    // DATEV header line
+    const datevHeaders = [
+      "Umsatz (ohne Soll/Haben-Kz)", "Soll/Haben-Kennzeichen", "WKZ Umsatz",
+      "Kurs", "Basis-Umsatz", "WKZ Basis-Umsatz", "Konto", "Gegenkonto (ohne BU-Schlüssel)",
+      "BU-Schlüssel", "Belegdatum", "Belegfeld 1", "Belegfeld 2",
+      "Skonto", "Buchungstext", "Postensperre", "Diverse Adressnummer",
+      "Geschäftspartnerbank", "Sachverhalt", "Zinssperre",
+    ];
+
+    const datevRows = filteredReceipts.map((r) => {
+      const amt = r.amount_eur ?? r.amount ?? 0;
+      const dateFormatted = r.date ? r.date.replace(/-/g, "").slice(4) : ""; // MMDD
+      const buKey = r.vat_rate === 19 ? "3" : r.vat_rate === 7 ? "2" : "";
+      return [
+        amt.toFixed(2).replace(".", ","),  // German decimal
+        "S",
+        "EUR",
+        "", "", "",
+        "4900",  // Sonstige betriebliche Aufwendungen (default)
+        "1200",  // Bank
+        buKey,
+        dateFormatted,
+        r.id.slice(0, 12),  // Belegfeld 1
+        "",
+        "",
+        (r.description || "").slice(0, 60),
+        "", "", "", "", "",
+      ];
+    });
+
+    const csvContent = [
+      datevHeaders.join(";"),
+      ...datevRows.map((row) => row.map((cell) => `"${cell}"`).join(";")),
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `DATEV_Export_${fromDate}_${toDate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: tt({ de: "DATEV-Export erstellt!", en: "DATEV export generated!" }) });
   };
 
   const generatePDF = async () => {
@@ -320,7 +399,7 @@ const ExpenseReport = () => {
               <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full max-w-full text-sm" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <Button className="gap-2" onClick={generatePDF} disabled={generating || filteredReceipts.length === 0}>
               <Download className="h-4 w-4" />
               {generating ? t("general.loading") : "PDF"}
@@ -329,7 +408,29 @@ const ExpenseReport = () => {
               <FileSpreadsheet className="h-4 w-4" />
               CSV
             </Button>
+            <Button variant="outline" className="gap-2" onClick={exportDATEV} disabled={filteredReceipts.length === 0}>
+              <FileSpreadsheet className="h-4 w-4" />
+              DATEV
+            </Button>
           </div>
+
+          {/* Status summary */}
+          {filteredReceipts.length > 0 && (
+            <div className="flex flex-wrap gap-3 text-sm">
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-destructive" />
+                <span className="text-muted-foreground">{statusCounts.incomplete} {tt({de:"Unvollständig", en:"Incomplete"})}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-green-500" />
+                <span className="text-muted-foreground">{statusCounts.ready} {tt({de:"Bereit", en:"Ready"})}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-muted-foreground" />
+                <span className="text-muted-foreground">{statusCounts.exported} {tt({de:"Exportiert", en:"Exported"})}</span>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -363,6 +464,7 @@ const ExpenseReport = () => {
                      <TableHead>{t("receipts.description")}</TableHead>
                      <TableHead>{t("receipts.company")}</TableHead>
                      <TableHead>{t("receipts.person")}</TableHead>
+                     <TableHead>Status</TableHead>
                    </TableRow>
                  </TableHeader>
                  <TableBody>
@@ -377,13 +479,14 @@ const ExpenseReport = () => {
                        <TableCell>{r.description || "–"}</TableCell>
                        <TableCell>{getCompanyName(r.company_id)}</TableCell>
                        <TableCell>{r.person_met || "–"}</TableCell>
+                       <TableCell>{statusLabel(getReceiptStatus(r))}</TableCell>
                      </TableRow>
                    ))}
                    <TableRow className="font-bold border-t-2">
                      <TableCell>{totalLabel}</TableCell>
                      <TableCell className="font-mono text-right whitespace-nowrap">{totalAmount.toFixed(2)} €</TableCell>
                      <TableCell className="font-mono text-right whitespace-nowrap">{totalVat.toFixed(2)} €</TableCell>
-                     <TableCell colSpan={3} />
+                     <TableCell colSpan={4} />
                    </TableRow>
                  </TableBody>
               </Table>
@@ -405,7 +508,10 @@ const ExpenseReport = () => {
                   {r.description && <p className="text-sm truncate">{r.description}</p>}
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{getCompanyName(r.company_id)}</span>
-                    {r.person_met && <span>{r.person_met}</span>}
+                    <div className="flex items-center gap-2">
+                      {r.person_met && <span>{r.person_met}</span>}
+                      {statusLabel(getReceiptStatus(r))}
+                    </div>
                   </div>
                 </div>
               ))}
