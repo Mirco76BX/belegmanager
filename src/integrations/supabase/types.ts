@@ -286,6 +286,7 @@ export type Database = {
           person_met: string | null
           receipt_type: string
           status: string
+          tax_category: string | null
           updated_at: string
           user_id: string
           vat_amount: number | null
@@ -309,6 +310,7 @@ export type Database = {
           person_met?: string | null
           receipt_type?: string
           status?: string
+          tax_category?: string | null
           updated_at?: string
           user_id: string
           vat_amount?: number | null
@@ -332,6 +334,7 @@ export type Database = {
           person_met?: string | null
           receipt_type?: string
           status?: string
+          tax_category?: string | null
           updated_at?: string
           user_id?: string
           vat_amount?: number | null
