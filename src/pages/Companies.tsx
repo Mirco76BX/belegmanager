@@ -88,6 +88,21 @@ const Companies = () => {
     e.preventDefault();
     if (!user) return;
     setSaving(true);
+
+    // Check for duplicate name
+    const duplicate = companies.find(
+      (c) => c.name.trim().toLowerCase() === name.trim().toLowerCase() && c.id !== editing?.id
+    );
+    if (duplicate) {
+      toast({
+        title: tt({de:"Organisation existiert bereits", en:"Organization already exists", tr:"Kuruluş zaten mevcut", ar:"المنظمة موجودة بالفعل", ru:"Организация уже существует"}),
+        description: tt({de:`"${duplicate.name}" ist bereits vorhanden.`, en:`"${duplicate.name}" already exists.`, tr:`"${duplicate.name}" zaten mevcut.`, ar:`"${duplicate.name}" موجودة بالفعل.`, ru:`"${duplicate.name}" уже существует.`}),
+        variant: "destructive",
+      });
+      setSaving(false);
+      return;
+    }
+
     const data = { name, tax_id: taxId || null, address: address || null, org_type: orgType };
     let error;
     if (editing) { ({ error } = await supabase.from("companies").update(data).eq("id", editing.id)); }
