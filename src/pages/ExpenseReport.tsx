@@ -95,6 +95,24 @@ const ExpenseReport = () => {
 
   const getCompanyName = (id: string | null) => id ? companies.find((c) => c.id === id)?.name || "–" : "–";
 
+  // Receipt completeness status
+  const getReceiptStatus = (r: Receipt): "incomplete" | "ready" | "exported" => {
+    if (r.accounting_status === "verbucht" || r.accounting_status === "exported") return "exported";
+    if (!r.amount || !r.date || !r.description) return "incomplete";
+    if (r.tax_category === "bewirtung" && (!r.person_met || !r.meeting_purpose)) return "incomplete";
+    return "ready";
+  };
+
+  const statusLabel = (s: "incomplete" | "ready" | "exported") => {
+    const map = {
+      incomplete: { de: "Unvollständig", en: "Incomplete", cls: "bg-destructive/10 text-destructive" },
+      ready: { de: "Bereit", en: "Ready", cls: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
+      exported: { de: "Exportiert", en: "Exported", cls: "bg-muted text-muted-foreground" },
+    };
+    const m = map[s];
+    return <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${m.cls}`}>{lang === "de" ? m.de : m.en}</span>;
+  };
+
   const filteredReceipts = filterCompanyId === "all" ? receipts
     : filterCompanyId === "none" ? receipts.filter(r => !r.company_id)
     : receipts.filter(r => r.company_id === filterCompanyId);
@@ -102,9 +120,14 @@ const ExpenseReport = () => {
   const totalAmount = filteredReceipts.reduce((sum, r) => sum + (r.amount_eur ?? r.amount ?? 0), 0);
   const totalVat = filteredReceipts.reduce((sum, r) => sum + (r.vat_amount || 0), 0);
 
+  // Status summary
+  const statusCounts = { incomplete: 0, ready: 0, exported: 0 };
+  filteredReceipts.forEach(r => { statusCounts[getReceiptStatus(r)]++; });
+
   const getTableHeaders = () => [
     t("receipts.date"), t("receipts.amount"), "MwSt.", "MwSt.-%", t("receipts.description"),
     t("receipts.company"), t("receipts.person"), tt({de:"Zweck", en:"Purpose", tr:"Amaç", ar:"الغرض", ru:"Цель"}),
+    "Status",
   ];
 
   const getTableRows = () =>
@@ -115,6 +138,10 @@ const ExpenseReport = () => {
           ? `${r.amount.toFixed(2)}\u00A0${r.currency}${r.amount_eur != null ? ` (${r.amount_eur.toFixed(2)}\u00A0€)` : ""}`
           : `${r.amount.toFixed(2)}\u00A0€`
         : "–";
+      const s = getReceiptStatus(r);
+      const sLabel = s === "incomplete" ? (lang === "de" ? "Unvollständig" : "Incomplete")
+        : s === "ready" ? (lang === "de" ? "Bereit" : "Ready")
+        : (lang === "de" ? "Exportiert" : "Exported");
       return [
         new Date(r.date).toLocaleDateString(locale),
         amountStr,
@@ -122,6 +149,7 @@ const ExpenseReport = () => {
         r.vat_rate != null ? `${r.vat_rate}%` : "–",
         r.description || "–", getCompanyName(r.company_id),
         r.person_met || "–", r.meeting_purpose || "–",
+        sLabel,
       ];
     });
 
@@ -145,7 +173,7 @@ const ExpenseReport = () => {
       ...metaLines,
       headers.join(";"),
       ...rows.map((row) => row.map((cell) => `"${cell}"`).join(";")),
-      [totalLabel, `${totalAmount.toFixed(2)}\u00A0€`, `${totalVat.toFixed(2)}\u00A0€`, "", "", "", "", ""].map((c) => `"${c}"`).join(";"),
+      [totalLabel, `${totalAmount.toFixed(2)}\u00A0€`, `${totalVat.toFixed(2)}\u00A0€`, "", "", "", "", "", ""].map((c) => `"${c}"`).join(";"),
     ].join("\n");
 
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
@@ -155,6 +183,54 @@ const ExpenseReport = () => {
     a.download = `Report_${fromDate}_${toDate}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // DATEV-compatible CSV export
+  const exportDATEV = () => {
+    if (filteredReceipts.length === 0) return;
+    // DATEV header line
+    const datevHeaders = [
+      "Umsatz (ohne Soll/Haben-Kz)", "Soll/Haben-Kennzeichen", "WKZ Umsatz",
+      "Kurs", "Basis-Umsatz", "WKZ Basis-Umsatz", "Konto", "Gegenkonto (ohne BU-Schlüssel)",
+      "BU-Schlüssel", "Belegdatum", "Belegfeld 1", "Belegfeld 2",
+      "Skonto", "Buchungstext", "Postensperre", "Diverse Adressnummer",
+      "Geschäftspartnerbank", "Sachverhalt", "Zinssperre",
+    ];
+
+    const datevRows = filteredReceipts.map((r) => {
+      const amt = r.amount_eur ?? r.amount ?? 0;
+      const dateFormatted = r.date ? r.date.replace(/-/g, "").slice(4) : ""; // MMDD
+      const buKey = r.vat_rate === 19 ? "3" : r.vat_rate === 7 ? "2" : "";
+      return [
+        amt.toFixed(2).replace(".", ","),  // German decimal
+        "S",
+        "EUR",
+        "", "", "",
+        "4900",  // Sonstige betriebliche Aufwendungen (default)
+        "1200",  // Bank
+        buKey,
+        dateFormatted,
+        r.id.slice(0, 12),  // Belegfeld 1
+        "",
+        "",
+        (r.description || "").slice(0, 60),
+        "", "", "", "", "",
+      ];
+    });
+
+    const csvContent = [
+      datevHeaders.join(";"),
+      ...datevRows.map((row) => row.map((cell) => `"${cell}"`).join(";")),
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `DATEV_Export_${fromDate}_${toDate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: tt({ de: "DATEV-Export erstellt!", en: "DATEV export generated!" }) });
   };
 
   const generatePDF = async () => {
