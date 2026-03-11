@@ -399,7 +399,7 @@ const ExpenseReport = () => {
               <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full max-w-full text-sm" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <Button className="gap-2" onClick={generatePDF} disabled={generating || filteredReceipts.length === 0}>
               <Download className="h-4 w-4" />
               {generating ? t("general.loading") : "PDF"}
@@ -408,7 +408,29 @@ const ExpenseReport = () => {
               <FileSpreadsheet className="h-4 w-4" />
               CSV
             </Button>
+            <Button variant="outline" className="gap-2" onClick={exportDATEV} disabled={filteredReceipts.length === 0}>
+              <FileSpreadsheet className="h-4 w-4" />
+              DATEV
+            </Button>
           </div>
+
+          {/* Status summary */}
+          {filteredReceipts.length > 0 && (
+            <div className="flex flex-wrap gap-3 text-sm">
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-destructive" />
+                <span className="text-muted-foreground">{statusCounts.incomplete} {tt({de:"Unvollständig", en:"Incomplete"})}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-green-500" />
+                <span className="text-muted-foreground">{statusCounts.ready} {tt({de:"Bereit", en:"Ready"})}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-muted-foreground" />
+                <span className="text-muted-foreground">{statusCounts.exported} {tt({de:"Exportiert", en:"Exported"})}</span>
+              </div>
+            </div>
+          )
         </CardContent>
       </Card>
 
