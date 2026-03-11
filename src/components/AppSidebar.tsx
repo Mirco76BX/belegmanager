@@ -25,6 +25,7 @@ const AppSidebar = () => {
     { key: "nav.receipts" as const, icon: Receipt, path: "/receipts" },
     { key: "nav.companies" as const, icon: Building2, path: "/companies" },
     { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report" },
+    { key: "nav.fahrtkosten" as const, icon: Car, path: "/fahrtkosten" },
     ...(isTaxAdvisor ? [{ key: "nav.clients" as const, icon: Users, path: "/clients" }] : []),
   ];
 
