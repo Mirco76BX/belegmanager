@@ -464,6 +464,7 @@ const ExpenseReport = () => {
                      <TableHead>{t("receipts.description")}</TableHead>
                      <TableHead>{t("receipts.company")}</TableHead>
                      <TableHead>{t("receipts.person")}</TableHead>
+                     <TableHead>Status</TableHead>
                    </TableRow>
                  </TableHeader>
                  <TableBody>
@@ -478,13 +479,14 @@ const ExpenseReport = () => {
                        <TableCell>{r.description || "–"}</TableCell>
                        <TableCell>{getCompanyName(r.company_id)}</TableCell>
                        <TableCell>{r.person_met || "–"}</TableCell>
+                       <TableCell>{statusLabel(getReceiptStatus(r))}</TableCell>
                      </TableRow>
                    ))}
                    <TableRow className="font-bold border-t-2">
                      <TableCell>{totalLabel}</TableCell>
                      <TableCell className="font-mono text-right whitespace-nowrap">{totalAmount.toFixed(2)} €</TableCell>
                      <TableCell className="font-mono text-right whitespace-nowrap">{totalVat.toFixed(2)} €</TableCell>
-                     <TableCell colSpan={3} />
+                     <TableCell colSpan={4} />
                    </TableRow>
                  </TableBody>
               </Table>
