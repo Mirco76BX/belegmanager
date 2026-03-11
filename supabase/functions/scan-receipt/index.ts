@@ -50,8 +50,19 @@ serve(async (req) => {
   "tax_amount": number or null (VAT/MwSt amount if visible on the receipt),
   "tax_rate": number or null (VAT/MwSt percentage rate, e.g. 19 or 7, if visible on the receipt),
   "items": ["list of individual items if visible"] or [],
-  "is_fuel_receipt": true or false (set to true if this is a gas station / fuel / petrol receipt, e.g. from a Tankstelle, gas station, petrol station, or if fuel items like Diesel, Benzin, Super, etc. are listed)
+  "is_fuel_receipt": true or false (set to true if this is a gas station / fuel / petrol receipt),
+  "suggested_tax_category": one of ["reisekosten_uebernachtung","reisekosten_fahrt","reisekosten_nebenkosten","bewirtung","tankkosten","bueromaterial","telekommunikation","fortbildung","versicherung","sonstiges"] based on what the receipt is for,
+  "confidence": {
+    "date": "high" or "medium" or "low",
+    "amount": "high" or "medium" or "low",
+    "tax_amount": "high" or "medium" or "low",
+    "tax_rate": "high" or "medium" or "low",
+    "vendor": "high" or "medium" or "low"
+  },
+  "is_handwritten": true or false (set to true if the receipt appears to be handwritten, e.g. a taxi receipt or manual Quittung),
+  "multiple_receipts_detected": true or false (set to true if you see more than one receipt/document in the image)
 }
+If the receipt is handwritten or hard to read, set confidence to "low" for affected fields.
 Do not include any other text, just the JSON object.`,
               },
               {
@@ -104,7 +115,16 @@ Do not include any other text, just the JSON object.`,
         tax_rate: null,
         items: [],
         is_fuel_receipt: false,
+        suggested_tax_category: null,
+        confidence: { date: "low", amount: "low", tax_amount: "low", tax_rate: "low", vendor: "low" },
+        is_handwritten: false,
+        multiple_receipts_detected: false,
       };
+    }
+
+    // Ensure confidence object exists
+    if (!extracted.confidence) {
+      extracted.confidence = { date: "high", amount: "high", tax_amount: "high", tax_rate: "high", vendor: "high" };
     }
 
     return new Response(JSON.stringify(extracted), {
