@@ -508,7 +508,10 @@ const ExpenseReport = () => {
                   {r.description && <p className="text-sm truncate">{r.description}</p>}
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{getCompanyName(r.company_id)}</span>
-                    {r.person_met && <span>{r.person_met}</span>}
+                    <div className="flex items-center gap-2">
+                      {r.person_met && <span>{r.person_met}</span>}
+                      {statusLabel(getReceiptStatus(r))}
+                    </div>
                   </div>
                 </div>
               ))}
