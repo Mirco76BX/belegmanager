@@ -430,7 +430,7 @@ const ExpenseReport = () => {
                 <span className="text-muted-foreground">{statusCounts.exported} {tt({de:"Exportiert", en:"Exported"})}</span>
               </div>
             </div>
-          )
+          )}
         </CardContent>
       </Card>
 
