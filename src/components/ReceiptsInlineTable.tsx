@@ -98,10 +98,13 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
     setSaving(false);
   };
 
-  const formatAmount = (a: number | null, currency?: string) => {
-    if (a == null) return "–";
-    const sym = currency && currency !== "EUR" ? ` ${currency}` : " €";
-    return `${a.toFixed(2)}${sym}`;
+  const formatAmount = (r: Receipt) => {
+    if (r.amount == null) return "–";
+    if (r.currency && r.currency !== "EUR") {
+      const eurStr = r.amount_eur != null ? `${r.amount_eur.toFixed(2)} €` : "–";
+      return eurStr;
+    }
+    return `${r.amount.toFixed(2)} €`;
   };
   const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "–";
   const isEditing = (id: string) => editingId === id;
