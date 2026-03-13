@@ -31,6 +31,7 @@ interface Receipt {
   mileage?: number | null;
   vat_amount?: number | null;
   vat_rate?: number | null;
+  amount_eur?: number | null;
 }
 
 interface Company {
