@@ -149,10 +149,21 @@ const Receipts = () => {
     if (!error) { setDetailOpen(false); fetchData(); }
   };
 
-  const formatAmount = (a: number | null, currency?: string) => {
+  const formatAmount = (a: number | null, currency?: string, amountEur?: number | null) => {
     if (a == null) return "–";
-    const sym = currency && currency !== "EUR" ? ` ${currency}` : " €";
-    return `${a.toFixed(2)}${sym}`;
+    if (currency && currency !== "EUR") {
+      const eurStr = amountEur != null ? `${amountEur.toFixed(2)} €` : "–";
+      return `${eurStr}`;
+    }
+    return `${a.toFixed(2)} €`;
+  };
+  const formatAmountFull = (r: Receipt) => {
+    if (r.amount == null) return "–";
+    if (r.currency && r.currency !== "EUR") {
+      const eurStr = r.amount_eur != null ? `${r.amount_eur.toFixed(2)} €` : "–";
+      return `${eurStr} (${r.amount.toFixed(2)} ${r.currency})`;
+    }
+    return `${r.amount.toFixed(2)} €`;
   };
   const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "–";
 
