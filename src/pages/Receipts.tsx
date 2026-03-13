@@ -372,7 +372,7 @@ const Receipts = () => {
                 </div>
                  <div className="flex justify-between text-sm">
                    <span className="text-muted-foreground">{t("receipts.amount")}</span>
-                   <span className="font-mono font-semibold">{formatAmount(detailReceipt.amount, detailReceipt.currency)}</span>
+                   <span className="font-mono font-semibold">{formatAmountFull(detailReceipt)}</span>
                  </div>
                  {(detailReceipt.vat_amount != null || detailReceipt.vat_rate != null) && (
                    <div className="flex justify-between text-sm">
