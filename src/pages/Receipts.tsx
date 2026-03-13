@@ -185,7 +185,7 @@ const Receipts = () => {
           <CardContent className="py-3 px-4">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="font-mono text-sm font-semibold whitespace-nowrap">{formatAmount(r.amount, r.currency)}</span>
+                <span className="font-mono text-sm font-semibold whitespace-nowrap">{formatAmount(r.amount, r.currency, r.amount_eur)}</span>
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
                   {new Date(r.date).toLocaleDateString(locale)}
                 </span>
