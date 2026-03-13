@@ -31,6 +31,7 @@ interface Receipt {
   mileage?: number | null;
   vat_amount?: number | null;
   vat_rate?: number | null;
+  amount_eur?: number | null;
 }
 
 interface Company {
@@ -148,10 +149,21 @@ const Receipts = () => {
     if (!error) { setDetailOpen(false); fetchData(); }
   };
 
-  const formatAmount = (a: number | null, currency?: string) => {
+  const formatAmount = (a: number | null, currency?: string, amountEur?: number | null) => {
     if (a == null) return "–";
-    const sym = currency && currency !== "EUR" ? ` ${currency}` : " €";
-    return `${a.toFixed(2)}${sym}`;
+    if (currency && currency !== "EUR") {
+      const eurStr = amountEur != null ? `${amountEur.toFixed(2)} €` : "–";
+      return `${eurStr}`;
+    }
+    return `${a.toFixed(2)} €`;
+  };
+  const formatAmountFull = (r: Receipt) => {
+    if (r.amount == null) return "–";
+    if (r.currency && r.currency !== "EUR") {
+      const eurStr = r.amount_eur != null ? `${r.amount_eur.toFixed(2)} €` : "–";
+      return `${eurStr} (${r.amount.toFixed(2)} ${r.currency})`;
+    }
+    return `${r.amount.toFixed(2)} €`;
   };
   const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "–";
 
@@ -173,7 +185,7 @@ const Receipts = () => {
           <CardContent className="py-3 px-4">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="font-mono text-sm font-semibold whitespace-nowrap">{formatAmount(r.amount, r.currency)}</span>
+                <span className="font-mono text-sm font-semibold whitespace-nowrap">{formatAmount(r.amount, r.currency, r.amount_eur)}</span>
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
                   {new Date(r.date).toLocaleDateString(locale)}
                 </span>
@@ -360,7 +372,7 @@ const Receipts = () => {
                 </div>
                  <div className="flex justify-between text-sm">
                    <span className="text-muted-foreground">{t("receipts.amount")}</span>
-                   <span className="font-mono font-semibold">{formatAmount(detailReceipt.amount, detailReceipt.currency)}</span>
+                   <span className="font-mono font-semibold">{formatAmountFull(detailReceipt)}</span>
                  </div>
                  {(detailReceipt.vat_amount != null || detailReceipt.vat_rate != null) && (
                    <div className="flex justify-between text-sm">

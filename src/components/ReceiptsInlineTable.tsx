@@ -35,6 +35,7 @@ interface Receipt {
   mileage?: number | null;
   vat_amount?: number | null;
   vat_rate?: number | null;
+  amount_eur?: number | null;
 }
 
 interface Company {
@@ -97,10 +98,13 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
     setSaving(false);
   };
 
-  const formatAmount = (a: number | null, currency?: string) => {
-    if (a == null) return "–";
-    const sym = currency && currency !== "EUR" ? ` ${currency}` : " €";
-    return `${a.toFixed(2)}${sym}`;
+  const formatAmount = (r: Receipt) => {
+    if (r.amount == null) return "–";
+    if (r.currency && r.currency !== "EUR") {
+      const eurStr = r.amount_eur != null ? `${r.amount_eur.toFixed(2)} €` : "–";
+      return eurStr;
+    }
+    return `${r.amount.toFixed(2)} €`;
   };
   const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "–";
   const isEditing = (id: string) => editingId === id;
@@ -134,7 +138,7 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
                   {new Date(r.date).toLocaleDateString(locale)}
                 </TableCell>
                 <TableCell className="font-mono text-sm text-muted-foreground whitespace-nowrap">
-                  {formatAmount(r.amount, r.currency)}
+                  {formatAmount(r)}
                 </TableCell>
                 <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
                   {r.description || "–"}
@@ -222,7 +226,7 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
             ) : (
               <>
                 <TableCell className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(locale)}</TableCell>
-                <TableCell className="font-mono whitespace-nowrap">{formatAmount(r.amount, r.currency)}</TableCell>
+                <TableCell className="font-mono whitespace-nowrap">{formatAmount(r)}</TableCell>
                 <TableCell className="max-w-[200px] truncate">{r.description || "–"}</TableCell>
                 <TableCell>{companyName(r.company_id)}</TableCell>
                 <TableCell className="max-w-[200px] truncate">
