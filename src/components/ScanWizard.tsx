@@ -732,7 +732,8 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                     {isBewirtung && <span className="text-destructive ml-1">*</span>}
                   </Label>
                   <Select
-                    value={PURPOSE_PRESETS.some(p => p.value === meetingPurpose) ? meetingPurpose : (meetingPurpose ? "custom" : "")}
+                    value={PURPOSE_PRESETS.some(p => p.value === meetingPurpose) || customPurposes.some(cp => cp.label === meetingPurpose)
+                      ? meetingPurpose : (meetingPurpose ? "custom" : "")}
                     onValueChange={(val) => {
                       if (val === "custom") { setMeetingPurpose(""); setShowCustomPurpose(true); }
                       else { setMeetingPurpose(val); setShowCustomPurpose(false); }
@@ -747,6 +748,18 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                           {tt({de: p.de, en: p.en, tr: p.tr, ar: p.ar, ru: p.ru})}
                         </SelectItem>
                       ))}
+                      {customPurposes.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider border-t mt-1 pt-2">
+                            {tt({de:"Eigene Zwecke", en:"Custom purposes", tr:"Özel amaçlar", ar:"أغراض مخصصة", ru:"Свои цели"})}
+                          </div>
+                          {customPurposes.map((cp) => (
+                            <SelectItem key={cp.id} value={cp.label}>
+                              ⭐ {cp.label}
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
                       <SelectItem value="custom">
                         {tt({de:"✏️ Eigener Zweck...", en:"✏️ Custom purpose..."})}
                       </SelectItem>
