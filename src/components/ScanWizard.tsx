@@ -104,6 +104,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
 
   const [date, setDate] = useState("");
   const [amount, setAmount] = useState("");
+  const [originalAmount, setOriginalAmount] = useState("");
   const [description, setDescription] = useState("");
   const [companyId, setCompanyId] = useState(defaultCompanyId || "");
   const [personMet, setPersonMet] = useState("");
@@ -128,7 +129,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   useEffect(() => {
     if (open && user) {
       setStep("upload"); setFile(null); setPreview(null); setScanResult(null);
-      setDate(""); setAmount(""); setDescription("");
+      setDate(""); setAmount(""); setOriginalAmount(""); setDescription("");
       setCompanyId(defaultCompanyId || "");
       setPersonMet(""); setOrganization(""); setMeetingPurpose("");
       setShowCustomPurpose(false); setShowNewCompany(false); setNewCompanyName("");
@@ -149,13 +150,31 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
     }
   }, [open, defaultCompanyId, user, subscription.tier]);
 
+  const convertToEur = async (value: number | null, detectedCurrency?: string, receiptDate?: string | null) => {
+    if (value == null) return null;
+    if (!detectedCurrency || detectedCurrency === "EUR") return value;
+
+    try {
+      const { data, error } = await supabase.functions.invoke("convert-currency", {
+        body: { amount: value, currency: detectedCurrency, date: receiptDate || undefined },
+      });
+
+      if (!error && data?.amount_eur != null) {
+        return Number(data.amount_eur);
+      }
+    } catch (error) {
+      console.warn("Currency conversion preview failed", error);
+    }
+
+    return value;
+  };
+
   // When tax category changes, apply Smart Guess VAT if no OCR value
   useEffect(() => {
     if (taxCategory && !scanResult?.tax_rate) {
       const guessedRate = getSmartGuessVat(taxCategory);
       if (guessedRate !== null) {
         setVatRate(String(guessedRate));
-        // Also compute estimated VAT amount from amount
         const amt = parseFloat(amount);
         if (!isNaN(amt) && guessedRate > 0) {
           const estimated = amt - (amt / (1 + guessedRate / 100));
@@ -163,7 +182,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         }
       }
     }
-  }, [taxCategory]);
+  }, [taxCategory, scanResult?.tax_rate, amount]);
 
   const handleFileSelected = async (selectedFile: File) => {
     setStep("scanning");
