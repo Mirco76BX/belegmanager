@@ -142,6 +142,8 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
 
       supabase.from("vehicles").select("license_plate, name").order("license_plate")
         .then(({ data }) => { if (data) setSavedVehicles(data); });
+      supabase.from("custom_purposes").select("id, label").order("label")
+        .then(({ data }) => { if (data) setCustomPurposes(data as any); });
 
       const maxScans = subscription.tier === "master" ? Infinity
         : subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans;
