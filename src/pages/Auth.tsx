@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { FileText, MailCheck, Star } from "lucide-react";
+import { FileText, MailCheck, Star, Globe, Brain, ShieldCheck, Smartphone, Calculator } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import receiptScanImg from "@/assets/receipt-scan.jpg";
 import testimonial1Img from "@/assets/testimonial-1.jpg";
@@ -230,6 +230,62 @@ const Auth = () => {
               </CardContent>
             </Card>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Features Section */}
+      <div className="border-t border-border px-4 py-16">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="mb-4 text-center text-3xl font-bold text-foreground">
+            {tt({de:"Warum BelegManager?", en:"Why ReceiptManager?", tr:"Neden BelegManager?", ar:"لماذا مدير الإيصالات؟", ru:"Почему ЧекМенеджер?"})}
+          </h2>
+          <p className="mb-12 text-center text-muted-foreground max-w-2xl mx-auto">
+            {tt({de:"Professionelles Belegmanagement – intelligent, sicher und weltweit einsetzbar.", en:"Professional receipt management – intelligent, secure and globally ready.", tr:"Profesyonel fiş yönetimi – akıllı, güvenli ve küresel.", ar:"إدارة إيصالات احترافية – ذكية وآمنة وجاهزة عالمياً.", ru:"Профессиональное управление чеками – умное, безопасное и глобальное."})}
+          </p>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                icon: Brain,
+                title: tt({de:"KI-gestützte Erkennung", en:"AI-powered recognition", tr:"Yapay zeka destekli tanıma", ar:"التعرف بالذكاء الاصطناعي", ru:"Распознавание с помощью ИИ"}),
+                desc: tt({de:"Automatische Extraktion von Betrag, Datum, MwSt. und Kategorie – auch bei handschriftlichen Quittungen.", en:"Automatic extraction of amount, date, VAT and category – even from handwritten receipts.", tr:"Tutar, tarih, KDV ve kategori otomatik çıkarımı – el yazısı fişlerden bile.", ar:"استخراج تلقائي للمبلغ والتاريخ وضريبة القيمة المضافة والفئة – حتى من الإيصالات المكتوبة بخط اليد.", ru:"Автоматическое извлечение суммы, даты, НДС и категории – даже с рукописных чеков."}),
+              },
+              {
+                icon: Globe,
+                title: tt({de:"150+ Währungen", en:"150+ Currencies", tr:"150+ Para Birimi", ar:"أكثر من 150 عملة", ru:"150+ валют"}),
+                desc: tt({de:"Belege in Fremdwährungen werden automatisch tagesgenau in EUR umgerechnet – ideal für Geschäftsreisen weltweit.", en:"Receipts in foreign currencies are automatically converted to EUR at the daily rate – ideal for business trips worldwide.", tr:"Yabancı para birimlerindeki fişler günlük kurla otomatik olarak EUR'ya çevrilir – dünya çapında iş seyahatleri için ideal.", ar:"يتم تحويل الإيصالات بالعملات الأجنبية تلقائياً إلى اليورو بسعر اليوم – مثالي لرحلات العمل حول العالم.", ru:"Чеки в иностранной валюте автоматически конвертируются в EUR по курсу дня – идеально для командировок по всему миру."}),
+              },
+              {
+                icon: ShieldCheck,
+                title: tt({de:"GoBD-konform", en:"Tax compliant", tr:"Vergi uyumlu", ar:"متوافق مع الضرائب", ru:"Налоговое соответствие"}),
+                desc: tt({de:"Steuerrechtliche Kategorisierung, Pflichtfeld-Prüfung bei Bewirtungsbelegen und revisionssicherer Export.", en:"Tax-compliant categorization, mandatory field checks for entertainment receipts, and audit-proof exports.", tr:"Vergi uyumlu kategorilendirme, ağırlama fişleri için zorunlu alan kontrolleri ve denetim güvenli dışa aktarım.", ar:"تصنيف متوافق مع الضرائب وفحص الحقول الإلزامية لإيصالات الضيافة وتصدير آمن للمراجعة.", ru:"Налоговая категоризация, проверка обязательных полей и экспорт, готовый к аудиту."}),
+              },
+              {
+                icon: Smartphone,
+                title: tt({de:"Mobile-First", en:"Mobile-First", tr:"Mobil Öncelikli", ar:"الجوال أولاً", ru:"Мобильный приоритет"}),
+                desc: tt({de:"Belege unterwegs fotografieren und sofort verarbeiten – im Restaurant, Taxi oder Hotel.", en:"Snap receipts on the go and process them instantly – at restaurants, taxis or hotels.", tr:"Hareket halinde fişleri çekin ve anında işleyin – restoran, taksi veya otelde.", ar:"صوّر الإيصالات أثناء التنقل وعالجها فوراً – في المطاعم أو سيارات الأجرة أو الفنادق.", ru:"Фотографируйте чеки в пути и обрабатывайте мгновенно – в ресторане, такси или отеле."}),
+              },
+              {
+                icon: Calculator,
+                title: tt({de:"Fahrtkosten-Assistent", en:"Mileage assistant", tr:"Kilometre asistanı", ar:"مساعد المسافات", ru:"Помощник по пробегу"}),
+                desc: tt({de:"PKW-Fahrten erfassen mit automatischer km-Pauschale (0,30 €/km) und PDF-Eigenbelegenerstellung.", en:"Log car trips with automatic mileage allowance (€0.30/km) and PDF self-receipt generation.", tr:"Otomatik km başına ödenek (0,30 €/km) ve PDF makbuz oluşturma ile araç yolculuklarını kaydedin.", ar:"سجّل رحلات السيارة مع بدل الكيلومتر التلقائي (0.30€/كم) وإنشاء إيصال ذاتي PDF.", ru:"Учёт поездок с автоматическим расчётом (0,30 €/км) и генерацией PDF-квитанции."}),
+              },
+              {
+                icon: FileText,
+                title: tt({de:"DATEV-Export", en:"DATEV export", tr:"DATEV dışa aktarım", ar:"تصدير DATEV", ru:"Экспорт DATEV"}),
+                desc: tt({de:"Fertige Reisekostenabrechnungen als PDF oder CSV – direkt bereit für Ihren Steuerberater.", en:"Ready-made expense reports as PDF or CSV – directly ready for your tax advisor.", tr:"Hazır masraf raporları PDF veya CSV olarak – mali müşaviriniz için doğrudan hazır.", ar:"تقارير مصاريف جاهزة بصيغة PDF أو CSV – جاهزة مباشرة لمستشارك الضريبي.", ru:"Готовые отчёты о расходах в PDF или CSV – сразу для вашего консультанта."}),
+              },
+            ].map((f, i) => (
+              <div key={i} className="flex gap-4 rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-md">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <f.icon className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">{f.title}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
