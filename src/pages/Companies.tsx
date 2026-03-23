@@ -120,9 +120,11 @@ const Companies = () => {
     setSaving(false);
   };
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("companies").delete().eq("id", id);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const { error } = await supabase.from("companies").delete().eq("id", deleteTarget.id);
     if (!error) fetchData();
+    setDeleteTarget(null);
   };
 
   // Vehicle form
