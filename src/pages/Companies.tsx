@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Building2, Plus, Pencil, Trash2, Users, User, HelpCircle, FileText, HeartPulse, Car } from "lucide-react";
 
 const ORG_TYPES = ["company", "association", "personal", "tax", "health_insurance", "other"] as const;
@@ -54,6 +55,9 @@ const Companies = () => {
   const [address, setAddress] = useState("");
   const [saving, setSaving] = useState(false);
   const [orgType, setOrgType] = useState<OrgType>("company");
+
+  // Delete confirmation
+  const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
 
   // Vehicle dialog
   const [vehicleDialogOpen, setVehicleDialogOpen] = useState(false);
@@ -116,9 +120,11 @@ const Companies = () => {
     setSaving(false);
   };
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("companies").delete().eq("id", id);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const { error } = await supabase.from("companies").delete().eq("id", deleteTarget.id);
     if (!error) fetchData();
+    setDeleteTarget(null);
   };
 
   // Vehicle form
@@ -198,7 +204,7 @@ const Companies = () => {
                   <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(c.id)}>
+                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setDeleteTarget(c)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -328,6 +334,32 @@ const Companies = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {tt({de:"Organisation löschen?", en:"Delete organization?", tr:"Kuruluşu sil?", ar:"حذف المنظمة؟", ru:"Удалить организацию?"})}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {tt({
+                de:`Möchten Sie "${deleteTarget?.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`,
+                en:`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`,
+                tr:`"${deleteTarget?.name}" silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`,
+                ar:`هل أنت متأكد من حذف "${deleteTarget?.name}"؟ لا يمكن التراجع عن هذا الإجراء.`,
+                ru:`Вы уверены, что хотите удалить "${deleteTarget?.name}"? Это действие нельзя отменить.`
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tt({de:"Abbrechen", en:"Cancel", tr:"İptal", ar:"إلغاء", ru:"Отмена"})}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {tt({de:"Löschen", en:"Delete", tr:"Sil", ar:"حذف", ru:"Удалить"})}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
