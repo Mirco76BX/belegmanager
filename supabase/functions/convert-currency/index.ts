@@ -21,7 +21,6 @@ serve(async (req) => {
       );
     }
 
-    // If already EUR, return as-is
     if (currency === "EUR") {
       return new Response(
         JSON.stringify({ amount_eur: amount, rate: 1, source: "identity" }),
@@ -29,45 +28,68 @@ serve(async (req) => {
       );
     }
 
-    // Use Frankfurter API (free, based on ECB data)
-    // Try historical rate for the receipt date, fallback to latest
     const dateParam = date || "latest";
-    const url = dateParam === "latest"
-      ? `https://api.frankfurter.dev/v1/latest?from=${currency}&to=EUR&amount=${amount}`
-      : `https://api.frankfurter.dev/v1/${dateParam}?from=${currency}&to=EUR&amount=${amount}`;
+    let amountEur: number | null = null;
+    let rate: number | null = null;
+    let source = "";
 
-    console.log("Fetching exchange rate:", url);
-    const response = await fetch(url);
+    // Try Frankfurter API first (ECB data, ~30 currencies)
+    try {
+      const url = dateParam === "latest"
+        ? `https://api.frankfurter.dev/v1/latest?from=${currency}&to=EUR&amount=${amount}`
+        : `https://api.frankfurter.dev/v1/${dateParam}?from=${currency}&to=EUR&amount=${amount}`;
+      console.log("Trying Frankfurter:", url);
+      const response = await fetch(url);
 
-    if (!response.ok) {
-      // Fallback to latest if historical date fails
-      if (dateParam !== "latest") {
+      if (response.ok) {
+        const data = await response.json();
+        if (data.rates?.EUR != null) {
+          amountEur = Math.round(data.rates.EUR * 100) / 100;
+          rate = data.rates.EUR / amount;
+          source = dateParam === "latest" ? "frankfurter_latest" : "frankfurter_historical";
+        }
+      } else if (dateParam !== "latest") {
         const fallbackUrl = `https://api.frankfurter.dev/v1/latest?from=${currency}&to=EUR&amount=${amount}`;
         const fallbackRes = await fetch(fallbackUrl);
         if (fallbackRes.ok) {
           const fallbackData = await fallbackRes.json();
-          return new Response(
-            JSON.stringify({
-              amount_eur: Math.round(fallbackData.rates.EUR * 100) / 100,
-              rate: fallbackData.rates.EUR / amount,
-              source: "frankfurter_latest_fallback",
-            }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          if (fallbackData.rates?.EUR != null) {
+            amountEur = Math.round(fallbackData.rates.EUR * 100) / 100;
+            rate = fallbackData.rates.EUR / amount;
+            source = "frankfurter_latest_fallback";
+          }
         }
       }
-      throw new Error(`Frankfurter API error: ${response.status}`);
+    } catch (e) {
+      console.warn("Frankfurter API failed:", e);
     }
 
-    const data = await response.json();
-    const amountEur = Math.round(data.rates.EUR * 100) / 100;
+    // Fallback: open.er-api.com (supports 150+ currencies including IDR, THB, VND, etc.)
+    if (amountEur === null) {
+      try {
+        const erUrl = `https://open.er-api.com/v6/latest/${currency}`;
+        console.log("Trying ExchangeRate fallback:", erUrl);
+        const erRes = await fetch(erUrl);
+        if (erRes.ok) {
+          const erData = await erRes.json();
+          if (erData.rates?.EUR) {
+            const eurRate = erData.rates.EUR;
+            amountEur = Math.round(amount * eurRate * 100) / 100;
+            rate = eurRate;
+            source = "exchangerate_api_fallback";
+          }
+        }
+      } catch (e) {
+        console.warn("ExchangeRate API also failed:", e);
+      }
+    }
+
+    if (amountEur === null) {
+      throw new Error(`Could not convert ${currency} to EUR – no API returned a rate`);
+    }
 
     return new Response(
-      JSON.stringify({
-        amount_eur: amountEur,
-        rate: data.rates.EUR / amount,
-        source: dateParam === "latest" ? "frankfurter_latest" : "frankfurter_historical",
-      }),
+      JSON.stringify({ amount_eur: amountEur, rate, source }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
