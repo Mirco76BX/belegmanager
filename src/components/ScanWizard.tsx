@@ -784,6 +784,42 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         )}
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={showSavePurposePrompt} onOpenChange={setShowSavePurposePrompt}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {tt({de:"Zweck speichern?", en:"Save purpose?", tr:"Amaç kaydedilsin mi?", ar:"حفظ الغرض؟", ru:"Сохранить цель?"})}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {tt({
+              de:`Möchten Sie "${pendingCustomPurpose}" dauerhaft als Auswahl im Dropdown speichern?`,
+              en:`Would you like to permanently save "${pendingCustomPurpose}" as a dropdown option?`,
+              tr:`"${pendingCustomPurpose}" kalıcı olarak açılır menüye kaydedilsin mi?`,
+              ar:`هل تريد حفظ "${pendingCustomPurpose}" بشكل دائم كخيار في القائمة؟`,
+              ru:`Сохранить "${pendingCustomPurpose}" как постоянный вариант в выпадающем списке?`
+            })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => { setShowSavePurposePrompt(false); setPendingCustomPurpose(""); }}>
+            {tt({de:"Nein", en:"No", tr:"Hayır", ar:"لا", ru:"Нет"})}
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={async () => {
+            if (user && pendingCustomPurpose) {
+              await supabase.from("custom_purposes").insert({ user_id: user.id, label: pendingCustomPurpose } as any);
+              setCustomPurposes(prev => [...prev, { id: crypto.randomUUID(), label: pendingCustomPurpose }]);
+              toast({ title: tt({de:"Zweck gespeichert!", en:"Purpose saved!"}) });
+            }
+            setShowSavePurposePrompt(false);
+            setPendingCustomPurpose("");
+          }}>
+            {tt({de:"Ja, speichern", en:"Yes, save", tr:"Evet, kaydet", ar:"نعم، حفظ", ru:"Да, сохранить"})}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
 
