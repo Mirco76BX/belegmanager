@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Camera, Upload, Loader2, Check, SkipForward, ArrowRight, Plus, AlertTriangle, Info } from "lucide-react";
 import { TAX_CATEGORIES, getSmartGuessVat, getRequiredFields, guessTaxCategoryFromScan } from "@/lib/taxCategories";
 
@@ -111,6 +112,9 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const [organization, setOrganization] = useState("");
   const [meetingPurpose, setMeetingPurpose] = useState("");
   const [showCustomPurpose, setShowCustomPurpose] = useState(false);
+  const [customPurposes, setCustomPurposes] = useState<{ id: string; label: string }[]>([]);
+  const [showSavePurposePrompt, setShowSavePurposePrompt] = useState(false);
+  const [pendingCustomPurpose, setPendingCustomPurpose] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
   const [mileage, setMileage] = useState("");
   const [mileageWarning, setMileageWarning] = useState<string | null>(null);
@@ -139,6 +143,8 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
 
       supabase.from("vehicles").select("license_plate, name").order("license_plate")
         .then(({ data }) => { if (data) setSavedVehicles(data); });
+      supabase.from("custom_purposes").select("id, label").order("label")
+        .then(({ data }) => { if (data) setCustomPurposes(data as any); });
 
       const maxScans = subscription.tier === "master" ? Infinity
         : subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans;
@@ -375,6 +381,16 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       if (error) throw error;
 
       toast({ title: tt({de:"Beleg gespeichert!", en:"Receipt saved!"}) });
+
+      // Check if custom purpose should be saved
+      const isCustom = !skipDetails && meetingPurpose.trim() &&
+        !PURPOSE_PRESETS.some(p => p.value === meetingPurpose) &&
+        !customPurposes.some(cp => cp.label === meetingPurpose.trim());
+      if (isCustom) {
+        setPendingCustomPurpose(meetingPurpose.trim());
+        setShowSavePurposePrompt(true);
+      }
+
       onSaved(); onClose();
     } catch (err: any) { toast({ title: err.message, variant: "destructive" }); }
     finally { setSaving(false); }
@@ -383,6 +399,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const conf = scanResult?.confidence;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -716,7 +733,8 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                     {isBewirtung && <span className="text-destructive ml-1">*</span>}
                   </Label>
                   <Select
-                    value={PURPOSE_PRESETS.some(p => p.value === meetingPurpose) ? meetingPurpose : (meetingPurpose ? "custom" : "")}
+                    value={PURPOSE_PRESETS.some(p => p.value === meetingPurpose) || customPurposes.some(cp => cp.label === meetingPurpose)
+                      ? meetingPurpose : (meetingPurpose ? "custom" : "")}
                     onValueChange={(val) => {
                       if (val === "custom") { setMeetingPurpose(""); setShowCustomPurpose(true); }
                       else { setMeetingPurpose(val); setShowCustomPurpose(false); }
@@ -731,6 +749,18 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                           {tt({de: p.de, en: p.en, tr: p.tr, ar: p.ar, ru: p.ru})}
                         </SelectItem>
                       ))}
+                      {customPurposes.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider border-t mt-1 pt-2">
+                            {tt({de:"Eigene Zwecke", en:"Custom purposes", tr:"Özel amaçlar", ar:"أغراض مخصصة", ru:"Свои цели"})}
+                          </div>
+                          {customPurposes.map((cp) => (
+                            <SelectItem key={cp.id} value={cp.label}>
+                              ⭐ {cp.label}
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
                       <SelectItem value="custom">
                         {tt({de:"✏️ Eigener Zweck...", en:"✏️ Custom purpose..."})}
                       </SelectItem>
@@ -755,6 +785,42 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         )}
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={showSavePurposePrompt} onOpenChange={setShowSavePurposePrompt}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {tt({de:"Zweck speichern?", en:"Save purpose?", tr:"Amaç kaydedilsin mi?", ar:"حفظ الغرض؟", ru:"Сохранить цель?"})}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {tt({
+              de:`Möchten Sie "${pendingCustomPurpose}" dauerhaft als Auswahl im Dropdown speichern?`,
+              en:`Would you like to permanently save "${pendingCustomPurpose}" as a dropdown option?`,
+              tr:`"${pendingCustomPurpose}" kalıcı olarak açılır menüye kaydedilsin mi?`,
+              ar:`هل تريد حفظ "${pendingCustomPurpose}" بشكل دائم كخيار في القائمة؟`,
+              ru:`Сохранить "${pendingCustomPurpose}" как постоянный вариант в выпадающем списке?`
+            })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => { setShowSavePurposePrompt(false); setPendingCustomPurpose(""); }}>
+            {tt({de:"Nein", en:"No", tr:"Hayır", ar:"لا", ru:"Нет"})}
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={async () => {
+            if (user && pendingCustomPurpose) {
+              await supabase.from("custom_purposes").insert({ user_id: user.id, label: pendingCustomPurpose } as any);
+              setCustomPurposes(prev => [...prev, { id: crypto.randomUUID(), label: pendingCustomPurpose }]);
+              toast({ title: tt({de:"Zweck gespeichert!", en:"Purpose saved!"}) });
+            }
+            setShowSavePurposePrompt(false);
+            setPendingCustomPurpose("");
+          }}>
+            {tt({de:"Ja, speichern", en:"Yes, save", tr:"Evet, kaydet", ar:"نعم، حفظ", ru:"Да, сохранить"})}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
 
