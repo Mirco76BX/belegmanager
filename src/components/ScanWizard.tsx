@@ -203,10 +203,20 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       if (error) throw error;
 
       setScanResult(data);
-      if (data.date) setDate(data.date);
-      if (data.amount) setAmount(String(data.amount));
+      const detectedDate = data.date || "";
+      const detectedCurrency = data.currency || "EUR";
+
+      if (detectedDate) setDate(detectedDate);
+      if (data.amount != null) {
+        setOriginalAmount(String(data.amount));
+        const convertedAmount = await convertToEur(data.amount, detectedCurrency, detectedDate);
+        setAmount(convertedAmount != null ? String(convertedAmount) : String(data.amount));
+      }
       if (data.description || data.vendor) setDescription([data.vendor, data.description].filter(Boolean).join(" – "));
-      if (data.tax_amount != null) setVatAmount(String(data.tax_amount));
+      if (data.tax_amount != null) {
+        const convertedVatAmount = await convertToEur(data.tax_amount, detectedCurrency, detectedDate);
+        setVatAmount(convertedVatAmount != null ? String(convertedVatAmount) : String(data.tax_amount));
+      }
       if (data.tax_rate != null) setVatRate(String(data.tax_rate));
 
       // Auto-detect tax category
