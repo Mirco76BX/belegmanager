@@ -104,6 +104,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
 
   const [date, setDate] = useState("");
   const [amount, setAmount] = useState("");
+  const [originalAmount, setOriginalAmount] = useState("");
   const [description, setDescription] = useState("");
   const [companyId, setCompanyId] = useState(defaultCompanyId || "");
   const [personMet, setPersonMet] = useState("");
@@ -128,7 +129,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   useEffect(() => {
     if (open && user) {
       setStep("upload"); setFile(null); setPreview(null); setScanResult(null);
-      setDate(""); setAmount(""); setDescription("");
+      setDate(""); setAmount(""); setOriginalAmount(""); setDescription("");
       setCompanyId(defaultCompanyId || "");
       setPersonMet(""); setOrganization(""); setMeetingPurpose("");
       setShowCustomPurpose(false); setShowNewCompany(false); setNewCompanyName("");
@@ -149,13 +150,31 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
     }
   }, [open, defaultCompanyId, user, subscription.tier]);
 
+  const convertToEur = async (value: number | null, detectedCurrency?: string, receiptDate?: string | null) => {
+    if (value == null) return null;
+    if (!detectedCurrency || detectedCurrency === "EUR") return value;
+
+    try {
+      const { data, error } = await supabase.functions.invoke("convert-currency", {
+        body: { amount: value, currency: detectedCurrency, date: receiptDate || undefined },
+      });
+
+      if (!error && data?.amount_eur != null) {
+        return Number(data.amount_eur);
+      }
+    } catch (error) {
+      console.warn("Currency conversion preview failed", error);
+    }
+
+    return value;
+  };
+
   // When tax category changes, apply Smart Guess VAT if no OCR value
   useEffect(() => {
     if (taxCategory && !scanResult?.tax_rate) {
       const guessedRate = getSmartGuessVat(taxCategory);
       if (guessedRate !== null) {
         setVatRate(String(guessedRate));
-        // Also compute estimated VAT amount from amount
         const amt = parseFloat(amount);
         if (!isNaN(amt) && guessedRate > 0) {
           const estimated = amt - (amt / (1 + guessedRate / 100));
@@ -163,7 +182,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         }
       }
     }
-  }, [taxCategory]);
+  }, [taxCategory, scanResult?.tax_rate, amount]);
 
   const handleFileSelected = async (selectedFile: File) => {
     setStep("scanning");
@@ -184,10 +203,20 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       if (error) throw error;
 
       setScanResult(data);
-      if (data.date) setDate(data.date);
-      if (data.amount) setAmount(String(data.amount));
+      const detectedDate = data.date || "";
+      const detectedCurrency = data.currency || "EUR";
+
+      if (detectedDate) setDate(detectedDate);
+      if (data.amount != null) {
+        setOriginalAmount(String(data.amount));
+        const convertedAmount = await convertToEur(data.amount, detectedCurrency, detectedDate);
+        setAmount(convertedAmount != null ? String(convertedAmount) : String(data.amount));
+      }
       if (data.description || data.vendor) setDescription([data.vendor, data.description].filter(Boolean).join(" – "));
-      if (data.tax_amount != null) setVatAmount(String(data.tax_amount));
+      if (data.tax_amount != null) {
+        const convertedVatAmount = await convertToEur(data.tax_amount, detectedCurrency, detectedDate);
+        setVatAmount(convertedVatAmount != null ? String(convertedVatAmount) : String(data.tax_amount));
+      }
       if (data.tax_rate != null) setVatRate(String(data.tax_rate));
 
       // Auto-detect tax category
@@ -310,38 +339,25 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const { error: uploadError } = await supabase.storage.from("receipts").upload(path, file);
       if (uploadError) throw uploadError;
 
-      const parsedAmount = amount ? parseFloat(amount) : null;
+      const parsedAmountEur = amount ? parseFloat(amount) : null;
       const currency = scanResult?.currency || "EUR";
-
-      let amountEur: number | null = null;
-      if (parsedAmount && currency !== "EUR") {
-        try {
-          const { data: convData, error: convError } = await supabase.functions.invoke("convert-currency", {
-            body: { amount: parsedAmount, currency, date: date || undefined },
-          });
-          if (!convError && convData?.amount_eur) {
-            amountEur = convData.amount_eur;
-          }
-        } catch (e) {
-          console.warn("Currency conversion failed, saving without EUR amount", e);
-        }
-      } else if (parsedAmount) {
-        amountEur = parsedAmount;
-      }
+      const parsedOriginalAmount = currency === "EUR"
+        ? parsedAmountEur
+        : (originalAmount ? parseFloat(originalAmount) : (scanResult?.amount ?? null));
 
       const finalVatRate = vatRate ? parseFloat(vatRate) : (scanResult?.tax_rate ?? null);
-      const finalVatAmount = vatAmount ? parseFloat(vatAmount) : (scanResult?.tax_amount ?? null);
+      const finalVatAmount = vatAmount ? parseFloat(vatAmount) : null;
 
       const insertData: any = {
         user_id: user.id, date: date || (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`; })(),
-        amount: parsedAmount, description: description || null,
+        amount: parsedOriginalAmount, description: description || null,
         company_id: companyId || null, file_path: path,
         receipt_type: isFuelReceipt ? "fuel" : "general",
         status: skipDetails ? "pending" : "complete",
         vat_amount: finalVatAmount,
         vat_rate: finalVatRate,
         currency,
-        amount_eur: amountEur,
+        amount_eur: parsedAmountEur,
         tax_category: taxCategory || null,
       };
 
@@ -473,11 +489,17 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                     <span className="font-semibold text-foreground">💰 {scanResult.amount.toFixed(2)} {scanResult.currency || "EUR"} inkl. MwSt.</span>
                     {confidenceBadge(conf?.amount, lang)}
+                    {scanResult.currency && scanResult.currency !== "EUR" && amount && (
+                      <span>≈ {Number(amount).toFixed(2)} €</span>
+                    )}
                     {scanResult.tax_amount != null && (
                       <span className="flex items-center gap-1">
                         MwSt: {scanResult.tax_amount.toFixed(2)} {scanResult.currency || "EUR"}
                         {confidenceBadge(conf?.tax_amount, lang)}
                       </span>
+                    )}
+                    {scanResult.tax_amount != null && scanResult.currency && scanResult.currency !== "EUR" && vatAmount && (
+                      <span>≈ {Number(vatAmount).toFixed(2)} €</span>
                     )}
                     {scanResult.tax_rate != null && (
                       <span className="flex items-center gap-1">
@@ -510,7 +532,24 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                   <Label className="text-sm">{tt({de:"Betrag inkl. MwSt. (€)", en:"Amount incl. VAT (€)"})}</Label>
                   {confidenceBadge(conf?.amount, lang)}
                 </div>
-                <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className={`h-11 text-base ${confidenceColor(conf?.amount)}`} />
+                {scanResult?.currency && scanResult.currency !== "EUR" && originalAmount && (
+                  <p className="text-xs text-muted-foreground">
+                    {tt({ de: "Original", en: "Original" })}: {Number(originalAmount).toFixed(2)} {scanResult.currency}
+                  </p>
+                )}
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    if ((scanResult?.currency || "EUR") === "EUR") {
+                      setOriginalAmount(e.target.value);
+                    }
+                  }}
+                  placeholder="0.00"
+                  className={`h-11 text-base ${confidenceColor(conf?.amount)}`}
+                />
               </div>
             </div>
 
