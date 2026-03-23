@@ -380,6 +380,16 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       if (error) throw error;
 
       toast({ title: tt({de:"Beleg gespeichert!", en:"Receipt saved!"}) });
+
+      // Check if custom purpose should be saved
+      const isCustom = !skipDetails && meetingPurpose.trim() &&
+        !PURPOSE_PRESETS.some(p => p.value === meetingPurpose) &&
+        !customPurposes.some(cp => cp.label === meetingPurpose.trim());
+      if (isCustom) {
+        setPendingCustomPurpose(meetingPurpose.trim());
+        setShowSavePurposePrompt(true);
+      }
+
       onSaved(); onClose();
     } catch (err: any) { toast({ title: err.message, variant: "destructive" }); }
     finally { setSaving(false); }
