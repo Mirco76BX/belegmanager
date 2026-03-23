@@ -339,38 +339,25 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const { error: uploadError } = await supabase.storage.from("receipts").upload(path, file);
       if (uploadError) throw uploadError;
 
-      const parsedAmount = amount ? parseFloat(amount) : null;
+      const parsedAmountEur = amount ? parseFloat(amount) : null;
       const currency = scanResult?.currency || "EUR";
-
-      let amountEur: number | null = null;
-      if (parsedAmount && currency !== "EUR") {
-        try {
-          const { data: convData, error: convError } = await supabase.functions.invoke("convert-currency", {
-            body: { amount: parsedAmount, currency, date: date || undefined },
-          });
-          if (!convError && convData?.amount_eur) {
-            amountEur = convData.amount_eur;
-          }
-        } catch (e) {
-          console.warn("Currency conversion failed, saving without EUR amount", e);
-        }
-      } else if (parsedAmount) {
-        amountEur = parsedAmount;
-      }
+      const parsedOriginalAmount = currency === "EUR"
+        ? parsedAmountEur
+        : (originalAmount ? parseFloat(originalAmount) : (scanResult?.amount ?? null));
 
       const finalVatRate = vatRate ? parseFloat(vatRate) : (scanResult?.tax_rate ?? null);
-      const finalVatAmount = vatAmount ? parseFloat(vatAmount) : (scanResult?.tax_amount ?? null);
+      const finalVatAmount = vatAmount ? parseFloat(vatAmount) : null;
 
       const insertData: any = {
         user_id: user.id, date: date || (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`; })(),
-        amount: parsedAmount, description: description || null,
+        amount: parsedOriginalAmount, description: description || null,
         company_id: companyId || null, file_path: path,
         receipt_type: isFuelReceipt ? "fuel" : "general",
         status: skipDetails ? "pending" : "complete",
         vat_amount: finalVatAmount,
         vat_rate: finalVatRate,
         currency,
-        amount_eur: amountEur,
+        amount_eur: parsedAmountEur,
         tax_category: taxCategory || null,
       };
 
