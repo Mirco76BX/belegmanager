@@ -56,6 +56,9 @@ const Companies = () => {
   const [saving, setSaving] = useState(false);
   const [orgType, setOrgType] = useState<OrgType>("company");
 
+  // Delete confirmation
+  const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
+
   // Vehicle dialog
   const [vehicleDialogOpen, setVehicleDialogOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
