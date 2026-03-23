@@ -489,11 +489,17 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                     <span className="font-semibold text-foreground">💰 {scanResult.amount.toFixed(2)} {scanResult.currency || "EUR"} inkl. MwSt.</span>
                     {confidenceBadge(conf?.amount, lang)}
+                    {scanResult.currency && scanResult.currency !== "EUR" && amount && (
+                      <span>≈ {Number(amount).toFixed(2)} €</span>
+                    )}
                     {scanResult.tax_amount != null && (
                       <span className="flex items-center gap-1">
                         MwSt: {scanResult.tax_amount.toFixed(2)} {scanResult.currency || "EUR"}
                         {confidenceBadge(conf?.tax_amount, lang)}
                       </span>
+                    )}
+                    {scanResult.tax_amount != null && scanResult.currency && scanResult.currency !== "EUR" && vatAmount && (
+                      <span>≈ {Number(vatAmount).toFixed(2)} €</span>
                     )}
                     {scanResult.tax_rate != null && (
                       <span className="flex items-center gap-1">
@@ -526,7 +532,24 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                   <Label className="text-sm">{tt({de:"Betrag inkl. MwSt. (€)", en:"Amount incl. VAT (€)"})}</Label>
                   {confidenceBadge(conf?.amount, lang)}
                 </div>
-                <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className={`h-11 text-base ${confidenceColor(conf?.amount)}`} />
+                {scanResult?.currency && scanResult.currency !== "EUR" && originalAmount && (
+                  <p className="text-xs text-muted-foreground">
+                    {tt({ de: "Original", en: "Original" })}: {Number(originalAmount).toFixed(2)} {scanResult.currency}
+                  </p>
+                )}
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    if ((scanResult?.currency || "EUR") === "EUR") {
+                      setOriginalAmount(e.target.value);
+                    }
+                  }}
+                  placeholder="0.00"
+                  className={`h-11 text-base ${confidenceColor(conf?.amount)}`}
+                />
               </div>
             </div>
 
