@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { FileText, MailCheck, Star } from "lucide-react";
+import { FileText, MailCheck, Star, Globe, Brain, ShieldCheck, Smartphone, Calculator } from "lucide-react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import receiptScanImg from "@/assets/receipt-scan.jpg";
 import testimonial1Img from "@/assets/testimonial-1.jpg";
