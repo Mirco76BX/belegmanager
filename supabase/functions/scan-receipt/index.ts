@@ -65,6 +65,7 @@ serve(async (req) => {
 }
 
 CRITICAL RULES FOR ACCURATE READING:
+0. DATE: Read the date EXACTLY as printed on the receipt. The date is on the receipt itself, NOT today's date. Look carefully for day, month, and year. Common formats: "20.03.2020" means March 20, 2020 → "2020-03-20". "Mar 20, 2020" → "2020-03-20". NEVER guess or fabricate a date. If you cannot find a date, return null.
 1. AMOUNTS: Read EVERY digit carefully. Pay close attention to thousand separators (dots or commas) vs decimal separators. For example in Indonesian receipts (IDR), amounts like "176.617" or "513.172" use dots as thousand separators — do NOT misread as decimal points. A typical Indonesian restaurant bill is 50,000-500,000 IDR, NOT 1,000-5,000 IDR.
 2. TOTAL AMOUNT: Always look for the GRAND TOTAL / TOTAL / Jumlah / Gesamt line — this is the "amount" field. Do NOT use a subtotal or single item price. Cross-check: the total should be >= sum of visible line items.
 3. TAX/VAT: Look for lines labeled "Tax", "VAT", "MwSt", "PPN", "Pajak", "Steuer", or a percentage (e.g. "11%", "19%"). If you find a tax rate but no tax amount, calculate: tax_amount = amount - (amount / (1 + tax_rate/100)). If you find a tax amount but no rate, calculate: tax_rate = round((tax_amount / (amount - tax_amount)) * 100).
