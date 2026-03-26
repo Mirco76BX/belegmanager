@@ -40,15 +40,15 @@ serve(async (req) => {
             content: [
               {
                 type: "text",
-                text: `Analyze this receipt image and extract the following information. Return ONLY valid JSON with these fields:
+                text: `Analyze this receipt image carefully and extract the following information. Return ONLY valid JSON with these fields:
 {
   "date": "YYYY-MM-DD format or null if not found",
   "amount": number or null (total amount paid including VAT),
-  "currency": "EUR" or detected currency code,
+  "currency": "EUR" or detected currency code (e.g. "IDR", "USD", "THB", "GBP"),
   "description": "brief description of what was purchased/service",
   "vendor": "name of the store/restaurant/vendor",
-  "tax_amount": number or null (VAT/MwSt amount if visible on the receipt),
-  "tax_rate": number or null (VAT/MwSt percentage rate, e.g. 19 or 7, if visible on the receipt),
+  "tax_amount": number or null (VAT/MwSt/PPN/tax amount if visible on the receipt),
+  "tax_rate": number or null (VAT/MwSt/PPN percentage rate, e.g. 19 or 7 or 11, if visible on the receipt),
   "items": ["list of individual items if visible"] or [],
   "is_fuel_receipt": true or false (set to true if this is a gas station / fuel / petrol receipt),
   "suggested_tax_category": one of ["reisekosten_uebernachtung","reisekosten_fahrt","reisekosten_nebenkosten","bewirtung","tankkosten","bueromaterial","telekommunikation","fortbildung","versicherung","sonstiges"] based on what the receipt is for,
@@ -62,7 +62,13 @@ serve(async (req) => {
   "is_handwritten": true or false (set to true if the receipt appears to be handwritten, e.g. a taxi receipt or manual Quittung),
   "multiple_receipts_detected": true or false (set to true if you see more than one receipt/document in the image)
 }
-If the receipt is handwritten or hard to read, set confidence to "low" for affected fields.
+
+CRITICAL RULES FOR ACCURATE READING:
+1. AMOUNTS: Read EVERY digit carefully. Pay close attention to thousand separators (dots or commas) vs decimal separators. For example in Indonesian receipts (IDR), amounts like "176.617" or "513.172" use dots as thousand separators — do NOT misread as decimal points. A typical Indonesian restaurant bill is 50,000-500,000 IDR, NOT 1,000-5,000 IDR.
+2. TOTAL AMOUNT: Always look for the GRAND TOTAL / TOTAL / Jumlah / Gesamt line — this is the "amount" field. Do NOT use a subtotal or single item price. Cross-check: the total should be >= sum of visible line items.
+3. TAX/VAT: Look for lines labeled "Tax", "VAT", "MwSt", "PPN", "Pajak", "Steuer", or a percentage (e.g. "11%", "19%"). If you find a tax rate but no tax amount, calculate: tax_amount = amount - (amount / (1 + tax_rate/100)). If you find a tax amount but no rate, calculate: tax_rate = round((tax_amount / (amount - tax_amount)) * 100).
+4. CURRENCY: Detect from symbols (Rp, €, $, £, ¥, ฿) or text (IDR, EUR, USD). Indonesian receipts use "Rp" or "IDR".
+5. If the receipt is blurry or hard to read, set confidence to "low" for affected fields.
 Do not include any other text, just the JSON object.`,
               },
               {
