@@ -133,6 +133,21 @@ Do not include any other text, just the JSON object.`,
       extracted.confidence = { date: "high", amount: "high", tax_amount: "high", tax_rate: "high", vendor: "high" };
     }
 
+    // Auto-calculate missing tax fields
+    if (extracted.amount != null && extracted.amount > 0) {
+      if (extracted.tax_rate != null && extracted.tax_rate > 0 && extracted.tax_amount == null) {
+        extracted.tax_amount = Math.round((extracted.amount - (extracted.amount / (1 + extracted.tax_rate / 100))) * 100) / 100;
+        extracted.confidence.tax_amount = "medium";
+      }
+      if (extracted.tax_amount != null && extracted.tax_amount > 0 && extracted.tax_rate == null) {
+        const netAmount = extracted.amount - extracted.tax_amount;
+        if (netAmount > 0) {
+          extracted.tax_rate = Math.round((extracted.tax_amount / netAmount) * 100);
+          extracted.confidence.tax_rate = "medium";
+        }
+      }
+    }
+
     return new Response(JSON.stringify(extracted), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
