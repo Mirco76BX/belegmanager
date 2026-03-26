@@ -45,6 +45,7 @@ serve(async (req) => {
   "date": "YYYY-MM-DD format or null if not found",
   "amount": number or null (total amount paid including VAT),
   "currency": "EUR" or detected currency code (e.g. "IDR", "USD", "THB", "GBP"),
+  "country": "two-letter ISO country code where this receipt was issued (e.g. ID, DE, US, TH, GB)",
   "description": "brief description of what was purchased/service",
   "vendor": "name of the store/restaurant/vendor",
   "tax_amount": number or null (VAT/MwSt/PPN/tax amount if visible on the receipt),
@@ -68,7 +69,41 @@ CRITICAL RULES FOR ACCURATE READING:
 2. TOTAL AMOUNT: Always look for the GRAND TOTAL / TOTAL / Jumlah / Gesamt line — this is the "amount" field. Do NOT use a subtotal or single item price. Cross-check: the total should be >= sum of visible line items.
 3. TAX/VAT: Look for lines labeled "Tax", "VAT", "MwSt", "PPN", "Pajak", "Steuer", or a percentage (e.g. "11%", "19%"). If you find a tax rate but no tax amount, calculate: tax_amount = amount - (amount / (1 + tax_rate/100)). If you find a tax amount but no rate, calculate: tax_rate = round((tax_amount / (amount - tax_amount)) * 100).
 4. CURRENCY: Detect from symbols (Rp, €, $, £, ¥, ฿) or text (IDR, EUR, USD). Indonesian receipts use "Rp" or "IDR".
-5. If the receipt is blurry or hard to read, set confidence to "low" for affected fields.
+5. COUNTRY-BASED VAT FALLBACK: If you CANNOT clearly read the tax rate from the receipt, determine the country from the vendor address, language, or currency and apply the standard VAT rate for that country. Use these standard rates:
+   - DE (Germany): 19% standard, 7% reduced (food, books, hotels)
+   - AT (Austria): 20% standard, 10% reduced
+   - CH (Switzerland): 8.1% standard, 2.6% reduced
+   - FR (France): 20% standard, 10% reduced
+   - IT (Italy): 22% standard, 10% reduced
+   - ES (Spain): 21% standard, 10% reduced
+   - NL (Netherlands): 21% standard, 9% reduced
+   - BE (Belgium): 21% standard, 6% reduced
+   - PL (Poland): 23% standard, 8% reduced
+   - CZ (Czech Republic): 21% standard, 12% reduced
+   - GB (UK): 20% standard, 5% reduced
+   - US (USA): 0% (no federal VAT; state sales tax varies, set tax_rate to null)
+   - ID (Indonesia): 11% PPN
+   - TH (Thailand): 7% VAT
+   - MY (Malaysia): 8% SST
+   - SG (Singapore): 9% GST
+   - JP (Japan): 10% standard, 8% reduced (food)
+   - KR (South Korea): 10% VAT
+   - AU (Australia): 10% GST
+   - NZ (New Zealand): 15% GST
+   - IN (India): 18% standard GST, 5%/12%/28% for other categories
+   - BR (Brazil): varies, use null if unsure
+   - AE (UAE): 5% VAT
+   - SA (Saudi Arabia): 15% VAT
+   - TR (Turkey): 20% standard, 10%/1% reduced
+   - ZA (South Africa): 15% VAT
+   - MX (Mexico): 16% IVA
+   - CA (Canada): 5% GST (+ provincial, use 5% as base)
+   - SE (Sweden): 25% standard, 12%/6% reduced
+   - DK (Denmark): 25% standard
+   - NO (Norway): 25% standard, 15%/12% reduced
+   - FI (Finland): 25.5% standard, 14%/10% reduced
+   When using a country fallback rate, set the corresponding confidence to "medium" (not "low") since we know the legal rate.
+6. If the receipt is blurry or hard to read, set confidence to "low" for affected fields.
 Do not include any other text, just the JSON object.`,
               },
               {
