@@ -33,7 +33,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           {
             role: "user",
@@ -42,7 +42,7 @@ serve(async (req) => {
                 type: "text",
                 text: `Analyze this receipt image carefully and extract the following information. Return ONLY valid JSON with these fields:
 {
-  "date": "YYYY-MM-DD format or null if not found",
+  "date": "YYYY-MM-DD format or null if not found. READ THE DATE EXACTLY AS PRINTED on the receipt. Do NOT use today's date. Look for date patterns like DD.MM.YYYY, DD/MM/YYYY, YYYY-MM-DD, MM/DD/YYYY, or written-out month names. Convert to YYYY-MM-DD.",
   "amount": number or null (total amount paid including VAT),
   "currency": "EUR" or detected currency code (e.g. "IDR", "USD", "THB", "GBP"),
   "country": "two-letter ISO country code where this receipt was issued (e.g. ID, DE, US, TH, GB)",
