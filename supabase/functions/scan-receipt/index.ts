@@ -186,6 +186,11 @@ Do not include any other text, just the JSON object.`,
       extracted.confidence = { date: "high", amount: "high", tax_amount: "high", tax_rate: "high", vendor: "high" };
     }
 
+    // Ensure vat_items array exists
+    if (!Array.isArray(extracted.vat_items)) {
+      extracted.vat_items = [];
+    }
+
     // Auto-calculate missing tax fields
     if (extracted.amount != null && extracted.amount > 0) {
       if (extracted.tax_rate != null && extracted.tax_rate > 0 && extracted.tax_amount == null) {
@@ -199,6 +204,17 @@ Do not include any other text, just the JSON object.`,
           extracted.confidence.tax_rate = "medium";
         }
       }
+    }
+
+    // If vat_items is empty but we have tax data, create a single entry
+    if (extracted.vat_items.length === 0 && extracted.tax_rate != null && extracted.tax_amount != null) {
+      const netAmount = extracted.amount != null ? extracted.amount - extracted.tax_amount : null;
+      extracted.vat_items.push({
+        label: "Gesamt",
+        net_amount: netAmount,
+        vat_rate: extracted.tax_rate,
+        vat_amount: extracted.tax_amount,
+      });
     }
 
     return new Response(JSON.stringify(extracted), {
