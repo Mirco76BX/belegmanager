@@ -391,7 +391,21 @@ const Receipts = () => {
                    <span className="text-muted-foreground">{t("receipts.amount")}</span>
                    <span className="font-mono font-semibold">{formatAmountFull(detailReceipt)}</span>
                  </div>
-                 {(detailReceipt.vat_amount != null || detailReceipt.vat_rate != null) && (
+                 {detailVatItems.length > 1 ? (
+                   <div className="space-y-1.5 pt-1">
+                     <span className="text-sm text-muted-foreground">{tt({de:"MwSt.-Positionen", en:"VAT Items"})}</span>
+                     {detailVatItems.map((vi) => (
+                       <div key={vi.id} className="flex justify-between text-sm pl-2 border-l-2 border-muted">
+                         <span className="text-muted-foreground">{vi.label || "–"} ({vi.vat_rate}%)</span>
+                         <span className="font-mono">{vi.vat_amount.toFixed(2)} €{vi.net_amount != null ? ` (netto: ${vi.net_amount.toFixed(2)} €)` : ""}</span>
+                       </div>
+                     ))}
+                     <div className="flex justify-between text-sm font-medium pt-0.5">
+                       <span className="text-muted-foreground">{tt({de:"MwSt. gesamt", en:"Total VAT"})}</span>
+                       <span className="font-mono">{detailVatItems.reduce((s, i) => s + i.vat_amount, 0).toFixed(2)} €</span>
+                     </div>
+                   </div>
+                 ) : (detailReceipt.vat_amount != null || detailReceipt.vat_rate != null) && (
                    <div className="flex justify-between text-sm">
                      <span className="text-muted-foreground">MwSt.</span>
                      <span className="font-mono">
