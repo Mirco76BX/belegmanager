@@ -288,6 +288,44 @@ export type Database = {
           },
         ]
       }
+      receipt_vat_items: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          net_amount: number | null
+          receipt_id: string
+          vat_amount: number
+          vat_rate: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          net_amount?: number | null
+          receipt_id: string
+          vat_amount: number
+          vat_rate: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          net_amount?: number | null
+          receipt_id?: string
+          vat_amount?: number
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipt_vat_items_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       receipts: {
         Row: {
           accounting_status: string
