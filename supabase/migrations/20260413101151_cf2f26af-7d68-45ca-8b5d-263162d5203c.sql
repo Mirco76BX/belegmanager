@@ -1,0 +1,1 @@
+UPDATE coupon_redemptions SET tier = 'master', expires_at = '2099-12-31' WHERE user_id = '97ad19b8-8072-475a-83c3-d876a2430f4a';
