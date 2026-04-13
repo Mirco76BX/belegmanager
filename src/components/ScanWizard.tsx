@@ -136,6 +136,8 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const [creatingCompany, setCreatingCompany] = useState(false);
   const [localCompanies, setLocalCompanies] = useState<Company[]>(companies);
   const [savedVehicles, setSavedVehicles] = useState<{ license_plate: string; name: string | null }[]>([]);
+  const [pendingReceiptId, setPendingReceiptId] = useState<string | null>(null);
+  const [pendingFilePath, setPendingFilePath] = useState<string | null>(null);
 
   useEffect(() => { setLocalCompanies(companies); }, [companies]);
 
@@ -149,6 +151,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       setLimitReached(false); setIsFuelReceipt(false);
       setLicensePlate(""); setMileage(""); setMileageWarning(null);
       setTaxCategory(""); setVatRate(""); setVatAmount(""); setVatItems([]);
+      setPendingReceiptId(null); setPendingFilePath(null);
 
       supabase.from("vehicles").select("license_plate, name").order("license_plate")
         .then(({ data }) => { if (data) setSavedVehicles(data); });
@@ -235,8 +238,8 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       if (data.tax_rate != null) setVatRate(String(data.tax_rate));
 
       // Process vat_items
+      let convertedItems: VatItem[] = [];
       if (Array.isArray(data.vat_items) && data.vat_items.length > 0) {
-        const convertedItems: VatItem[] = [];
         for (const item of data.vat_items) {
           const convertedNet = await convertToEur(item.net_amount, detectedCurrency, detectedDate);
           const convertedVat = await convertToEur(item.vat_amount, detectedCurrency, detectedDate);
@@ -254,10 +257,56 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const suggestedCat = data.suggested_tax_category || guessTaxCategoryFromScan(data.vendor, data.description, !!data.is_fuel_receipt);
       if (suggestedCat) setTaxCategory(suggestedCat);
 
-      if (data.is_fuel_receipt) {
+      const detectedIsFuel = !!data.is_fuel_receipt;
+      if (detectedIsFuel) {
         setIsFuelReceipt(true);
         setMeetingPurpose("Tanken");
         if (!suggestedCat) setTaxCategory("tankkosten");
+      }
+
+      // === AUTO-SAVE as pending immediately after scan ===
+      try {
+        const ext = croppedFile.name.split(".").pop() || "jpg";
+        const filePath = `${user!.id}/${crypto.randomUUID()}.${ext}`;
+        await supabase.storage.from("receipts").upload(filePath, croppedFile);
+        setPendingFilePath(filePath);
+
+        const parsedAmount = data.amount != null ? data.amount : null;
+        const convertedAmt = await convertToEur(parsedAmount, detectedCurrency, detectedDate);
+
+        const { data: receiptRow, error: insertErr } = await supabase.from("receipts").insert({
+          user_id: user!.id,
+          date: detectedDate || new Date().toISOString().slice(0, 10),
+          amount: parsedAmount,
+          amount_eur: convertedAmt,
+          description: [data.vendor, data.description].filter(Boolean).join(" – ") || null,
+          file_path: filePath,
+          receipt_type: detectedIsFuel ? "fuel" : "general",
+          status: "pending",
+          vat_amount: data.tax_amount ?? null,
+          vat_rate: data.tax_rate ?? null,
+          currency: detectedCurrency,
+          tax_category: suggestedCat || null,
+          meeting_purpose: detectedIsFuel ? "Tanken" : null,
+        }).select("id").single();
+
+        if (!insertErr && receiptRow) {
+          setPendingReceiptId(receiptRow.id);
+
+          // Save VAT items too
+          if (Array.isArray(data.vat_items) && data.vat_items.length > 0) {
+            const vatInserts = convertedItems.map((item: VatItem) => ({
+              receipt_id: receiptRow.id,
+              label: item.label,
+              net_amount: item.net_amount,
+              vat_rate: item.vat_rate,
+              vat_amount: item.vat_amount,
+            }));
+            await supabase.from("receipt_vat_items").insert(vatInserts);
+          }
+        }
+      } catch (autoSaveErr) {
+        console.warn("Auto-save pending receipt failed:", autoSaveErr);
       }
 
       // Notify about multiple receipts
@@ -365,10 +414,14 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
 
     setSaving(true);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from("receipts").upload(path, file);
-      if (uploadError) throw uploadError;
+      // Upload file only if not already uploaded during auto-save
+      let filePath = pendingFilePath;
+      if (!filePath) {
+        const ext = file.name.split(".").pop() || "jpg";
+        filePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
+        const { error: uploadError } = await supabase.storage.from("receipts").upload(filePath, file);
+        if (uploadError) throw uploadError;
+      }
 
       const parsedAmountEur = amount ? parseFloat(amount) : null;
       const currency = scanResult?.currency || "EUR";
@@ -379,10 +432,10 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const finalVatRate = vatRate ? parseFloat(vatRate) : (scanResult?.tax_rate ?? null);
       const finalVatAmount = vatAmount ? parseFloat(vatAmount) : null;
 
-      const insertData: any = {
+      const receiptData: any = {
         user_id: user.id, date: date || (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`; })(),
         amount: parsedOriginalAmount, description: description || null,
-        company_id: companyId || null, file_path: path,
+        company_id: companyId || null, file_path: filePath,
         receipt_type: isFuelReceipt ? "fuel" : "general",
         status: skipDetails ? "pending" : "complete",
         vat_amount: finalVatAmount,
@@ -393,22 +446,36 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       };
 
       if (isFuelReceipt) {
-        insertData.license_plate = skipDetails ? null : licensePlate || null;
-        insertData.mileage = skipDetails ? null : (mileage ? parseFloat(mileage) : null);
-        insertData.meeting_purpose = "Tanken";
+        receiptData.license_plate = skipDetails ? null : licensePlate || null;
+        receiptData.mileage = skipDetails ? null : (mileage ? parseFloat(mileage) : null);
+        receiptData.meeting_purpose = "Tanken";
       } else {
-        insertData.person_met = skipDetails ? null : personMet || null;
-        insertData.organization = skipDetails ? null : organization || null;
-        insertData.meeting_purpose = skipDetails ? null : meetingPurpose || null;
+        receiptData.person_met = skipDetails ? null : personMet || null;
+        receiptData.organization = skipDetails ? null : organization || null;
+        receiptData.meeting_purpose = skipDetails ? null : meetingPurpose || null;
       }
 
-      const { data: receiptData, error } = await supabase.from("receipts").insert(insertData).select("id").single();
-      if (error) throw error;
+      let receiptId: string;
 
-      // Insert VAT items if available
-      if (vatItems.length > 0 && receiptData?.id) {
+      if (pendingReceiptId) {
+        // Update the auto-saved pending receipt
+        const { error } = await supabase.from("receipts").update(receiptData).eq("id", pendingReceiptId);
+        if (error) throw error;
+        receiptId = pendingReceiptId;
+
+        // Delete old VAT items and re-insert
+        await supabase.from("receipt_vat_items").delete().eq("receipt_id", receiptId);
+      } else {
+        // Insert new receipt (fallback if auto-save failed)
+        const { data: newReceipt, error } = await supabase.from("receipts").insert(receiptData).select("id").single();
+        if (error) throw error;
+        receiptId = newReceipt.id;
+      }
+
+      // Insert VAT items
+      if (vatItems.length > 0) {
         const vatInserts = vatItems.map((item) => ({
-          receipt_id: receiptData.id,
+          receipt_id: receiptId,
           label: item.label,
           net_amount: item.net_amount,
           vat_rate: item.vat_rate,
