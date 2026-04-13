@@ -13,6 +13,14 @@ import { Camera, Receipt as ReceiptIcon, Trash2, Pencil, ScanLine } from "lucide
 import ScanWizard from "@/components/ScanWizard";
 import ReceiptsInlineTable from "@/components/ReceiptsInlineTable";
 
+interface VatItem {
+  id: string;
+  label: string | null;
+  net_amount: number | null;
+  vat_rate: number;
+  vat_amount: number;
+}
+
 interface Receipt {
   id: string;
   date: string;
