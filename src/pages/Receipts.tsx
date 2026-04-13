@@ -13,6 +13,14 @@ import { Camera, Receipt as ReceiptIcon, Trash2, Pencil, ScanLine } from "lucide
 import ScanWizard from "@/components/ScanWizard";
 import ReceiptsInlineTable from "@/components/ReceiptsInlineTable";
 
+interface VatItem {
+  id: string;
+  label: string | null;
+  net_amount: number | null;
+  vat_rate: number;
+  vat_amount: number;
+}
+
 interface Receipt {
   id: string;
   date: string;
@@ -57,6 +65,7 @@ const Receipts = () => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailReceipt, setDetailReceipt] = useState<Receipt | null>(null);
   const [detailImageUrl, setDetailImageUrl] = useState<string | null>(null);
+  const [detailVatItems, setDetailVatItems] = useState<VatItem[]>([]);
   const [isEditing, setIsEditing] = useState(false);
 
   const [editPersonMet, setEditPersonMet] = useState("");
@@ -93,11 +102,19 @@ const Receipts = () => {
     setDetailReceipt(r);
     setIsEditing(false);
     setDetailImageUrl(null);
+    setDetailVatItems([]);
     setDetailOpen(true);
     if (r.file_path) {
       const { data } = await supabase.storage.from("receipts").createSignedUrl(r.file_path, 300);
       if (data?.signedUrl) setDetailImageUrl(data.signedUrl);
     }
+    // Fetch VAT items
+    const { data: vatData } = await supabase
+      .from("receipt_vat_items")
+      .select("*")
+      .eq("receipt_id", r.id)
+      .order("vat_rate");
+    if (vatData && vatData.length > 0) setDetailVatItems(vatData);
   };
 
   const startEditing = () => {
@@ -374,7 +391,21 @@ const Receipts = () => {
                    <span className="text-muted-foreground">{t("receipts.amount")}</span>
                    <span className="font-mono font-semibold">{formatAmountFull(detailReceipt)}</span>
                  </div>
-                 {(detailReceipt.vat_amount != null || detailReceipt.vat_rate != null) && (
+                 {detailVatItems.length > 1 ? (
+                   <div className="space-y-1.5 pt-1">
+                     <span className="text-sm text-muted-foreground">{tt({de:"MwSt.-Positionen", en:"VAT Items"})}</span>
+                     {detailVatItems.map((vi) => (
+                       <div key={vi.id} className="flex justify-between text-sm pl-2 border-l-2 border-muted">
+                         <span className="text-muted-foreground">{vi.label || "–"} ({vi.vat_rate}%)</span>
+                         <span className="font-mono">{vi.vat_amount.toFixed(2)} €{vi.net_amount != null ? ` (netto: ${vi.net_amount.toFixed(2)} €)` : ""}</span>
+                       </div>
+                     ))}
+                     <div className="flex justify-between text-sm font-medium pt-0.5">
+                       <span className="text-muted-foreground">{tt({de:"MwSt. gesamt", en:"Total VAT"})}</span>
+                       <span className="font-mono">{detailVatItems.reduce((s, i) => s + i.vat_amount, 0).toFixed(2)} €</span>
+                     </div>
+                   </div>
+                 ) : (detailReceipt.vat_amount != null || detailReceipt.vat_rate != null) && (
                    <div className="flex justify-between text-sm">
                      <span className="text-muted-foreground">MwSt.</span>
                      <span className="font-mono">

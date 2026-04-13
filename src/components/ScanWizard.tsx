@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Camera, Upload, Loader2, Check, SkipForward, ArrowRight, Plus, AlertTriangle, Info } from "lucide-react";
+import { Camera, Upload, Loader2, Check, SkipForward, ArrowRight, Plus, AlertTriangle, Info, X } from "lucide-react";
 import { TAX_CATEGORIES, getSmartGuessVat, getRequiredFields, guessTaxCategoryFromScan } from "@/lib/taxCategories";
 
 const PURPOSE_PRESETS = [
@@ -33,6 +33,13 @@ interface ConfidenceScores {
   vendor?: string;
 }
 
+interface VatItem {
+  label: string;
+  net_amount: number | null;
+  vat_rate: number;
+  vat_amount: number;
+}
+
 interface ScanResult {
   date: string | null;
   amount: number | null;
@@ -41,6 +48,7 @@ interface ScanResult {
   vendor: string | null;
   tax_amount: number | null;
   tax_rate: number | null;
+  vat_items?: VatItem[];
   items: string[];
   is_fuel_receipt?: boolean;
   suggested_tax_category?: string | null;
@@ -121,6 +129,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const [taxCategory, setTaxCategory] = useState<string>("");
   const [vatRate, setVatRate] = useState<string>("");
   const [vatAmount, setVatAmount] = useState<string>("");
+  const [vatItems, setVatItems] = useState<VatItem[]>([]);
 
   const [showNewCompany, setShowNewCompany] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState("");
@@ -139,7 +148,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       setShowCustomPurpose(false); setShowNewCompany(false); setNewCompanyName("");
       setLimitReached(false); setIsFuelReceipt(false);
       setLicensePlate(""); setMileage(""); setMileageWarning(null);
-      setTaxCategory(""); setVatRate(""); setVatAmount("");
+      setTaxCategory(""); setVatRate(""); setVatAmount(""); setVatItems([]);
 
       supabase.from("vehicles").select("license_plate, name").order("license_plate")
         .then(({ data }) => { if (data) setSavedVehicles(data); });
@@ -224,6 +233,22 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         setVatAmount(convertedVatAmount != null ? String(convertedVatAmount) : String(data.tax_amount));
       }
       if (data.tax_rate != null) setVatRate(String(data.tax_rate));
+
+      // Process vat_items
+      if (Array.isArray(data.vat_items) && data.vat_items.length > 0) {
+        const convertedItems: VatItem[] = [];
+        for (const item of data.vat_items) {
+          const convertedNet = await convertToEur(item.net_amount, detectedCurrency, detectedDate);
+          const convertedVat = await convertToEur(item.vat_amount, detectedCurrency, detectedDate);
+          convertedItems.push({
+            label: item.label || "Allgemein",
+            net_amount: convertedNet ?? item.net_amount,
+            vat_rate: item.vat_rate,
+            vat_amount: convertedVat ?? item.vat_amount,
+          });
+        }
+        setVatItems(convertedItems);
+      }
 
       // Auto-detect tax category
       const suggestedCat = data.suggested_tax_category || guessTaxCategoryFromScan(data.vendor, data.description, !!data.is_fuel_receipt);
@@ -377,8 +402,21 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         insertData.meeting_purpose = skipDetails ? null : meetingPurpose || null;
       }
 
-      const { error } = await supabase.from("receipts").insert(insertData);
+      const { data: receiptData, error } = await supabase.from("receipts").insert(insertData).select("id").single();
       if (error) throw error;
+
+      // Insert VAT items if available
+      if (vatItems.length > 0 && receiptData?.id) {
+        const vatInserts = vatItems.map((item) => ({
+          receipt_id: receiptData.id,
+          label: item.label,
+          net_amount: item.net_amount,
+          vat_rate: item.vat_rate,
+          vat_amount: item.vat_amount,
+        }));
+        const { error: vatError } = await supabase.from("receipt_vat_items").insert(vatInserts);
+        if (vatError) console.error("Failed to save VAT items:", vatError);
+      }
 
       toast({ title: tt({de:"Beleg gespeichert!", en:"Receipt saved!"}) });
 
@@ -509,20 +547,32 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                     {scanResult.currency && scanResult.currency !== "EUR" && amount && (
                       <span>≈ {Number(amount).toFixed(2)} €</span>
                     )}
-                    {scanResult.tax_amount != null && (
-                      <span className="flex items-center gap-1">
-                        MwSt: {scanResult.tax_amount.toFixed(2)} {scanResult.currency || "EUR"}
-                        {confidenceBadge(conf?.tax_amount, lang)}
-                      </span>
-                    )}
-                    {scanResult.tax_amount != null && scanResult.currency && scanResult.currency !== "EUR" && vatAmount && (
-                      <span>≈ {Number(vatAmount).toFixed(2)} €</span>
-                    )}
-                    {scanResult.tax_rate != null && (
-                      <span className="flex items-center gap-1">
-                        Satz: {scanResult.tax_rate}%
-                        {confidenceBadge(conf?.tax_rate, lang)}
-                      </span>
+                    {vatItems.length > 1 ? (
+                      <div className="flex flex-col gap-0.5 mt-0.5">
+                        {vatItems.map((item, idx) => (
+                          <span key={idx} className="text-xs text-muted-foreground">
+                            📊 {item.label}: {item.vat_amount.toFixed(2)} € ({item.vat_rate}%)
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <>
+                        {scanResult.tax_amount != null && (
+                          <span className="flex items-center gap-1">
+                            MwSt: {scanResult.tax_amount.toFixed(2)} {scanResult.currency || "EUR"}
+                            {confidenceBadge(conf?.tax_amount, lang)}
+                          </span>
+                        )}
+                        {scanResult.tax_amount != null && scanResult.currency && scanResult.currency !== "EUR" && vatAmount && (
+                          <span>≈ {Number(vatAmount).toFixed(2)} €</span>
+                        )}
+                        {scanResult.tax_rate != null && (
+                          <span className="flex items-center gap-1">
+                            Satz: {scanResult.tax_rate}%
+                            {confidenceBadge(conf?.tax_rate, lang)}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
@@ -570,27 +620,120 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
               </div>
             </div>
 
-            {/* VAT fields with Smart Guess */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5">
-                  <Label className="text-sm">{tt({de:"MwSt.-Satz (%)", en:"VAT Rate (%)"})}</Label>
-                  {confidenceBadge(conf?.tax_rate, lang)}
-                  {taxCategory && !scanResult?.tax_rate && vatRate && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                      {tt({de:"Smart Guess", en:"Smart Guess"})}
-                    </span>
-                  )}
-                </div>
-                <Input type="number" step="0.01" value={vatRate} onChange={(e) => setVatRate(e.target.value)} placeholder="19" className={`h-11 text-base ${confidenceColor(conf?.tax_rate)}`} />
+            {/* VAT items - multiple rates support */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">{tt({de:"MwSt.-Positionen", en:"VAT Items"})}</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => setVatItems(prev => [...prev, { label: "", net_amount: null, vat_rate: 19, vat_amount: 0 }])}
+                >
+                  <Plus className="h-3 w-3" />
+                  {tt({de:"Position", en:"Item"})}
+                </Button>
               </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5">
-                  <Label className="text-sm">{tt({de:"MwSt.-Betrag (€)", en:"VAT Amount (€)"})}</Label>
-                  {confidenceBadge(conf?.tax_amount, lang)}
+              {vatItems.length > 0 ? (
+                <div className="space-y-2">
+                  {vatItems.map((item, idx) => (
+                    <div key={idx} className="rounded-md border bg-muted/30 p-2.5 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Input
+                          value={item.label}
+                          onChange={(e) => {
+                            const updated = [...vatItems];
+                            updated[idx] = { ...updated[idx], label: e.target.value };
+                            setVatItems(updated);
+                          }}
+                          placeholder={tt({de:"z.B. Übernachtung, Speisen...", en:"e.g. Accommodation, Food..."})}
+                          className="h-8 text-sm flex-1 mr-2"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                          onClick={() => setVatItems(prev => prev.filter((_, i) => i !== idx))}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="space-y-0.5">
+                          <Label className="text-[10px] text-muted-foreground">{tt({de:"Netto (€)", en:"Net (€)"})}</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={item.net_amount ?? ""}
+                            onChange={(e) => {
+                              const updated = [...vatItems];
+                              updated[idx] = { ...updated[idx], net_amount: e.target.value ? parseFloat(e.target.value) : null };
+                              setVatItems(updated);
+                            }}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-0.5">
+                          <Label className="text-[10px] text-muted-foreground">{tt({de:"MwSt. %", en:"VAT %"})}</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={item.vat_rate}
+                            onChange={(e) => {
+                              const updated = [...vatItems];
+                              updated[idx] = { ...updated[idx], vat_rate: parseFloat(e.target.value) || 0 };
+                              setVatItems(updated);
+                            }}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-0.5">
+                          <Label className="text-[10px] text-muted-foreground">{tt({de:"MwSt. (€)", en:"VAT (€)"})}</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={item.vat_amount}
+                            onChange={(e) => {
+                              const updated = [...vatItems];
+                              updated[idx] = { ...updated[idx], vat_amount: parseFloat(e.target.value) || 0 };
+                              setVatItems(updated);
+                            }}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex justify-between text-xs text-muted-foreground px-1">
+                    <span>{tt({de:"Gesamt MwSt.", en:"Total VAT"})}</span>
+                    <span className="font-mono font-medium">{vatItems.reduce((s, i) => s + (i.vat_amount || 0), 0).toFixed(2)} €</span>
+                  </div>
                 </div>
-                <Input type="number" step="0.01" value={vatAmount} onChange={(e) => setVatAmount(e.target.value)} placeholder="0.00" className={`h-11 text-base ${confidenceColor(conf?.tax_amount)}`} />
-              </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Label className="text-sm">{tt({de:"MwSt.-Satz (%)", en:"VAT Rate (%)"})}</Label>
+                      {confidenceBadge(conf?.tax_rate, lang)}
+                      {taxCategory && !scanResult?.tax_rate && vatRate && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                          {tt({de:"Smart Guess", en:"Smart Guess"})}
+                        </span>
+                      )}
+                    </div>
+                    <Input type="number" step="0.01" value={vatRate} onChange={(e) => setVatRate(e.target.value)} placeholder="19" className={`h-11 text-base ${confidenceColor(conf?.tax_rate)}`} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Label className="text-sm">{tt({de:"MwSt.-Betrag (€)", en:"VAT Amount (€)"})}</Label>
+                      {confidenceBadge(conf?.tax_amount, lang)}
+                    </div>
+                    <Input type="number" step="0.01" value={vatAmount} onChange={(e) => setVatAmount(e.target.value)} placeholder="0.00" className={`h-11 text-base ${confidenceColor(conf?.tax_amount)}`} />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-1.5">
