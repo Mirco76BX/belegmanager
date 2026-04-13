@@ -547,20 +547,32 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                     {scanResult.currency && scanResult.currency !== "EUR" && amount && (
                       <span>≈ {Number(amount).toFixed(2)} €</span>
                     )}
-                    {scanResult.tax_amount != null && (
-                      <span className="flex items-center gap-1">
-                        MwSt: {scanResult.tax_amount.toFixed(2)} {scanResult.currency || "EUR"}
-                        {confidenceBadge(conf?.tax_amount, lang)}
-                      </span>
-                    )}
-                    {scanResult.tax_amount != null && scanResult.currency && scanResult.currency !== "EUR" && vatAmount && (
-                      <span>≈ {Number(vatAmount).toFixed(2)} €</span>
-                    )}
-                    {scanResult.tax_rate != null && (
-                      <span className="flex items-center gap-1">
-                        Satz: {scanResult.tax_rate}%
-                        {confidenceBadge(conf?.tax_rate, lang)}
-                      </span>
+                    {vatItems.length > 1 ? (
+                      <div className="flex flex-col gap-0.5 mt-0.5">
+                        {vatItems.map((item, idx) => (
+                          <span key={idx} className="text-xs text-muted-foreground">
+                            📊 {item.label}: {item.vat_amount.toFixed(2)} € ({item.vat_rate}%)
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <>
+                        {scanResult.tax_amount != null && (
+                          <span className="flex items-center gap-1">
+                            MwSt: {scanResult.tax_amount.toFixed(2)} {scanResult.currency || "EUR"}
+                            {confidenceBadge(conf?.tax_amount, lang)}
+                          </span>
+                        )}
+                        {scanResult.tax_amount != null && scanResult.currency && scanResult.currency !== "EUR" && vatAmount && (
+                          <span>≈ {Number(vatAmount).toFixed(2)} €</span>
+                        )}
+                        {scanResult.tax_rate != null && (
+                          <span className="flex items-center gap-1">
+                            Satz: {scanResult.tax_rate}%
+                            {confidenceBadge(conf?.tax_rate, lang)}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
