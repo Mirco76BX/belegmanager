@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Camera, Upload, Loader2, Check, SkipForward, ArrowRight, Plus, AlertTriangle, Info } from "lucide-react";
+import { Camera, Upload, Loader2, Check, SkipForward, ArrowRight, Plus, AlertTriangle, Info, X } from "lucide-react";
 import { TAX_CATEGORIES, getSmartGuessVat, getRequiredFields, guessTaxCategoryFromScan } from "@/lib/taxCategories";
 
 const PURPOSE_PRESETS = [
