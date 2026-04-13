@@ -75,7 +75,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const uid = userId || user?.id;
     if (!uid) return;
     try {
-      // First check if user is a tax advisor via profile
+      // Check subscription/coupon first (may grant higher tier than tax_advisor)
+      const { data, error } = await supabase.functions.invoke("check-subscription");
+      if (!error && data?.subscribed) {
+        const pid = data?.product_id;
+        const tier = MASTER_PRODUCT_IDS.includes(pid) ? "master" : RELAX_PRODUCT_IDS.includes(pid) ? "relax" : "free";
+        setSubscription({
+          subscribed: true,
+          productId: data?.product_id ?? null,
+          subscriptionEnd: data?.subscription_end ?? null,
+          tier,
+          loading: false,
+        });
+        return;
+      }
+
+      // Fall back to tax_advisor profile check
       const { data: profile } = await supabase
         .from("profiles")
         .select("is_tax_advisor")
@@ -93,15 +108,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke("check-subscription");
-      if (error) throw error;
-      const pid = data?.product_id;
-      const tier = MASTER_PRODUCT_IDS.includes(pid) ? "master" : RELAX_PRODUCT_IDS.includes(pid) ? "relax" : "free";
+      // No subscription
       setSubscription({
-        subscribed: data?.subscribed ?? false,
-        productId: data?.product_id ?? null,
-        subscriptionEnd: data?.subscription_end ?? null,
-        tier,
+        subscribed: false,
+        productId: null,
+        subscriptionEnd: null,
+        tier: "free",
         loading: false,
       });
     } catch {
