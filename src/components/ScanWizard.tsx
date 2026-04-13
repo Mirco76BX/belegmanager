@@ -608,27 +608,120 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
               </div>
             </div>
 
-            {/* VAT fields with Smart Guess */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5">
-                  <Label className="text-sm">{tt({de:"MwSt.-Satz (%)", en:"VAT Rate (%)"})}</Label>
-                  {confidenceBadge(conf?.tax_rate, lang)}
-                  {taxCategory && !scanResult?.tax_rate && vatRate && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                      {tt({de:"Smart Guess", en:"Smart Guess"})}
-                    </span>
-                  )}
-                </div>
-                <Input type="number" step="0.01" value={vatRate} onChange={(e) => setVatRate(e.target.value)} placeholder="19" className={`h-11 text-base ${confidenceColor(conf?.tax_rate)}`} />
+            {/* VAT items - multiple rates support */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">{tt({de:"MwSt.-Positionen", en:"VAT Items"})}</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => setVatItems(prev => [...prev, { label: "", net_amount: null, vat_rate: 19, vat_amount: 0 }])}
+                >
+                  <Plus className="h-3 w-3" />
+                  {tt({de:"Position", en:"Item"})}
+                </Button>
               </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5">
-                  <Label className="text-sm">{tt({de:"MwSt.-Betrag (€)", en:"VAT Amount (€)"})}</Label>
-                  {confidenceBadge(conf?.tax_amount, lang)}
+              {vatItems.length > 0 ? (
+                <div className="space-y-2">
+                  {vatItems.map((item, idx) => (
+                    <div key={idx} className="rounded-md border bg-muted/30 p-2.5 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Input
+                          value={item.label}
+                          onChange={(e) => {
+                            const updated = [...vatItems];
+                            updated[idx] = { ...updated[idx], label: e.target.value };
+                            setVatItems(updated);
+                          }}
+                          placeholder={tt({de:"z.B. Übernachtung, Speisen...", en:"e.g. Accommodation, Food..."})}
+                          className="h-8 text-sm flex-1 mr-2"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                          onClick={() => setVatItems(prev => prev.filter((_, i) => i !== idx))}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="space-y-0.5">
+                          <Label className="text-[10px] text-muted-foreground">{tt({de:"Netto (€)", en:"Net (€)"})}</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={item.net_amount ?? ""}
+                            onChange={(e) => {
+                              const updated = [...vatItems];
+                              updated[idx] = { ...updated[idx], net_amount: e.target.value ? parseFloat(e.target.value) : null };
+                              setVatItems(updated);
+                            }}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-0.5">
+                          <Label className="text-[10px] text-muted-foreground">{tt({de:"MwSt. %", en:"VAT %"})}</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={item.vat_rate}
+                            onChange={(e) => {
+                              const updated = [...vatItems];
+                              updated[idx] = { ...updated[idx], vat_rate: parseFloat(e.target.value) || 0 };
+                              setVatItems(updated);
+                            }}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-0.5">
+                          <Label className="text-[10px] text-muted-foreground">{tt({de:"MwSt. (€)", en:"VAT (€)"})}</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={item.vat_amount}
+                            onChange={(e) => {
+                              const updated = [...vatItems];
+                              updated[idx] = { ...updated[idx], vat_amount: parseFloat(e.target.value) || 0 };
+                              setVatItems(updated);
+                            }}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex justify-between text-xs text-muted-foreground px-1">
+                    <span>{tt({de:"Gesamt MwSt.", en:"Total VAT"})}</span>
+                    <span className="font-mono font-medium">{vatItems.reduce((s, i) => s + (i.vat_amount || 0), 0).toFixed(2)} €</span>
+                  </div>
                 </div>
-                <Input type="number" step="0.01" value={vatAmount} onChange={(e) => setVatAmount(e.target.value)} placeholder="0.00" className={`h-11 text-base ${confidenceColor(conf?.tax_amount)}`} />
-              </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Label className="text-sm">{tt({de:"MwSt.-Satz (%)", en:"VAT Rate (%)"})}</Label>
+                      {confidenceBadge(conf?.tax_rate, lang)}
+                      {taxCategory && !scanResult?.tax_rate && vatRate && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                          {tt({de:"Smart Guess", en:"Smart Guess"})}
+                        </span>
+                      )}
+                    </div>
+                    <Input type="number" step="0.01" value={vatRate} onChange={(e) => setVatRate(e.target.value)} placeholder="19" className={`h-11 text-base ${confidenceColor(conf?.tax_rate)}`} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Label className="text-sm">{tt({de:"MwSt.-Betrag (€)", en:"VAT Amount (€)"})}</Label>
+                      {confidenceBadge(conf?.tax_amount, lang)}
+                    </div>
+                    <Input type="number" step="0.01" value={vatAmount} onChange={(e) => setVatAmount(e.target.value)} placeholder="0.00" className={`h-11 text-base ${confidenceColor(conf?.tax_amount)}`} />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-1.5">
