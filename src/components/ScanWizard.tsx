@@ -402,8 +402,21 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         insertData.meeting_purpose = skipDetails ? null : meetingPurpose || null;
       }
 
-      const { error } = await supabase.from("receipts").insert(insertData);
+      const { data: receiptData, error } = await supabase.from("receipts").insert(insertData).select("id").single();
       if (error) throw error;
+
+      // Insert VAT items if available
+      if (vatItems.length > 0 && receiptData?.id) {
+        const vatInserts = vatItems.map((item) => ({
+          receipt_id: receiptData.id,
+          label: item.label,
+          net_amount: item.net_amount,
+          vat_rate: item.vat_rate,
+          vat_amount: item.vat_amount,
+        }));
+        const { error: vatError } = await supabase.from("receipt_vat_items").insert(vatInserts);
+        if (vatError) console.error("Failed to save VAT items:", vatError);
+      }
 
       toast({ title: tt({de:"Beleg gespeichert!", en:"Receipt saved!"}) });
 
