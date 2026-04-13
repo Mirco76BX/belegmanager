@@ -129,6 +129,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const [taxCategory, setTaxCategory] = useState<string>("");
   const [vatRate, setVatRate] = useState<string>("");
   const [vatAmount, setVatAmount] = useState<string>("");
+  const [vatItems, setVatItems] = useState<VatItem[]>([]);
 
   const [showNewCompany, setShowNewCompany] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState("");
