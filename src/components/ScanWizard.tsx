@@ -414,10 +414,14 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
 
     setSaving(true);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from("receipts").upload(path, file);
-      if (uploadError) throw uploadError;
+      // Upload file only if not already uploaded during auto-save
+      let filePath = pendingFilePath;
+      if (!filePath) {
+        const ext = file.name.split(".").pop() || "jpg";
+        filePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
+        const { error: uploadError } = await supabase.storage.from("receipts").upload(filePath, file);
+        if (uploadError) throw uploadError;
+      }
 
       const parsedAmountEur = amount ? parseFloat(amount) : null;
       const currency = scanResult?.currency || "EUR";
@@ -428,10 +432,10 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const finalVatRate = vatRate ? parseFloat(vatRate) : (scanResult?.tax_rate ?? null);
       const finalVatAmount = vatAmount ? parseFloat(vatAmount) : null;
 
-      const insertData: any = {
+      const receiptData: any = {
         user_id: user.id, date: date || (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`; })(),
         amount: parsedOriginalAmount, description: description || null,
-        company_id: companyId || null, file_path: path,
+        company_id: companyId || null, file_path: filePath,
         receipt_type: isFuelReceipt ? "fuel" : "general",
         status: skipDetails ? "pending" : "complete",
         vat_amount: finalVatAmount,
@@ -442,22 +446,36 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       };
 
       if (isFuelReceipt) {
-        insertData.license_plate = skipDetails ? null : licensePlate || null;
-        insertData.mileage = skipDetails ? null : (mileage ? parseFloat(mileage) : null);
-        insertData.meeting_purpose = "Tanken";
+        receiptData.license_plate = skipDetails ? null : licensePlate || null;
+        receiptData.mileage = skipDetails ? null : (mileage ? parseFloat(mileage) : null);
+        receiptData.meeting_purpose = "Tanken";
       } else {
-        insertData.person_met = skipDetails ? null : personMet || null;
-        insertData.organization = skipDetails ? null : organization || null;
-        insertData.meeting_purpose = skipDetails ? null : meetingPurpose || null;
+        receiptData.person_met = skipDetails ? null : personMet || null;
+        receiptData.organization = skipDetails ? null : organization || null;
+        receiptData.meeting_purpose = skipDetails ? null : meetingPurpose || null;
       }
 
-      const { data: receiptData, error } = await supabase.from("receipts").insert(insertData).select("id").single();
-      if (error) throw error;
+      let receiptId: string;
 
-      // Insert VAT items if available
-      if (vatItems.length > 0 && receiptData?.id) {
+      if (pendingReceiptId) {
+        // Update the auto-saved pending receipt
+        const { error } = await supabase.from("receipts").update(receiptData).eq("id", pendingReceiptId);
+        if (error) throw error;
+        receiptId = pendingReceiptId;
+
+        // Delete old VAT items and re-insert
+        await supabase.from("receipt_vat_items").delete().eq("receipt_id", receiptId);
+      } else {
+        // Insert new receipt (fallback if auto-save failed)
+        const { data: newReceipt, error } = await supabase.from("receipts").insert(receiptData).select("id").single();
+        if (error) throw error;
+        receiptId = newReceipt.id;
+      }
+
+      // Insert VAT items
+      if (vatItems.length > 0) {
         const vatInserts = vatItems.map((item) => ({
-          receipt_id: receiptData.id,
+          receipt_id: receiptId,
           label: item.label,
           net_amount: item.net_amount,
           vat_rate: item.vat_rate,
