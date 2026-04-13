@@ -48,8 +48,16 @@ serve(async (req) => {
   "country": "two-letter ISO country code where this receipt was issued (e.g. ID, DE, US, TH, GB)",
   "description": "brief description of what was purchased/service",
   "vendor": "name of the store/restaurant/vendor",
-  "tax_amount": number or null (VAT/MwSt/PPN/tax amount if visible on the receipt),
-  "tax_rate": number or null (VAT/MwSt/PPN percentage rate, e.g. 19 or 7 or 11, if visible on the receipt),
+  "tax_amount": number or null (TOTAL VAT/MwSt/PPN/tax amount across all rates, if visible on the receipt),
+  "tax_rate": number or null (VAT rate IF there is only ONE rate on the receipt, e.g. 19 or 7. Set to null if MULTIPLE rates apply.),
+  "vat_items": [
+    {
+      "label": "description of this VAT line, e.g. 'Übernachtung', 'Speisen', 'Getränke', 'Allgemein'",
+      "net_amount": number (net amount for this line),
+      "vat_rate": number (VAT percentage, e.g. 7 or 19),
+      "vat_amount": number (VAT amount for this line)
+    }
+  ],
   "items": ["list of individual items if visible"] or [],
   "is_fuel_receipt": true or false (set to true if this is a gas station / fuel / petrol receipt),
   "suggested_tax_category": one of ["reisekosten_uebernachtung","reisekosten_fahrt","reisekosten_nebenkosten","bewirtung","tankkosten","bueromaterial","telekommunikation","fortbildung","versicherung","sonstiges"] based on what the receipt is for,
@@ -63,6 +71,14 @@ serve(async (req) => {
   "is_handwritten": true or false (set to true if the receipt appears to be handwritten, e.g. a taxi receipt or manual Quittung),
   "multiple_receipts_detected": true or false (set to true if you see more than one receipt/document in the image)
 }
+
+IMPORTANT FOR VAT ITEMS:
+- ALWAYS populate "vat_items" array. Even if there is only ONE VAT rate, create one entry.
+- For hotel receipts: Look for separate lines like "Übernachtung" (7% in Germany), "Frühstück"/"Speisen" (19%), "Parkgebühr" (19%), etc.
+- For restaurant receipts: Look for "Speisen" (19%) vs "Getränke" (19%) or reduced rate items (7%).
+- If only one VAT rate is found, create a single vat_items entry with that rate.
+- The sum of all vat_items.vat_amount should equal the total tax_amount.
+- If you cannot determine individual lines, create ONE entry with the total values.
 
 CRITICAL RULES FOR ACCURATE READING:
 0. DATE: Read the date EXACTLY as printed on the receipt. The date is on the receipt itself, NOT today's date. Look carefully for day, month, and year. Common formats: "20.03.2020" means March 20, 2020 → "2020-03-20". "Mar 20, 2020" → "2020-03-20". NEVER guess or fabricate a date. If you cannot find a date, return null.
