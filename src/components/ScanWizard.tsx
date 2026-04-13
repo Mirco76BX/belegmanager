@@ -234,6 +234,22 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       }
       if (data.tax_rate != null) setVatRate(String(data.tax_rate));
 
+      // Process vat_items
+      if (Array.isArray(data.vat_items) && data.vat_items.length > 0) {
+        const convertedItems: VatItem[] = [];
+        for (const item of data.vat_items) {
+          const convertedNet = await convertToEur(item.net_amount, detectedCurrency, detectedDate);
+          const convertedVat = await convertToEur(item.vat_amount, detectedCurrency, detectedDate);
+          convertedItems.push({
+            label: item.label || "Allgemein",
+            net_amount: convertedNet ?? item.net_amount,
+            vat_rate: item.vat_rate,
+            vat_amount: convertedVat ?? item.vat_amount,
+          });
+        }
+        setVatItems(convertedItems);
+      }
+
       // Auto-detect tax category
       const suggestedCat = data.suggested_tax_category || guessTaxCategoryFromScan(data.vendor, data.description, !!data.is_fuel_receipt);
       if (suggestedCat) setTaxCategory(suggestedCat);
