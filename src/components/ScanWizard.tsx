@@ -33,6 +33,13 @@ interface ConfidenceScores {
   vendor?: string;
 }
 
+interface VatItem {
+  label: string;
+  net_amount: number | null;
+  vat_rate: number;
+  vat_amount: number;
+}
+
 interface ScanResult {
   date: string | null;
   amount: number | null;
@@ -41,6 +48,7 @@ interface ScanResult {
   vendor: string | null;
   tax_amount: number | null;
   tax_rate: number | null;
+  vat_items?: VatItem[];
   items: string[];
   is_fuel_receipt?: boolean;
   suggested_tax_category?: string | null;
