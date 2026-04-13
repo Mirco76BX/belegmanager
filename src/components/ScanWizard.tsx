@@ -257,10 +257,56 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const suggestedCat = data.suggested_tax_category || guessTaxCategoryFromScan(data.vendor, data.description, !!data.is_fuel_receipt);
       if (suggestedCat) setTaxCategory(suggestedCat);
 
-      if (data.is_fuel_receipt) {
+      const detectedIsFuel = !!data.is_fuel_receipt;
+      if (detectedIsFuel) {
         setIsFuelReceipt(true);
         setMeetingPurpose("Tanken");
         if (!suggestedCat) setTaxCategory("tankkosten");
+      }
+
+      // === AUTO-SAVE as pending immediately after scan ===
+      try {
+        const ext = croppedFile.name.split(".").pop() || "jpg";
+        const filePath = `${user!.id}/${crypto.randomUUID()}.${ext}`;
+        await supabase.storage.from("receipts").upload(filePath, croppedFile);
+        setPendingFilePath(filePath);
+
+        const parsedAmount = data.amount != null ? data.amount : null;
+        const convertedAmt = await convertToEur(parsedAmount, detectedCurrency, detectedDate);
+
+        const { data: receiptRow, error: insertErr } = await supabase.from("receipts").insert({
+          user_id: user!.id,
+          date: detectedDate || new Date().toISOString().slice(0, 10),
+          amount: parsedAmount,
+          amount_eur: convertedAmt,
+          description: [data.vendor, data.description].filter(Boolean).join(" – ") || null,
+          file_path: filePath,
+          receipt_type: detectedIsFuel ? "fuel" : "general",
+          status: "pending",
+          vat_amount: data.tax_amount ?? null,
+          vat_rate: data.tax_rate ?? null,
+          currency: detectedCurrency,
+          tax_category: suggestedCat || null,
+          meeting_purpose: detectedIsFuel ? "Tanken" : null,
+        }).select("id").single();
+
+        if (!insertErr && receiptRow) {
+          setPendingReceiptId(receiptRow.id);
+
+          // Save VAT items too
+          if (Array.isArray(data.vat_items) && data.vat_items.length > 0) {
+            const vatInserts = convertedItems.map((item: VatItem) => ({
+              receipt_id: receiptRow.id,
+              label: item.label,
+              net_amount: item.net_amount,
+              vat_rate: item.vat_rate,
+              vat_amount: item.vat_amount,
+            }));
+            await supabase.from("receipt_vat_items").insert(vatInserts);
+          }
+        }
+      } catch (autoSaveErr) {
+        console.warn("Auto-save pending receipt failed:", autoSaveErr);
       }
 
       // Notify about multiple receipts
