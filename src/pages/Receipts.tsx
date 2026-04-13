@@ -65,6 +65,7 @@ const Receipts = () => {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailReceipt, setDetailReceipt] = useState<Receipt | null>(null);
   const [detailImageUrl, setDetailImageUrl] = useState<string | null>(null);
+  const [detailVatItems, setDetailVatItems] = useState<VatItem[]>([]);
   const [isEditing, setIsEditing] = useState(false);
 
   const [editPersonMet, setEditPersonMet] = useState("");
