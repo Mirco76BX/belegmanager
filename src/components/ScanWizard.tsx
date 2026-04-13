@@ -155,8 +155,8 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       supabase.from("custom_purposes").select("id, label").order("label")
         .then(({ data }) => { if (data) setCustomPurposes(data as any); });
 
-      const maxScans = subscription.tier === "master" ? Infinity
-        : subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans;
+      const tierConfig = TIERS[subscription.tier] || TIERS.free;
+      const maxScans = tierConfig.maxScans;
 
       if (maxScans !== Infinity) {
         supabase.from("receipts").select("id", { count: "exact", head: true })
@@ -455,11 +455,11 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
             <h3 className="font-semibold text-foreground">
               {tt({de:"Scan-Limit erreicht", en:"Scan limit reached"})}
             </h3>
-            <p className="text-sm text-muted-foreground max-w-xs">
-              {tt({
-                de:`Du hast ${scanCount} von ${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} Scans verwendet. Upgrade deinen Plan für mehr Scans.`,
-                en:`You've used ${scanCount} of ${subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} scans. Upgrade your plan for more scans.`,
-              })}
+             <p className="text-sm text-muted-foreground max-w-xs">
+               {tt({
+                 de:`Du hast ${scanCount} von ${(TIERS[subscription.tier] || TIERS.free).maxScans} Scans verwendet. Upgrade deinen Plan für mehr Scans.`,
+                 en:`You've used ${scanCount} of ${(TIERS[subscription.tier] || TIERS.free).maxScans} scans. Upgrade your plan for more scans.`,
+               })}
             </p>
             <div className="flex gap-2">
               <Button variant="outline" onClick={onClose}>
@@ -476,7 +476,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
           <div className="space-y-4">
             {scanCount !== null && !limitReached && (
               <p className="text-xs text-muted-foreground text-right">
-                {scanCount} / {subscription.tier === "relax" ? TIERS.relax.maxScans : TIERS.free.maxScans} Scans
+                {scanCount} / {(TIERS[subscription.tier] || TIERS.free).maxScans} Scans
               </p>
             )}
             <p className="text-sm text-muted-foreground">
