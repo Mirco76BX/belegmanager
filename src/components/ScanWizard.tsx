@@ -151,6 +151,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       setLimitReached(false); setIsFuelReceipt(false);
       setLicensePlate(""); setMileage(""); setMileageWarning(null);
       setTaxCategory(""); setVatRate(""); setVatAmount(""); setVatItems([]);
+      setPendingReceiptId(null); setPendingFilePath(null);
 
       supabase.from("vehicles").select("license_plate, name").order("license_plate")
         .then(({ data }) => { if (data) setSavedVehicles(data); });
