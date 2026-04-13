@@ -102,11 +102,19 @@ const Receipts = () => {
     setDetailReceipt(r);
     setIsEditing(false);
     setDetailImageUrl(null);
+    setDetailVatItems([]);
     setDetailOpen(true);
     if (r.file_path) {
       const { data } = await supabase.storage.from("receipts").createSignedUrl(r.file_path, 300);
       if (data?.signedUrl) setDetailImageUrl(data.signedUrl);
     }
+    // Fetch VAT items
+    const { data: vatData } = await supabase
+      .from("receipt_vat_items")
+      .select("*")
+      .eq("receipt_id", r.id)
+      .order("vat_rate");
+    if (vatData && vatData.length > 0) setDetailVatItems(vatData);
   };
 
   const startEditing = () => {
