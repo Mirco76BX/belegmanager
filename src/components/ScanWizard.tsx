@@ -104,9 +104,12 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const [scanCount, setScanCount] = useState<number | null>(null);
   const [limitReached, setLimitReached] = useState(false);
 
-  const [step, setStep] = useState<"upload" | "scanning" | "company" | "details">("upload");
+  const [step, setStep] = useState<"upload" | "pages" | "scanning" | "company" | "details">("upload");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [pages, setPages] = useState<{ file: File; preview: string }[]>([]);
+  const addPageInputRef = useRef<HTMLInputElement>(null);
+  const addPageCameraRef = useRef<HTMLInputElement>(null);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [saving, setSaving] = useState(false);
   const [isFuelReceipt, setIsFuelReceipt] = useState(false);
