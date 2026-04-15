@@ -206,9 +206,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
     }
   }, [taxCategory, scanResult?.tax_rate, amount]);
 
-  const handleFileSelected = async (selectedFile: File) => {
-    setStep("scanning");
-
+  const handlePageAdded = async (selectedFile: File) => {
     try {
       const base64 = await new Promise<string>((resolve) => {
         const r = new FileReader();
@@ -218,10 +216,33 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
 
       const croppedBase64 = await autoCropImage(base64);
       const croppedFile = dataUrlToFile(croppedBase64, selectedFile.name);
-      setFile(croppedFile);
-      setPreview(croppedBase64);
 
-      const { data, error } = await supabase.functions.invoke("scan-receipt", { body: { imageBase64: croppedBase64 } });
+      setPages((prev) => [...prev, { file: croppedFile, preview: croppedBase64 }]);
+      setStep("pages");
+    } catch (err) {
+      console.error("Error processing page:", err);
+      toast({ title: tt({ de: "Seite konnte nicht verarbeitet werden.", en: "Could not process page." }), variant: "destructive" });
+    }
+  };
+
+  const handleRemovePage = (index: number) => {
+    setPages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleStartScan = async () => {
+    if (pages.length === 0) return;
+    setStep("scanning");
+
+    // Use first page as main preview/file
+    setFile(pages[0].file);
+    setPreview(pages[0].preview);
+
+    try {
+      const imageArray = pages.map((p) => p.preview);
+
+      const { data, error } = await supabase.functions.invoke("scan-receipt", {
+        body: pages.length > 1 ? { images: imageArray } : { imageBase64: imageArray[0] },
+      });
       if (error) throw error;
 
       setScanResult(data);
@@ -270,10 +291,21 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
 
       // === AUTO-SAVE as pending immediately after scan ===
       try {
-        const ext = croppedFile.name.split(".").pop() || "jpg";
+        // Upload all page files, use first as main file_path
+        const firstPage = pages[0];
+        const ext = firstPage.file.name.split(".").pop() || "jpg";
         const filePath = `${user!.id}/${crypto.randomUUID()}.${ext}`;
-        await supabase.storage.from("receipts").upload(filePath, croppedFile);
+        await supabase.storage.from("receipts").upload(filePath, firstPage.file);
         setPendingFilePath(filePath);
+
+        // Upload additional pages
+        const additionalPaths: string[] = [];
+        for (let i = 1; i < pages.length; i++) {
+          const pageExt = pages[i].file.name.split(".").pop() || "jpg";
+          const pagePath = `${user!.id}/${crypto.randomUUID()}.${pageExt}`;
+          await supabase.storage.from("receipts").upload(pagePath, pages[i].file);
+          additionalPaths.push(pagePath);
+        }
 
         const parsedAmount = data.amount != null ? data.amount : null;
         const convertedAmt = await convertToEur(parsedAmount, detectedCurrency, detectedDate);
