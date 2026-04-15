@@ -443,7 +443,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   };
 
   const handleSave = async (skipDetails = false) => {
-    if (!user || !file) return;
+    if (!user || (!file && pages.length === 0)) return;
 
     // Validate required fields for Bewirtung (only when not skipping)
     if (!skipDetails && !validateRequiredFields()) return;
