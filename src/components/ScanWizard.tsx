@@ -147,6 +147,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   useEffect(() => {
     if (open && user) {
       setStep("upload"); setFile(null); setPreview(null); setScanResult(null);
+      setPages([]);
       setDate(""); setAmount(""); setOriginalAmount(""); setDescription("");
       setCompanyId(defaultCompanyId || "");
       setPersonMet(""); setOrganization(""); setMeetingPurpose("");
