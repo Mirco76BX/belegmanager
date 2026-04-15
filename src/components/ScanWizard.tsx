@@ -584,7 +584,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
               </p>
             )}
             <p className="text-sm text-muted-foreground">
-              {tt({de:"Fotografiere deinen Beleg oder lade ein Bild/PDF hoch.", en:"Take a photo of your receipt or upload an image/PDF."})}
+              {tt({de:"Fotografiere deinen Beleg oder lade ein Bild/PDF hoch. Bei mehrseitigen Belegen (z.B. Hotelrechnungen) kannst du im nächsten Schritt weitere Seiten hinzufügen.", en:"Take a photo of your receipt or upload an image/PDF. For multi-page receipts (e.g. hotel invoices) you can add more pages in the next step."})}
             </p>
             <div className="grid grid-cols-2 gap-3">
               <Button variant="outline" className="h-28 flex-col gap-2" onClick={() => cameraInputRef.current?.click()}>
@@ -596,17 +596,71 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                 <span className="text-sm">{tt({de:"Datei wählen", en:"Choose File"})}</span>
               </Button>
             </div>
-            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelected(f); }} />
-            <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelected(f); }} />
+            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePageAdded(f); e.target.value = ""; }} />
+            <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePageAdded(f); e.target.value = ""; }} />
+          </div>
+        )}
+
+        {step === "pages" && (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {tt({de:`${pages.length} Seite(n) erfasst. Weitere Seiten hinzufügen oder Scan starten.`, en:`${pages.length} page(s) captured. Add more pages or start scanning.`})}
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              {pages.map((page, i) => (
+                <div key={i} className="relative group">
+                  <img src={page.preview} alt={`Page ${i + 1}`} className="h-24 w-full rounded-md border object-cover" />
+                  <span className="absolute bottom-0.5 left-0.5 text-[10px] bg-background/80 rounded px-1 font-medium">{i + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePage(i)}
+                    className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                className="h-24 flex-col gap-1 border-dashed"
+                onClick={() => addPageInputRef.current?.click()}
+              >
+                <Plus className="h-5 w-5 text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground">{tt({de:"Seite", en:"Page"})}</span>
+              </Button>
+            </div>
+            <input ref={addPageInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePageAdded(f); e.target.value = ""; }} />
+            <input ref={addPageCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePageAdded(f); e.target.value = ""; }} />
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => addPageCameraRef.current?.click()}>
+                <Camera className="h-4 w-4 mr-2" />
+                {tt({de:"Foto", en:"Photo"})}
+              </Button>
+              <Button className="flex-1" onClick={handleStartScan} disabled={pages.length === 0}>
+                <ArrowRight className="h-4 w-4 mr-2" />
+                {tt({de:`Scannen (${pages.length} ${pages.length === 1 ? "Seite" : "Seiten"})`, en:`Scan (${pages.length} ${pages.length === 1 ? "page" : "pages"})`})}
+              </Button>
+            </div>
           </div>
         )}
 
         {step === "scanning" && (
           <div className="flex flex-col items-center gap-4 py-8">
-            {preview && <img src={preview} alt="Receipt" className="max-h-40 rounded-lg border object-contain" />}
+            {pages.length > 1 ? (
+              <div className="flex gap-1 justify-center">
+                {pages.slice(0, 4).map((page, i) => (
+                  <img key={i} src={page.preview} alt={`Page ${i + 1}`} className="h-20 rounded border object-cover" />
+                ))}
+                {pages.length > 4 && <span className="text-xs text-muted-foreground self-center">+{pages.length - 4}</span>}
+              </div>
+            ) : (
+              preview && <img src={preview} alt="Receipt" className="max-h-40 rounded-lg border object-contain" />
+            )}
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">
-              {tt({de:"KI liest Beleg aus...", en:"AI reading receipt..."})}
+              {pages.length > 1
+                ? tt({de:`KI liest ${pages.length} Seiten aus...`, en:`AI reading ${pages.length} pages...`})
+                : tt({de:"KI liest Beleg aus...", en:"AI reading receipt..."})}
             </p>
           </div>
         )}
