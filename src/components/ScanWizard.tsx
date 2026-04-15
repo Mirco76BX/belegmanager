@@ -546,6 +546,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         <DialogHeader>
           <DialogTitle>
             {step === "upload" && tt({de:"Beleg scannen", en:"Scan Receipt"})}
+            {step === "pages" && tt({de:"Seiten erfassen", en:"Capture Pages"})}
             {step === "scanning" && tt({de:"Wird gescannt...", en:"Scanning..."})}
             {step === "company" && tt({de:"Zuordnung", en:"Assignment"})}
             {step === "details" && tt({de:"Weitere Details", en:"Additional Details"})}
