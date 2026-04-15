@@ -6,41 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const { imageBase64 } = await req.json();
-
-    if (!imageBase64) {
-      return new Response(
-        JSON.stringify({ error: "No image provided" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Analyze this receipt image carefully and extract the following information. Return ONLY valid JSON with these fields:
+const RECEIPT_PROMPT = `Analyze this receipt image carefully and extract the following information. Return ONLY valid JSON with these fields:
 {
   "date": "YYYY-MM-DD format or null if not found. READ THE DATE EXACTLY AS PRINTED on the receipt. Do NOT use today's date. Look for date patterns like DD.MM.YYYY, DD/MM/YYYY, YYYY-MM-DD, MM/DD/YYYY, or written-out month names. Convert to YYYY-MM-DD.",
   "amount": number or null (total amount paid including VAT),
@@ -121,15 +87,107 @@ CRITICAL RULES FOR ACCURATE READING:
    - FI (Finland): 25.5% standard, 14%/10% reduced
    When using a country fallback rate, set the corresponding confidence to "medium" (not "low") since we know the legal rate.
 6. If the receipt is blurry or hard to read, set confidence to "low" for affected fields.
-Do not include any other text, just the JSON object.`,
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: imageBase64,
-                },
-              },
-            ],
+Do not include any other text, just the JSON object.`;
+
+const MULTI_PAGE_PREFIX = `You are analyzing a MULTI-PAGE receipt/invoice. All images below belong to the SAME document (e.g. a hotel invoice with multiple pages). Combine the information from ALL pages into a single result. The total amount should come from the final summary/total on the last page (or wherever the grand total is). Look across all pages for VAT breakdowns, line items, dates, and vendor info.\n\n`;
+
+function buildImageContent(images: string[]) {
+  const parts: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
+
+  if (images.length > 1) {
+    parts.push({ type: "text", text: MULTI_PAGE_PREFIX + RECEIPT_PROMPT });
+    for (let i = 0; i < images.length; i++) {
+      parts.push({ type: "text", text: `--- Page ${i + 1} of ${images.length} ---` });
+      parts.push({ type: "image_url", image_url: { url: images[i] } });
+    }
+  } else {
+    parts.push({ type: "text", text: RECEIPT_PROMPT });
+    parts.push({ type: "image_url", image_url: { url: images[0] } });
+  }
+
+  return parts;
+}
+
+function postProcess(extracted: any): any {
+  // Ensure confidence object exists
+  if (!extracted.confidence) {
+    extracted.confidence = { date: "high", amount: "high", tax_amount: "high", tax_rate: "high", vendor: "high" };
+  }
+
+  // Ensure vat_items array exists
+  if (!Array.isArray(extracted.vat_items)) {
+    extracted.vat_items = [];
+  }
+
+  // Auto-calculate missing tax fields
+  if (extracted.amount != null && extracted.amount > 0) {
+    if (extracted.tax_rate != null && extracted.tax_rate > 0 && extracted.tax_amount == null) {
+      extracted.tax_amount = Math.round((extracted.amount - (extracted.amount / (1 + extracted.tax_rate / 100))) * 100) / 100;
+      extracted.confidence.tax_amount = "medium";
+    }
+    if (extracted.tax_amount != null && extracted.tax_amount > 0 && extracted.tax_rate == null) {
+      const netAmount = extracted.amount - extracted.tax_amount;
+      if (netAmount > 0) {
+        extracted.tax_rate = Math.round((extracted.tax_amount / netAmount) * 100);
+        extracted.confidence.tax_rate = "medium";
+      }
+    }
+  }
+
+  // If vat_items is empty but we have tax data, create a single entry
+  if (extracted.vat_items.length === 0 && extracted.tax_rate != null && extracted.tax_amount != null) {
+    const netAmount = extracted.amount != null ? extracted.amount - extracted.tax_amount : null;
+    extracted.vat_items.push({
+      label: "Gesamt",
+      net_amount: netAmount,
+      vat_rate: extracted.tax_rate,
+      vat_amount: extracted.tax_amount,
+    });
+  }
+
+  return extracted;
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const body = await req.json();
+
+    // Support both single image (imageBase64) and multiple images (images array)
+    let images: string[] = [];
+    if (Array.isArray(body.images) && body.images.length > 0) {
+      images = body.images;
+    } else if (body.imageBase64) {
+      images = [body.imageBase64];
+    }
+
+    if (images.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "No image provided" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-pro",
+        messages: [
+          {
+            role: "user",
+            content: buildImageContent(images),
           },
         ],
       }),
@@ -181,41 +239,7 @@ Do not include any other text, just the JSON object.`,
       };
     }
 
-    // Ensure confidence object exists
-    if (!extracted.confidence) {
-      extracted.confidence = { date: "high", amount: "high", tax_amount: "high", tax_rate: "high", vendor: "high" };
-    }
-
-    // Ensure vat_items array exists
-    if (!Array.isArray(extracted.vat_items)) {
-      extracted.vat_items = [];
-    }
-
-    // Auto-calculate missing tax fields
-    if (extracted.amount != null && extracted.amount > 0) {
-      if (extracted.tax_rate != null && extracted.tax_rate > 0 && extracted.tax_amount == null) {
-        extracted.tax_amount = Math.round((extracted.amount - (extracted.amount / (1 + extracted.tax_rate / 100))) * 100) / 100;
-        extracted.confidence.tax_amount = "medium";
-      }
-      if (extracted.tax_amount != null && extracted.tax_amount > 0 && extracted.tax_rate == null) {
-        const netAmount = extracted.amount - extracted.tax_amount;
-        if (netAmount > 0) {
-          extracted.tax_rate = Math.round((extracted.tax_amount / netAmount) * 100);
-          extracted.confidence.tax_rate = "medium";
-        }
-      }
-    }
-
-    // If vat_items is empty but we have tax data, create a single entry
-    if (extracted.vat_items.length === 0 && extracted.tax_rate != null && extracted.tax_amount != null) {
-      const netAmount = extracted.amount != null ? extracted.amount - extracted.tax_amount : null;
-      extracted.vat_items.push({
-        label: "Gesamt",
-        net_amount: netAmount,
-        vat_rate: extracted.tax_rate,
-        vat_amount: extracted.tax_amount,
-      });
-    }
+    extracted = postProcess(extracted);
 
     return new Response(JSON.stringify(extracted), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

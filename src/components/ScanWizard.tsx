@@ -104,9 +104,12 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const [scanCount, setScanCount] = useState<number | null>(null);
   const [limitReached, setLimitReached] = useState(false);
 
-  const [step, setStep] = useState<"upload" | "scanning" | "company" | "details">("upload");
+  const [step, setStep] = useState<"upload" | "pages" | "scanning" | "company" | "details">("upload");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [pages, setPages] = useState<{ file: File; preview: string }[]>([]);
+  const addPageInputRef = useRef<HTMLInputElement>(null);
+  const addPageCameraRef = useRef<HTMLInputElement>(null);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [saving, setSaving] = useState(false);
   const [isFuelReceipt, setIsFuelReceipt] = useState(false);
@@ -144,6 +147,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   useEffect(() => {
     if (open && user) {
       setStep("upload"); setFile(null); setPreview(null); setScanResult(null);
+      setPages([]);
       setDate(""); setAmount(""); setOriginalAmount(""); setDescription("");
       setCompanyId(defaultCompanyId || "");
       setPersonMet(""); setOrganization(""); setMeetingPurpose("");
@@ -202,9 +206,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
     }
   }, [taxCategory, scanResult?.tax_rate, amount]);
 
-  const handleFileSelected = async (selectedFile: File) => {
-    setStep("scanning");
-
+  const handlePageAdded = async (selectedFile: File) => {
     try {
       const base64 = await new Promise<string>((resolve) => {
         const r = new FileReader();
@@ -214,10 +216,33 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
 
       const croppedBase64 = await autoCropImage(base64);
       const croppedFile = dataUrlToFile(croppedBase64, selectedFile.name);
-      setFile(croppedFile);
-      setPreview(croppedBase64);
 
-      const { data, error } = await supabase.functions.invoke("scan-receipt", { body: { imageBase64: croppedBase64 } });
+      setPages((prev) => [...prev, { file: croppedFile, preview: croppedBase64 }]);
+      setStep("pages");
+    } catch (err) {
+      console.error("Error processing page:", err);
+      toast({ title: tt({ de: "Seite konnte nicht verarbeitet werden.", en: "Could not process page." }), variant: "destructive" });
+    }
+  };
+
+  const handleRemovePage = (index: number) => {
+    setPages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleStartScan = async () => {
+    if (pages.length === 0) return;
+    setStep("scanning");
+
+    // Use first page as main preview/file
+    setFile(pages[0].file);
+    setPreview(pages[0].preview);
+
+    try {
+      const imageArray = pages.map((p) => p.preview);
+
+      const { data, error } = await supabase.functions.invoke("scan-receipt", {
+        body: pages.length > 1 ? { images: imageArray } : { imageBase64: imageArray[0] },
+      });
       if (error) throw error;
 
       setScanResult(data);
@@ -266,10 +291,21 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
 
       // === AUTO-SAVE as pending immediately after scan ===
       try {
-        const ext = croppedFile.name.split(".").pop() || "jpg";
+        // Upload all page files, use first as main file_path
+        const firstPage = pages[0];
+        const ext = firstPage.file.name.split(".").pop() || "jpg";
         const filePath = `${user!.id}/${crypto.randomUUID()}.${ext}`;
-        await supabase.storage.from("receipts").upload(filePath, croppedFile);
+        await supabase.storage.from("receipts").upload(filePath, firstPage.file);
         setPendingFilePath(filePath);
+
+        // Upload additional pages
+        const additionalPaths: string[] = [];
+        for (let i = 1; i < pages.length; i++) {
+          const pageExt = pages[i].file.name.split(".").pop() || "jpg";
+          const pagePath = `${user!.id}/${crypto.randomUUID()}.${pageExt}`;
+          await supabase.storage.from("receipts").upload(pagePath, pages[i].file);
+          additionalPaths.push(pagePath);
+        }
 
         const parsedAmount = data.amount != null ? data.amount : null;
         const convertedAmt = await convertToEur(parsedAmount, detectedCurrency, detectedDate);
@@ -407,7 +443,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   };
 
   const handleSave = async (skipDetails = false) => {
-    if (!user || !file) return;
+    if (!user || (!file && pages.length === 0)) return;
 
     // Validate required fields for Bewirtung (only when not skipping)
     if (!skipDetails && !validateRequiredFields()) return;
@@ -510,6 +546,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         <DialogHeader>
           <DialogTitle>
             {step === "upload" && tt({de:"Beleg scannen", en:"Scan Receipt"})}
+            {step === "pages" && tt({de:"Seiten erfassen", en:"Capture Pages"})}
             {step === "scanning" && tt({de:"Wird gescannt...", en:"Scanning..."})}
             {step === "company" && tt({de:"Zuordnung", en:"Assignment"})}
             {step === "details" && tt({de:"Weitere Details", en:"Additional Details"})}
@@ -547,7 +584,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
               </p>
             )}
             <p className="text-sm text-muted-foreground">
-              {tt({de:"Fotografiere deinen Beleg oder lade ein Bild/PDF hoch.", en:"Take a photo of your receipt or upload an image/PDF."})}
+              {tt({de:"Fotografiere deinen Beleg oder lade ein Bild/PDF hoch. Bei mehrseitigen Belegen (z.B. Hotelrechnungen) kannst du im nächsten Schritt weitere Seiten hinzufügen.", en:"Take a photo of your receipt or upload an image/PDF. For multi-page receipts (e.g. hotel invoices) you can add more pages in the next step."})}
             </p>
             <div className="grid grid-cols-2 gap-3">
               <Button variant="outline" className="h-28 flex-col gap-2" onClick={() => cameraInputRef.current?.click()}>
@@ -559,17 +596,71 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                 <span className="text-sm">{tt({de:"Datei wählen", en:"Choose File"})}</span>
               </Button>
             </div>
-            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelected(f); }} />
-            <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelected(f); }} />
+            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePageAdded(f); e.target.value = ""; }} />
+            <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePageAdded(f); e.target.value = ""; }} />
+          </div>
+        )}
+
+        {step === "pages" && (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {tt({de:`${pages.length} Seite(n) erfasst. Weitere Seiten hinzufügen oder Scan starten.`, en:`${pages.length} page(s) captured. Add more pages or start scanning.`})}
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              {pages.map((page, i) => (
+                <div key={i} className="relative group">
+                  <img src={page.preview} alt={`Page ${i + 1}`} className="h-24 w-full rounded-md border object-cover" />
+                  <span className="absolute bottom-0.5 left-0.5 text-[10px] bg-background/80 rounded px-1 font-medium">{i + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePage(i)}
+                    className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                className="h-24 flex-col gap-1 border-dashed"
+                onClick={() => addPageInputRef.current?.click()}
+              >
+                <Plus className="h-5 w-5 text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground">{tt({de:"Seite", en:"Page"})}</span>
+              </Button>
+            </div>
+            <input ref={addPageInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePageAdded(f); e.target.value = ""; }} />
+            <input ref={addPageCameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePageAdded(f); e.target.value = ""; }} />
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => addPageCameraRef.current?.click()}>
+                <Camera className="h-4 w-4 mr-2" />
+                {tt({de:"Foto", en:"Photo"})}
+              </Button>
+              <Button className="flex-1" onClick={handleStartScan} disabled={pages.length === 0}>
+                <ArrowRight className="h-4 w-4 mr-2" />
+                {tt({de:`Scannen (${pages.length} ${pages.length === 1 ? "Seite" : "Seiten"})`, en:`Scan (${pages.length} ${pages.length === 1 ? "page" : "pages"})`})}
+              </Button>
+            </div>
           </div>
         )}
 
         {step === "scanning" && (
           <div className="flex flex-col items-center gap-4 py-8">
-            {preview && <img src={preview} alt="Receipt" className="max-h-40 rounded-lg border object-contain" />}
+            {pages.length > 1 ? (
+              <div className="flex gap-1 justify-center">
+                {pages.slice(0, 4).map((page, i) => (
+                  <img key={i} src={page.preview} alt={`Page ${i + 1}`} className="h-20 rounded border object-cover" />
+                ))}
+                {pages.length > 4 && <span className="text-xs text-muted-foreground self-center">+{pages.length - 4}</span>}
+              </div>
+            ) : (
+              preview && <img src={preview} alt="Receipt" className="max-h-40 rounded-lg border object-contain" />
+            )}
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">
-              {tt({de:"KI liest Beleg aus...", en:"AI reading receipt..."})}
+              {pages.length > 1
+                ? tt({de:`KI liest ${pages.length} Seiten aus...`, en:`AI reading ${pages.length} pages...`})
+                : tt({de:"KI liest Beleg aus...", en:"AI reading receipt..."})}
             </p>
           </div>
         )}
