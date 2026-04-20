@@ -250,33 +250,39 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const detectedCurrency = data.currency || "EUR";
 
       if (detectedDate) setDate(detectedDate);
+
+      // Run all currency conversions in parallel (no-ops for EUR)
+      const [convertedAmount, convertedVatAmount, convertedItems] = await Promise.all([
+        data.amount != null ? convertToEur(data.amount, detectedCurrency, detectedDate) : Promise.resolve(null),
+        data.tax_amount != null ? convertToEur(data.tax_amount, detectedCurrency, detectedDate) : Promise.resolve(null),
+        Array.isArray(data.vat_items) && data.vat_items.length > 0
+          ? Promise.all(
+              data.vat_items.map(async (item: VatItem) => {
+                const [cn, cv] = await Promise.all([
+                  convertToEur(item.net_amount, detectedCurrency, detectedDate),
+                  convertToEur(item.vat_amount, detectedCurrency, detectedDate),
+                ]);
+                return {
+                  label: item.label || "Allgemein",
+                  net_amount: cn ?? item.net_amount,
+                  vat_rate: item.vat_rate,
+                  vat_amount: cv ?? item.vat_amount,
+                };
+              })
+            )
+          : Promise.resolve([] as VatItem[]),
+      ]);
+
       if (data.amount != null) {
         setOriginalAmount(String(data.amount));
-        const convertedAmount = await convertToEur(data.amount, detectedCurrency, detectedDate);
         setAmount(convertedAmount != null ? String(convertedAmount) : String(data.amount));
       }
       if (data.description || data.vendor) setDescription([data.vendor, data.description].filter(Boolean).join(" – "));
       if (data.tax_amount != null) {
-        const convertedVatAmount = await convertToEur(data.tax_amount, detectedCurrency, detectedDate);
         setVatAmount(convertedVatAmount != null ? String(convertedVatAmount) : String(data.tax_amount));
       }
       if (data.tax_rate != null) setVatRate(String(data.tax_rate));
-
-      // Process vat_items
-      let convertedItems: VatItem[] = [];
-      if (Array.isArray(data.vat_items) && data.vat_items.length > 0) {
-        for (const item of data.vat_items) {
-          const convertedNet = await convertToEur(item.net_amount, detectedCurrency, detectedDate);
-          const convertedVat = await convertToEur(item.vat_amount, detectedCurrency, detectedDate);
-          convertedItems.push({
-            label: item.label || "Allgemein",
-            net_amount: convertedNet ?? item.net_amount,
-            vat_rate: item.vat_rate,
-            vat_amount: convertedVat ?? item.vat_amount,
-          });
-        }
-        setVatItems(convertedItems);
-      }
+      if (convertedItems.length > 0) setVatItems(convertedItems);
 
       // Auto-detect tax category
       const suggestedCat = data.suggested_tax_category || guessTaxCategoryFromScan(data.vendor, data.description, !!data.is_fuel_receipt);
@@ -289,61 +295,57 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         if (!suggestedCat) setTaxCategory("tankkosten");
       }
 
-      // === AUTO-SAVE as pending immediately after scan ===
-      try {
-        // Upload all page files, use first as main file_path
-        const firstPage = pages[0];
-        const ext = firstPage.file.name.split(".").pop() || "jpg";
-        const filePath = `${user!.id}/${crypto.randomUUID()}.${ext}`;
-        await supabase.storage.from("receipts").upload(filePath, firstPage.file);
-        setPendingFilePath(filePath);
+      // === AUTO-SAVE as pending — runs in background, does NOT block UI ===
+      (async () => {
+        try {
+          // Upload ALL pages in parallel
+          const uploadedPaths = await Promise.all(
+            pages.map(async (p) => {
+              const ext = p.file.name.split(".").pop() || "jpg";
+              const path = `${user!.id}/${crypto.randomUUID()}.${ext}`;
+              await supabase.storage.from("receipts").upload(path, p.file);
+              return path;
+            })
+          );
+          const filePath = uploadedPaths[0];
+          setPendingFilePath(filePath);
 
-        // Upload additional pages
-        const additionalPaths: string[] = [];
-        for (let i = 1; i < pages.length; i++) {
-          const pageExt = pages[i].file.name.split(".").pop() || "jpg";
-          const pagePath = `${user!.id}/${crypto.randomUUID()}.${pageExt}`;
-          await supabase.storage.from("receipts").upload(pagePath, pages[i].file);
-          additionalPaths.push(pagePath);
-        }
+          const parsedAmount = data.amount != null ? data.amount : null;
 
-        const parsedAmount = data.amount != null ? data.amount : null;
-        const convertedAmt = await convertToEur(parsedAmount, detectedCurrency, detectedDate);
+          const { data: receiptRow, error: insertErr } = await supabase.from("receipts").insert({
+            user_id: user!.id,
+            date: detectedDate || new Date().toISOString().slice(0, 10),
+            amount: parsedAmount,
+            amount_eur: convertedAmount,
+            description: [data.vendor, data.description].filter(Boolean).join(" – ") || null,
+            file_path: filePath,
+            receipt_type: detectedIsFuel ? "fuel" : "general",
+            status: "pending",
+            vat_amount: data.tax_amount ?? null,
+            vat_rate: data.tax_rate ?? null,
+            currency: detectedCurrency,
+            tax_category: suggestedCat || null,
+            meeting_purpose: detectedIsFuel ? "Tanken" : null,
+          }).select("id").single();
 
-        const { data: receiptRow, error: insertErr } = await supabase.from("receipts").insert({
-          user_id: user!.id,
-          date: detectedDate || new Date().toISOString().slice(0, 10),
-          amount: parsedAmount,
-          amount_eur: convertedAmt,
-          description: [data.vendor, data.description].filter(Boolean).join(" – ") || null,
-          file_path: filePath,
-          receipt_type: detectedIsFuel ? "fuel" : "general",
-          status: "pending",
-          vat_amount: data.tax_amount ?? null,
-          vat_rate: data.tax_rate ?? null,
-          currency: detectedCurrency,
-          tax_category: suggestedCat || null,
-          meeting_purpose: detectedIsFuel ? "Tanken" : null,
-        }).select("id").single();
+          if (!insertErr && receiptRow) {
+            setPendingReceiptId(receiptRow.id);
 
-        if (!insertErr && receiptRow) {
-          setPendingReceiptId(receiptRow.id);
-
-          // Save VAT items too
-          if (Array.isArray(data.vat_items) && data.vat_items.length > 0) {
-            const vatInserts = convertedItems.map((item: VatItem) => ({
-              receipt_id: receiptRow.id,
-              label: item.label,
-              net_amount: item.net_amount,
-              vat_rate: item.vat_rate,
-              vat_amount: item.vat_amount,
-            }));
-            await supabase.from("receipt_vat_items").insert(vatInserts);
+            if (convertedItems.length > 0) {
+              const vatInserts = convertedItems.map((item: VatItem) => ({
+                receipt_id: receiptRow.id,
+                label: item.label,
+                net_amount: item.net_amount,
+                vat_rate: item.vat_rate,
+                vat_amount: item.vat_amount,
+              }));
+              await supabase.from("receipt_vat_items").insert(vatInserts);
+            }
           }
+        } catch (autoSaveErr) {
+          console.warn("Auto-save pending receipt failed:", autoSaveErr);
         }
-      } catch (autoSaveErr) {
-        console.warn("Auto-save pending receipt failed:", autoSaveErr);
-      }
+      })();
 
       // Notify about multiple receipts
       if (data.multiple_receipts_detected) {
