@@ -274,27 +274,24 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
 
       if (detectedDate) setDate(detectedDate);
 
-      // Run all currency conversions in parallel (no-ops for EUR)
-      const [convertedAmount, convertedVatAmount, convertedItems] = await Promise.all([
-        data.amount != null ? convertToEur(data.amount, detectedCurrency, detectedDate) : Promise.resolve(null),
-        data.tax_amount != null ? convertToEur(data.tax_amount, detectedCurrency, detectedDate) : Promise.resolve(null),
-        Array.isArray(data.vat_items) && data.vat_items.length > 0
-          ? Promise.all(
-              data.vat_items.map(async (item: VatItem) => {
-                const [cn, cv] = await Promise.all([
-                  convertToEur(item.net_amount, detectedCurrency, detectedDate),
-                  convertToEur(item.vat_amount, detectedCurrency, detectedDate),
-                ]);
-                return {
-                  label: item.label || "Allgemein",
-                  net_amount: cn ?? item.net_amount,
-                  vat_rate: item.vat_rate,
-                  vat_amount: cv ?? item.vat_amount,
-                };
-              })
-            )
-          : Promise.resolve([] as VatItem[]),
-      ]);
+      // Fetch EUR rate ONCE per scan; convert every value locally afterwards.
+      const eurRate = await fetchEurRate(detectedCurrency, detectedDate);
+      const toEur = (v: number | null | undefined): number | null => {
+        if (v == null) return null;
+        if (!eurRate) return Number(v);
+        return Math.round(Number(v) * eurRate * 100) / 100;
+      };
+
+      const convertedAmount = data.amount != null ? toEur(data.amount) : null;
+      const convertedVatAmount = data.tax_amount != null ? toEur(data.tax_amount) : null;
+      const convertedItems: VatItem[] = Array.isArray(data.vat_items) && data.vat_items.length > 0
+        ? data.vat_items.map((item: VatItem) => ({
+            label: item.label || "Allgemein",
+            net_amount: toEur(item.net_amount) ?? item.net_amount,
+            vat_rate: item.vat_rate,
+            vat_amount: toEur(item.vat_amount) ?? item.vat_amount,
+          }))
+        : [];
 
       if (data.amount != null) {
         setOriginalAmount(String(data.amount));
