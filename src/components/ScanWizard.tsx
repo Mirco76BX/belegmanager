@@ -191,6 +191,26 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
     return value;
   };
 
+  /**
+   * Fetches the EUR exchange rate ONCE per scan and converts every value locally.
+   * Avoids firing N parallel convert-currency calls (1x amount + 1x VAT + N x VAT items).
+   */
+  const fetchEurRate = async (currency?: string, receiptDate?: string | null): Promise<number | null> => {
+    if (!currency || currency === "EUR") return 1;
+    try {
+      const { data, error } = await supabase.functions.invoke("convert-currency", {
+        body: { amount: 1, currency, date: receiptDate || undefined },
+      });
+      if (!error && data?.amount_eur != null) {
+        const rate = Number(data.amount_eur);
+        return Number.isFinite(rate) && rate > 0 ? rate : null;
+      }
+    } catch (error) {
+      console.warn("Currency rate lookup failed", error);
+    }
+    return null;
+  };
+
   // When tax category changes, apply Smart Guess VAT if no OCR value
   useEffect(() => {
     if (taxCategory && !scanResult?.tax_rate) {
