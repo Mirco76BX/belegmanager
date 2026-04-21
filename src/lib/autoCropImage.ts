@@ -113,3 +113,41 @@ export function dataUrlToFile(dataUrl: string, filename: string): File {
   for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
   return new File([arr], filename, { type: mime });
 }
+
+/**
+ * Downscales and re-compresses an image data URL so uploads + AI calls stay fast.
+ * Keeps text readable for OCR (max ~2000px on longest edge, JPEG quality 0.82).
+ */
+export function compressImage(
+  dataUrl: string,
+  maxDimension = 2000,
+  quality = 0.82
+): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const { width, height } = img;
+      const longest = Math.max(width, height);
+      const scale = longest > maxDimension ? maxDimension / longest : 1;
+      const targetW = Math.round(width * scale);
+      const targetH = Math.round(height * scale);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(dataUrl);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, targetW, targetH);
+      try {
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      } catch {
+        resolve(dataUrl);
+      }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}

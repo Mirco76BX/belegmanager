@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { autoCropImage, dataUrlToFile } from "@/lib/autoCropImage";
+import { autoCropImage, dataUrlToFile, compressImage } from "@/lib/autoCropImage";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, TIERS } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -191,6 +191,26 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
     return value;
   };
 
+  /**
+   * Fetches the EUR exchange rate ONCE per scan and converts every value locally.
+   * Avoids firing N parallel convert-currency calls (1x amount + 1x VAT + N x VAT items).
+   */
+  const fetchEurRate = async (currency?: string, receiptDate?: string | null): Promise<number | null> => {
+    if (!currency || currency === "EUR") return 1;
+    try {
+      const { data, error } = await supabase.functions.invoke("convert-currency", {
+        body: { amount: 1, currency, date: receiptDate || undefined },
+      });
+      if (!error && data?.amount_eur != null) {
+        const rate = Number(data.amount_eur);
+        return Number.isFinite(rate) && rate > 0 ? rate : null;
+      }
+    } catch (error) {
+      console.warn("Currency rate lookup failed", error);
+    }
+    return null;
+  };
+
   // When tax category changes, apply Smart Guess VAT if no OCR value
   useEffect(() => {
     if (taxCategory && !scanResult?.tax_rate) {
@@ -215,9 +235,12 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       });
 
       const croppedBase64 = await autoCropImage(base64);
-      const croppedFile = dataUrlToFile(croppedBase64, selectedFile.name);
+      // Downscale + JPEG-compress so uploads & AI calls are fast even with phone cameras
+      const compressedBase64 = await compressImage(croppedBase64);
+      const baseName = selectedFile.name.replace(/\.[^.]+$/, "");
+      const compressedFile = dataUrlToFile(compressedBase64, `${baseName}.jpg`);
 
-      setPages((prev) => [...prev, { file: croppedFile, preview: croppedBase64 }]);
+      setPages((prev) => [...prev, { file: compressedFile, preview: compressedBase64 }]);
       setStep("pages");
     } catch (err) {
       console.error("Error processing page:", err);
@@ -251,27 +274,24 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
 
       if (detectedDate) setDate(detectedDate);
 
-      // Run all currency conversions in parallel (no-ops for EUR)
-      const [convertedAmount, convertedVatAmount, convertedItems] = await Promise.all([
-        data.amount != null ? convertToEur(data.amount, detectedCurrency, detectedDate) : Promise.resolve(null),
-        data.tax_amount != null ? convertToEur(data.tax_amount, detectedCurrency, detectedDate) : Promise.resolve(null),
-        Array.isArray(data.vat_items) && data.vat_items.length > 0
-          ? Promise.all(
-              data.vat_items.map(async (item: VatItem) => {
-                const [cn, cv] = await Promise.all([
-                  convertToEur(item.net_amount, detectedCurrency, detectedDate),
-                  convertToEur(item.vat_amount, detectedCurrency, detectedDate),
-                ]);
-                return {
-                  label: item.label || "Allgemein",
-                  net_amount: cn ?? item.net_amount,
-                  vat_rate: item.vat_rate,
-                  vat_amount: cv ?? item.vat_amount,
-                };
-              })
-            )
-          : Promise.resolve([] as VatItem[]),
-      ]);
+      // Fetch EUR rate ONCE per scan; convert every value locally afterwards.
+      const eurRate = await fetchEurRate(detectedCurrency, detectedDate);
+      const toEur = (v: number | null | undefined): number | null => {
+        if (v == null) return null;
+        if (!eurRate) return Number(v);
+        return Math.round(Number(v) * eurRate * 100) / 100;
+      };
+
+      const convertedAmount = data.amount != null ? toEur(data.amount) : null;
+      const convertedVatAmount = data.tax_amount != null ? toEur(data.tax_amount) : null;
+      const convertedItems: VatItem[] = Array.isArray(data.vat_items) && data.vat_items.length > 0
+        ? data.vat_items.map((item: VatItem) => ({
+            label: item.label || "Allgemein",
+            net_amount: toEur(item.net_amount) ?? item.net_amount,
+            vat_rate: item.vat_rate,
+            vat_amount: toEur(item.vat_amount) ?? item.vat_amount,
+          }))
+        : [];
 
       if (data.amount != null) {
         setOriginalAmount(String(data.amount));
