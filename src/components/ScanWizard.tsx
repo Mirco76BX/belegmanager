@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { autoCropImage, dataUrlToFile } from "@/lib/autoCropImage";
+import { autoCropImage, dataUrlToFile, compressImage } from "@/lib/autoCropImage";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, TIERS } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -215,9 +215,12 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       });
 
       const croppedBase64 = await autoCropImage(base64);
-      const croppedFile = dataUrlToFile(croppedBase64, selectedFile.name);
+      // Downscale + JPEG-compress so uploads & AI calls are fast even with phone cameras
+      const compressedBase64 = await compressImage(croppedBase64);
+      const baseName = selectedFile.name.replace(/\.[^.]+$/, "");
+      const compressedFile = dataUrlToFile(compressedBase64, `${baseName}.jpg`);
 
-      setPages((prev) => [...prev, { file: croppedFile, preview: croppedBase64 }]);
+      setPages((prev) => [...prev, { file: compressedFile, preview: compressedBase64 }]);
       setStep("pages");
     } catch (err) {
       console.error("Error processing page:", err);
