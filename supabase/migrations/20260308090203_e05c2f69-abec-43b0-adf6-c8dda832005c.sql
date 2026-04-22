@@ -1,0 +1,1 @@
+ALTER TABLE public.companies ADD COLUMN org_type text NOT NULL DEFAULT 'company';

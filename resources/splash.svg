@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2732" height="2732" viewBox="0 0 2732 2732">
+  <defs>
+    <radialGradient id="bg" cx="0.5" cy="0.5" r="0.75">
+      <stop offset="0" stop-color="#143761"/>
+      <stop offset="1" stop-color="#0b1f3a"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="2732" height="2732" fill="url(#bg)"/>
+
+  <!-- Centered receipt mark -->
+  <g transform="translate(1116 986)">
+    <path d="M0 0 H500 V560 L466 600 L432 560 L398 600 L364 560 L330 600 L296 560 L262 600 L228 560 L194 600 L160 560 L126 600 L92 560 L58 600 L24 560 L0 600 Z"
+          fill="#ffffff" opacity="0.95"/>
+    <rect x="0" y="0" width="500" height="56" fill="#c6a35a"/>
+    <circle cx="396" cy="170" r="52" fill="#16a34a"/>
+    <path d="M372 172 l18 18 l36 -42" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="40" y="130" width="280" height="18" rx="4" fill="#0b1f3a" opacity="0.85"/>
+    <rect x="40" y="180" width="220" height="14" rx="4" fill="#0b1f3a" opacity="0.55"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="1366" y="1820" font-family="-apple-system, Segoe UI, Roboto, sans-serif"
+        font-size="96" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="2">
+    BelegManager
+  </text>
+  <text x="1366" y="1900" font-family="-apple-system, Segoe UI, Roboto, sans-serif"
+        font-size="42" font-weight="400" fill="#c6a35a" text-anchor="middle" letter-spacing="4">
+    SCAN &amp; LOG
+  </text>
+</svg>

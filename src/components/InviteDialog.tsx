@@ -1,0 +1,118 @@
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UserPlus, Mail, MessageCircle } from "lucide-react";
+
+const REGISTER_URL = window.location.origin + "/auth";
+
+const InviteDialog = () => {
+  const [open, setOpen] = useState(false);
+  const { user } = useAuth();
+  const { tt } = useLanguage();
+
+  const handleEmailInvite = () => {
+    const message = tt({
+      de: `Hallo! Ich nutze BelegManager zur Belegverwaltung und möchte dich einladen. Registriere dich hier: ${REGISTER_URL}`,
+      en: `Hi! I'm using ReceiptManager for expense tracking and would like to invite you. Register here: ${REGISTER_URL}`,
+      tr: `Merhaba! Masraf takibi için BelegManager kullanıyorum ve sizi davet etmek istiyorum. Buradan kayıt olun: ${REGISTER_URL}`,
+      ar: `مرحباً! أنا أستخدم مدير الإيصالات لتتبع المصاريف وأود دعوتك. سجل هنا: ${REGISTER_URL}`,
+      ru: `Привет! Я использую ЧекМенеджер для учёта расходов и хочу пригласить тебя. Зарегистрируйся здесь: ${REGISTER_URL}`,
+    });
+
+    const subject = tt({
+      de: "Einladung zu BelegManager",
+      en: "Invitation to ReceiptManager",
+      tr: "BelegManager'a davet",
+      ar: "دعوة إلى مدير الإيصالات",
+      ru: "Приглашение в ЧекМенеджер",
+    });
+
+    window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`, "_self");
+
+    if (user) {
+      supabase.from("invitations").insert({
+        invited_by: user.id,
+        email: "email-invite",
+      });
+    }
+
+    setOpen(false);
+  };
+
+  const handleWhatsAppInvite = () => {
+    const message = tt({
+      de: `Hallo! Ich nutze BelegManager zur Belegverwaltung und möchte dich einladen. Registriere dich hier: ${REGISTER_URL}`,
+      en: `Hi! I'm using ReceiptManager for expense tracking and would like to invite you. Register here: ${REGISTER_URL}`,
+      tr: `Merhaba! Masraf takibi için BelegManager kullanıyorum ve sizi davet etmek istiyorum. Buradan kayıt olun: ${REGISTER_URL}`,
+      ar: `مرحباً! أنا أستخدم مدير الإيصالات لتتبع المصاريف وأود دعوتك. سجل هنا: ${REGISTER_URL}`,
+      ru: `Привет! Я использую ЧекМенеджер для учёта расходов и хочу пригласить тебя. Зарегистрируйся здесь: ${REGISTER_URL}`,
+    });
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
+
+    if (user) {
+      supabase.from("invitations").insert({
+        invited_by: user.id,
+        email: `whatsapp-invite`,
+      });
+    }
+
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground">
+          <UserPlus className="h-4 w-4" />
+          {tt({de:"Einladen", en:"Invite", tr:"Davet et", ar:"دعوة", ru:"Пригласить"})}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{tt({de:"Kollegen einladen", en:"Invite a colleague", tr:"Meslektaş davet et", ar:"دعوة زميل", ru:"Пригласить коллегу"})}</DialogTitle>
+        </DialogHeader>
+        <Tabs defaultValue="email" className="w-full">
+          <TabsList className="w-full">
+            <TabsTrigger value="email" className="flex-1 gap-2">
+              <Mail className="h-4 w-4" />
+              E-Mail
+            </TabsTrigger>
+            <TabsTrigger value="whatsapp" className="flex-1 gap-2">
+              <MessageCircle className="h-4 w-4" />
+              WhatsApp
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="email">
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">
+                {tt({de:"Dein E-Mail-Programm öffnet sich mit einem vorformulierten Einladungstext. Wähle dort den Empfänger aus.", en:"Your email client will open with a pre-written invitation. Choose the recipient there.", tr:"E-posta istemciniz önceden yazılmış bir davetle açılacak. Alıcıyı orada seçin.", ar:"سيفتح برنامج البريد بدعوة مكتوبة مسبقاً. اختر المستلم هناك.", ru:"Почтовый клиент откроется с готовым текстом. Выберите получателя."})}
+              </p>
+              <Button onClick={handleEmailInvite} className="w-full gap-2">
+                <Mail className="h-4 w-4" />
+                {tt({de:"Per E-Mail einladen", en:"Invite via email", tr:"E-posta ile davet et", ar:"دعوة عبر البريد", ru:"Пригласить по почте"})}
+              </Button>
+            </div>
+          </TabsContent>
+          <TabsContent value="whatsapp">
+            <div className="space-y-4 pt-2">
+              <p className="text-sm text-muted-foreground">
+                {tt({de:"WhatsApp öffnet sich mit einem vorformulierten Einladungstext. Wähle dort den Kontakt aus.", en:"WhatsApp will open with a pre-written invitation. Choose your contact there.", tr:"WhatsApp önceden yazılmış bir davetle açılacak. Oradan kişinizi seçin.", ar:"سيفتح واتساب بدعوة مكتوبة مسبقاً. اختر جهة الاتصال هناك.", ru:"WhatsApp откроется с готовым текстом приглашения. Выберите контакт."})}
+              </p>
+              <Button onClick={handleWhatsAppInvite} className="w-full gap-2">
+                <MessageCircle className="h-4 w-4" />
+                {tt({de:"Mit WhatsApp teilen", en:"Share via WhatsApp", tr:"WhatsApp ile paylaş", ar:"مشاركة عبر واتساب", ru:"Поделиться через WhatsApp"})}
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default InviteDialog;
