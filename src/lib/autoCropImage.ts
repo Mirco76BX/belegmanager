@@ -97,7 +97,7 @@ export function autoCropImage(dataUrl: string, threshold = 30, margin = 10): Pro
       const cropCtx = cropCanvas.getContext("2d")!;
       cropCtx.drawImage(img, left, top, cropW, cropH, 0, 0, cropW, cropH);
 
-      resolve(cropCanvas.toDataURL("image/jpeg", 0.92));
+      resolve(cropCanvas.toDataURL("image/jpeg", 0.85));
     };
     img.onerror = () => resolve(dataUrl); // fallback to original
     img.src = dataUrl;
@@ -116,12 +116,13 @@ export function dataUrlToFile(dataUrl: string, filename: string): File {
 
 /**
  * Downscales and re-compresses an image data URL so uploads + AI calls stay fast.
- * Keeps text readable for OCR (max ~2000px on longest edge, JPEG quality 0.82).
+ * Keeps text readable for OCR (max ~1600px on longest edge, JPEG quality 0.78,
+ * ergibt ~400-700KB pro Seite).
  */
 export function compressImage(
   dataUrl: string,
-  maxDimension = 2000,
-  quality = 0.82
+  maxDimension = 1600,
+  quality = 0.78
 ): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
