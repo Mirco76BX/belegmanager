@@ -12,7 +12,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 const DEV_MODE = process.env.CAP_DEV === "1";
 
 const config: CapacitorConfig = {
-  appId: "de.bakerix.scanandlog",
+  appId: "de.belegmanager.scanandlog",
   appName: "BelegManager",
   webDir: "dist",
   // bundledWebRuntime: false,  // (Capacitor >=3 default)

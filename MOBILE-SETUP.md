@@ -2,8 +2,8 @@
 
 Vollständige Anleitung, wie du aus diesem Repo eine store-ready iOS- und Android-App baust.
 
-- **Bundle-ID iOS:** `de.bakerix.scanandlog`
-- **Package-Name Android:** `de.bakerix.scanandlog`
+- **Bundle-ID iOS:** `de.belegmanager.scanandlog`
+- **Package-Name Android:** `de.belegmanager.scanandlog`
 - **App-Name:** `BelegManager`
 - **Branding-Farbe:** `#0b1f3a` (Navy)
 
@@ -116,7 +116,7 @@ npm run cap:open:ios
 
 1. Linke Seitenleiste: `App` → `TARGETS: App` → Tab **Signing &amp; Capabilities**.
 2. **Team:** dein Apple-Developer-Team wählen.
-3. **Bundle Identifier:** `de.bakerix.scanandlog` (oder wähle einen eigenen, z. B. `de.bakerix.belegmanager` — dann musst du den auch in `capacitor.config.ts` ändern).
+3. **Bundle Identifier:** `de.belegmanager.scanandlog` (oder wähle einen eigenen, z. B. `de.bakerix.belegmanager` — dann musst du den auch in `capacitor.config.ts` ändern).
 4. **Automatically manage signing:** aktiviert lassen (Xcode erstellt Provisioning-Profile).
 
 ### 4.3 Capabilities (optional, je nach Feature)
@@ -127,7 +127,7 @@ npm run cap:open:ios
 ### 4.4 App Store Connect
 
 1. [appstoreconnect.apple.com](https://appstoreconnect.apple.com) → **My Apps** → **+ → New App**.
-2. **Platform:** iOS, **Primary Language:** German, **Bundle ID:** `de.bakerix.scanandlog`, **SKU:** `belegmanager-ios-001`.
+2. **Platform:** iOS, **Primary Language:** German, **Bundle ID:** `de.belegmanager.scanandlog`, **SKU:** `belegmanager-ios-001`.
 3. **App Information:** Kategorie „Finanzen" oder „Wirtschaft", Privacy Policy URL (Pflicht — siehe §7).
 4. **App Privacy:** Deklariere mindestens
    - *Kontaktinfos:* E-Mail (Login)

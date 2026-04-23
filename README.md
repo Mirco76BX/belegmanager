@@ -6,7 +6,7 @@ strukturiert ablegen und für die Buchhaltung bzw. Steuer exportieren.
 - **Web:** Vite + React 18 + TypeScript + Tailwind + shadcn/ui
 - **Backend:** Supabase (Auth, Datenbank, Storage, Edge Functions)
 - **Mobile:** Capacitor 8 (iOS + Android)
-- **Bundle-ID:** `de.bakerix.scanandlog`
+- **Bundle-ID:** `de.belegmanager.scanandlog`
 
 ## Setup
 
