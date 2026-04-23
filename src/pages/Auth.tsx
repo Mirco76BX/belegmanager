@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -208,8 +210,37 @@ const Auth = () => {
                   variant="outline"
                   className="w-full gap-2"
                   onClick={async () => {
+                    const isNative = Capacitor.isNativePlatform();
+                    // On native: redirect to a bridge page that forwards to the
+                    // belegmanager:// custom scheme. The Lovable OAuth broker
+                    // requires an https redirect_uri, so we cannot point it at
+                    // the custom scheme directly.
+                    const redirect_uri = isNative
+                      ? "https://belegmanager.online/auth/native-callback"
+                      : window.location.origin;
+
+                    if (isNative) {
+                      // Open the OAuth flow in the system browser so the user
+                      // sees Google's real consent screen, then bring them back
+                      // via deep link.
+                      const result = await lovable.auth.signInWithOAuth("google", {
+                        redirect_uri,
+                      });
+                      if (result.error) {
+                        toast({ title: String(result.error), variant: "destructive" });
+                        return;
+                      }
+                      if (result.redirected) {
+                        // Lovable triggered a window.location redirect — intercept
+                        // it and open in the in-app system browser instead.
+                        // Fallback: nothing more to do, the redirect already happened.
+                        return;
+                      }
+                      return;
+                    }
+
                     const { error } = await lovable.auth.signInWithOAuth("google", {
-                      redirect_uri: window.location.origin,
+                      redirect_uri,
                     });
                     if (error) toast({ title: String(error), variant: "destructive" });
                   }}
