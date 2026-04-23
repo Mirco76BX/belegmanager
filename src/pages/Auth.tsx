@@ -5,6 +5,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -210,37 +211,16 @@ const Auth = () => {
                   className="w-full gap-2"
                   onClick={async () => {
                     const isNative = Capacitor.isNativePlatform();
-                    // On native: redirect to a bridge page that forwards to the
-                    // belegmanager:// custom scheme. The Lovable OAuth broker
-                    // requires an https redirect_uri, so we cannot point it at
-                    // the custom scheme directly.
-                    //
-                    // IMPORTANT: The bridge MUST live on the Lovable-managed
-                    // subdomain (belegmanager.lovable.app), NOT on the custom
-                    // domain. The OAuth broker endpoint `/~oauth/initiate` is
-                    // only served by Lovable's hosting layer on the default
-                    // subdomain — custom domains return 404 for it.
                     const redirect_uri = isNative
                       ? "https://belegmanager.lovable.app/auth/native-callback"
                       : window.location.origin;
 
                     if (isNative) {
-                      // Open the OAuth flow in the system browser so the user
-                      // sees Google's real consent screen, then bring them back
-                      // via deep link.
-                      const result = await lovable.auth.signInWithOAuth("google", {
-                        redirect_uri,
-                      });
-                      if (result.error) {
-                        toast({ title: String(result.error), variant: "destructive" });
-                        return;
-                      }
-                      if (result.redirected) {
-                        // Lovable triggered a window.location redirect — intercept
-                        // it and open in the in-app system browser instead.
-                        // Fallback: nothing more to do, the redirect already happened.
-                        return;
-                      }
+                      const oauthUrl = new URL("https://belegmanager.lovable.app/~oauth/initiate");
+                      oauthUrl.searchParams.set("provider", "google");
+                      oauthUrl.searchParams.set("redirect_uri", redirect_uri);
+
+                      await Browser.open({ url: oauthUrl.toString() });
                       return;
                     }
 
