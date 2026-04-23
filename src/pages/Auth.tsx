@@ -214,8 +214,14 @@ const Auth = () => {
                     // belegmanager:// custom scheme. The Lovable OAuth broker
                     // requires an https redirect_uri, so we cannot point it at
                     // the custom scheme directly.
+                    //
+                    // IMPORTANT: The bridge MUST live on the Lovable-managed
+                    // subdomain (belegmanager.lovable.app), NOT on the custom
+                    // domain. The OAuth broker endpoint `/~oauth/initiate` is
+                    // only served by Lovable's hosting layer on the default
+                    // subdomain — custom domains return 404 for it.
                     const redirect_uri = isNative
-                      ? "https://belegmanager.online/auth/native-callback"
+                      ? "https://belegmanager.lovable.app/auth/native-callback"
                       : window.location.origin;
 
                     if (isNative) {
