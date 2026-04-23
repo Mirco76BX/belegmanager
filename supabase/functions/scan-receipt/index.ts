@@ -156,6 +156,13 @@ serve(async (req) => {
   try {
     const body = await req.json();
 
+    if (body.warmup === true) {
+      return new Response(
+        JSON.stringify({ ok: true, warm: true, ts: new Date().toISOString() }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Support both single image (imageBase64) and multiple images (images array)
     let images: string[] = [];
     if (Array.isArray(body.images) && body.images.length > 0) {
@@ -183,7 +190,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "user",
