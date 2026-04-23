@@ -26,6 +26,7 @@ import Fahrtkosten from "@/pages/Fahrtkosten";
 import Datenschutz from "@/pages/Datenschutz";
 import Demo from "@/pages/Demo";
 import ResetPassword from "@/pages/ResetPassword";
+import NativeAuthCallback from "@/pages/NativeAuthCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,52 @@ const ScrollToTop = () => {
   return null;
 };
 
+/**
+ * Native deep-link listener: handles the `belegmanager://auth/callback` URL
+ * that the system browser triggers after the OAuth bridge page redirects.
+ * No-op on web.
+ */
+const NativeDeepLinkHandler = () => {
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let remove: (() => void) | undefined;
+
+    (async () => {
+      const handle = await CapacitorApp.addListener("appUrlOpen", async ({ url }) => {
+        try {
+          if (!url.includes("auth/callback")) return;
+
+          // Parse query + hash from the deep link
+          const u = new URL(url);
+          const code = u.searchParams.get("code");
+
+          if (code) {
+            await supabase.auth.exchangeCodeForSession(code);
+          } else if (u.hash) {
+            const params = new URLSearchParams(u.hash.replace(/^#/, ""));
+            const access_token = params.get("access_token");
+            const refresh_token = params.get("refresh_token");
+            if (access_token && refresh_token) {
+              await supabase.auth.setSession({ access_token, refresh_token });
+            }
+          }
+        } catch (err) {
+          console.error("[Auth] Deep-link session exchange failed:", err);
+        } finally {
+          // Close the in-app browser if it is still showing
+          try { await Browser.close(); } catch {}
+        }
+      });
+      remove = () => handle.remove();
+    })();
+
+    return () => { remove?.(); };
+  }, []);
+
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -60,8 +107,10 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <ScrollToTop />
+            <NativeDeepLinkHandler />
             <Routes>
               <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
+              <Route path="/auth/native-callback" element={<NativeAuthCallback />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/demo" element={<Demo />} />
               <Route path="/impressum" element={<Impressum />} />
