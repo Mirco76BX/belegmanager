@@ -181,6 +181,12 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         body: { amount: value, currency: detectedCurrency, date: receiptDate || undefined },
       });
 
+      if (!error && data?.rate != null) {
+        const rate = Number(data.rate);
+        if (Number.isFinite(rate) && rate > 0) {
+          return Math.round(value * rate * 100) / 100;
+        }
+      }
       if (!error && data?.amount_eur != null) {
         return Number(data.amount_eur);
       }
@@ -201,8 +207,8 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const { data, error } = await supabase.functions.invoke("convert-currency", {
         body: { amount: 1, currency, date: receiptDate || undefined },
       });
-      if (!error && data?.amount_eur != null) {
-        const rate = Number(data.amount_eur);
+      if (!error && data?.rate != null) {
+        const rate = Number(data.rate);
         return Number.isFinite(rate) && rate > 0 ? rate : null;
       }
     } catch (error) {
