@@ -93,6 +93,10 @@ const confidenceBadge = (level?: string, lang?: string) => {
   );
 };
 
+const RATE_SAMPLE_AMOUNT = 1000000;
+
+const roundCurrencyAmount = (value: number) => Math.round(value * 100) / 100;
+
 const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCompaniesChanged }: ScanWizardProps) => {
   const { user, subscription } = useAuth();
   const { lang, tt } = useLanguage();
@@ -184,7 +188,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       if (!error && data?.rate != null) {
         const rate = Number(data.rate);
         if (Number.isFinite(rate) && rate > 0) {
-          return Math.round(value * rate * 100) / 100;
+          return roundCurrencyAmount(value * rate);
         }
       }
       if (!error && data?.amount_eur != null) {
@@ -205,10 +209,15 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
     if (!currency || currency === "EUR") return 1;
     try {
       const { data, error } = await supabase.functions.invoke("convert-currency", {
-        body: { amount: 1, currency, date: receiptDate || undefined },
+        body: { amount: RATE_SAMPLE_AMOUNT, currency, date: receiptDate || undefined },
       });
       if (!error && data?.rate != null) {
         const rate = Number(data.rate);
+        return Number.isFinite(rate) && rate > 0 ? rate : null;
+      }
+      if (!error && data?.amount_eur != null) {
+        const amountEur = Number(data.amount_eur);
+        const rate = amountEur / RATE_SAMPLE_AMOUNT;
         return Number.isFinite(rate) && rate > 0 ? rate : null;
       }
     } catch (error) {
