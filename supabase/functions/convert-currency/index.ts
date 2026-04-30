@@ -6,6 +6,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const roundEurAmount = (value: number) => {
+  const rounded = Math.round(value * 100) / 100;
+  return rounded === 0 && value > 0 ? value : rounded;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -44,7 +49,7 @@ serve(async (req) => {
       if (response.ok) {
         const data = await response.json();
         if (data.rates?.EUR != null) {
-          amountEur = Math.round(data.rates.EUR * 100) / 100;
+          amountEur = roundEurAmount(data.rates.EUR);
           rate = data.rates.EUR / amount;
           source = dateParam === "latest" ? "frankfurter_latest" : "frankfurter_historical";
         }
@@ -54,7 +59,7 @@ serve(async (req) => {
         if (fallbackRes.ok) {
           const fallbackData = await fallbackRes.json();
           if (fallbackData.rates?.EUR != null) {
-            amountEur = Math.round(fallbackData.rates.EUR * 100) / 100;
+            amountEur = roundEurAmount(fallbackData.rates.EUR);
             rate = fallbackData.rates.EUR / amount;
             source = "frankfurter_latest_fallback";
           }
@@ -74,7 +79,7 @@ serve(async (req) => {
           const erData = await erRes.json();
           if (erData.rates?.EUR) {
             const eurRate = erData.rates.EUR;
-            amountEur = Math.round(amount * eurRate * 100) / 100;
+            amountEur = roundEurAmount(amount * eurRate);
             rate = eurRate;
             source = "exchangerate_api_fallback";
           }
