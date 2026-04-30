@@ -294,7 +294,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const toEur = (v: number | null | undefined): number | null => {
         if (v == null) return null;
         if (!eurRate) return Number(v);
-        return Math.round(Number(v) * eurRate * 100) / 100;
+        return roundCurrencyAmount(Number(v) * eurRate);
       };
 
       const convertedAmount = data.amount != null ? toEur(data.amount) : null;
@@ -346,6 +346,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
           setPendingFilePath(filePath);
 
           const parsedAmount = data.amount != null ? data.amount : null;
+          const pendingVatAmount = detectedCurrency === "EUR" ? data.tax_amount ?? null : convertedVatAmount;
 
           const { data: receiptRow, error: insertErr } = await supabase.from("receipts").insert({
             user_id: user!.id,
@@ -356,7 +357,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
             file_path: filePath,
             receipt_type: detectedIsFuel ? "fuel" : "general",
             status: "pending",
-            vat_amount: data.tax_amount ?? null,
+            vat_amount: pendingVatAmount,
             vat_rate: data.tax_rate ?? null,
             currency: detectedCurrency,
             tax_category: suggestedCat || null,
