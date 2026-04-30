@@ -93,6 +93,10 @@ const confidenceBadge = (level?: string, lang?: string) => {
   );
 };
 
+const RATE_SAMPLE_AMOUNT = 1000000;
+
+const roundCurrencyAmount = (value: number) => Math.round(value * 100) / 100;
+
 const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCompaniesChanged }: ScanWizardProps) => {
   const { user, subscription } = useAuth();
   const { lang, tt } = useLanguage();
@@ -184,7 +188,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       if (!error && data?.rate != null) {
         const rate = Number(data.rate);
         if (Number.isFinite(rate) && rate > 0) {
-          return Math.round(value * rate * 100) / 100;
+          return roundCurrencyAmount(value * rate);
         }
       }
       if (!error && data?.amount_eur != null) {
@@ -205,10 +209,15 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
     if (!currency || currency === "EUR") return 1;
     try {
       const { data, error } = await supabase.functions.invoke("convert-currency", {
-        body: { amount: 1, currency, date: receiptDate || undefined },
+        body: { amount: RATE_SAMPLE_AMOUNT, currency, date: receiptDate || undefined },
       });
       if (!error && data?.rate != null) {
         const rate = Number(data.rate);
+        return Number.isFinite(rate) && rate > 0 ? rate : null;
+      }
+      if (!error && data?.amount_eur != null) {
+        const amountEur = Number(data.amount_eur);
+        const rate = amountEur / RATE_SAMPLE_AMOUNT;
         return Number.isFinite(rate) && rate > 0 ? rate : null;
       }
     } catch (error) {
@@ -285,7 +294,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const toEur = (v: number | null | undefined): number | null => {
         if (v == null) return null;
         if (!eurRate) return Number(v);
-        return Math.round(Number(v) * eurRate * 100) / 100;
+        return roundCurrencyAmount(Number(v) * eurRate);
       };
 
       const convertedAmount = data.amount != null ? toEur(data.amount) : null;
@@ -337,6 +346,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
           setPendingFilePath(filePath);
 
           const parsedAmount = data.amount != null ? data.amount : null;
+          const pendingVatAmount = detectedCurrency === "EUR" ? data.tax_amount ?? null : convertedVatAmount;
 
           const { data: receiptRow, error: insertErr } = await supabase.from("receipts").insert({
             user_id: user!.id,
@@ -347,7 +357,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
             file_path: filePath,
             receipt_type: detectedIsFuel ? "fuel" : "general",
             status: "pending",
-            vat_amount: data.tax_amount ?? null,
+            vat_amount: pendingVatAmount,
             vat_rate: data.tax_rate ?? null,
             currency: detectedCurrency,
             tax_category: suggestedCat || null,
