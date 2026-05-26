@@ -11,6 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:datev": "vitest run src/lib/datev.test.ts",
+    "validate:datev": "node scripts/validate-datev.mjs",
     "cap:sync": "vite build && npx cap sync",
     "cap:open:ios": "npx cap open ios",
     "cap:open:android": "npx cap open android",

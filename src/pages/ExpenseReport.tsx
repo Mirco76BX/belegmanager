@@ -10,9 +10,38 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FileSpreadsheet, Download } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import {
+  buildDatevStapel,
+  downloadDatevCsv,
+  DEFAULT_GEGENKONTO,
+  type DatevMandantSettings,
+  type Kontenrahmen,
+} from "@/lib/datev";
+
+// localStorage-Key, damit der User die DATEV-Stammdaten nicht jedes Mal neu eintippen muss
+const DATEV_SETTINGS_KEY = "belegmanager.datev_settings.v1";
+
+function loadDatevSettings(): Partial<DatevMandantSettings> {
+  try {
+    const raw = localStorage.getItem(DATEV_SETTINGS_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as Partial<DatevMandantSettings>;
+  } catch {
+    return {};
+  }
+}
+
+function saveDatevSettings(s: DatevMandantSettings) {
+  try {
+    localStorage.setItem(DATEV_SETTINGS_KEY, JSON.stringify(s));
+  } catch {
+    // ignore
+  }
+}
 
 interface Receipt {
   id: string;
@@ -60,7 +89,24 @@ const ExpenseReport = () => {
   const [generating, setGenerating] = useState(false);
   const [filterCompanyId, setFilterCompanyId] = useState<string>("all");
   const [profile, setProfile] = useState<{ first_name: string | null; last_name: string | null; display_name: string | null; email: string } | null>(null);
-  
+
+  // DATEV-Export Dialog State
+  const [datevDialogOpen, setDatevDialogOpen] = useState(false);
+  const [datevForm, setDatevForm] = useState<DatevMandantSettings>(() => {
+    const cached = loadDatevSettings();
+    return {
+      berater_nr: cached.berater_nr ?? "",
+      mandanten_nr: cached.mandanten_nr ?? "",
+      wj_beginn: cached.wj_beginn ?? `${new Date().getFullYear()}-01-01`,
+      sachkontenlaenge: (cached.sachkontenlaenge as 4 | 5 | 6 | 7 | 8) ?? 4,
+      kontenrahmen: (cached.kontenrahmen as Kontenrahmen) ?? "SKR03",
+      konto_gegenkonto: cached.konto_gegenkonto ?? DEFAULT_GEGENKONTO.SKR03,
+      bezeichnung: cached.bezeichnung ?? "",
+      diktatkuerzel: cached.diktatkuerzel ?? "",
+    };
+  });
+  const [datevEncoding, setDatevEncoding] = useState<"windows-1252" | "utf-8-bom">("windows-1252");
+
 
   const fetchData = async () => {
     if (!user || subscription.tier === "free") return;
@@ -185,53 +231,92 @@ const ExpenseReport = () => {
     URL.revokeObjectURL(url);
   };
 
-  // DATEV-compatible CSV export
+  // DATEV-Export: öffnet erst den Stammdaten-Dialog, dann generiert die Lib den Stapel.
   const exportDATEV = () => {
     if (filteredReceipts.length === 0) return;
-    // DATEV header line
-    const datevHeaders = [
-      "Umsatz (ohne Soll/Haben-Kz)", "Soll/Haben-Kennzeichen", "WKZ Umsatz",
-      "Kurs", "Basis-Umsatz", "WKZ Basis-Umsatz", "Konto", "Gegenkonto (ohne BU-Schlüssel)",
-      "BU-Schlüssel", "Belegdatum", "Belegfeld 1", "Belegfeld 2",
-      "Skonto", "Buchungstext", "Postensperre", "Diverse Adressnummer",
-      "Geschäftspartnerbank", "Sachverhalt", "Zinssperre",
-    ];
+    setDatevDialogOpen(true);
+  };
 
-    const datevRows = filteredReceipts.map((r) => {
-      const amt = r.amount_eur ?? r.amount ?? 0;
-      const dateFormatted = r.date ? r.date.replace(/-/g, "").slice(4) : ""; // MMDD
-      const buKey = r.vat_rate === 19 ? "3" : r.vat_rate === 7 ? "2" : "";
-      return [
-        amt.toFixed(2).replace(".", ","),  // German decimal
-        "S",
-        "EUR",
-        "", "", "",
-        "4900",  // Sonstige betriebliche Aufwendungen (default)
-        "1200",  // Bank
-        buKey,
-        dateFormatted,
-        r.id.slice(0, 12),  // Belegfeld 1
-        "",
-        "",
-        (r.description || "").slice(0, 60),
-        "", "", "", "", "",
-      ];
+  // Setzt das Gegenkonto auf den passenden Default, wenn der Kontenrahmen
+  // wechselt UND der User das Feld noch nicht selbst geändert hat.
+  const handleKontenrahmenChange = (next: Kontenrahmen) => {
+    setDatevForm((prev) => {
+      const isAtDefault =
+        prev.konto_gegenkonto === DEFAULT_GEGENKONTO.SKR03 ||
+        prev.konto_gegenkonto === DEFAULT_GEGENKONTO.SKR04;
+      return {
+        ...prev,
+        kontenrahmen: next,
+        konto_gegenkonto: isAtDefault ? DEFAULT_GEGENKONTO[next] : prev.konto_gegenkonto,
+      };
+    });
+  };
+
+  const performDatevExport = async () => {
+    // Stammdaten cachen für den nächsten Export
+    saveDatevSettings(datevForm);
+
+    const result = buildDatevStapel({
+      receipts: filteredReceipts.map((r) => ({
+        id: r.id,
+        date: r.date,
+        amount: r.amount,
+        amount_eur: r.amount_eur ?? null,
+        currency: r.currency,
+        vat_rate: r.vat_rate ?? null,
+        description: r.description,
+        tax_category: r.tax_category ?? null,
+      })),
+      mandant: datevForm,
+      datumVon: fromDate,
+      datumBis: toDate,
+      exportiertVon: profile?.email || user?.email || "BelegManager",
+      herkunft: "BM",
     });
 
-    const csvContent = [
-      datevHeaders.join(";"),
-      ...datevRows.map((row) => row.map((cell) => `"${cell}"`).join(";")),
-    ].join("\n");
+    const hardErrors = result.warnings.filter((w) =>
+      /Berater-Nr|Mandanten-Nr|WJ-Beginn/.test(w),
+    );
+    if (hardErrors.length > 0) {
+      toast({
+        title: tt({ de: "DATEV-Stammdaten ungültig", en: "DATEV master data invalid" }),
+        description: hardErrors.join(" • "),
+        variant: "destructive",
+      });
+      return;
+    }
 
-    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `DATEV_Export_${fromDate}_${toDate}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast({ title: tt({ de: "DATEV-Export erstellt!", en: "DATEV export generated!" }) });
+    try {
+      await downloadDatevCsv(result, datevEncoding);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast({
+        title: tt({ de: "DATEV-Export fehlgeschlagen", en: "DATEV export failed" }),
+        description: msg,
+        variant: "destructive",
+      });
+      return;
+    }
+    setDatevDialogOpen(false);
+
+    const softWarnings = result.warnings.filter((w) => !hardErrors.includes(w));
+    toast({
+      title: tt({ de: "DATEV-Stapel erstellt", en: "DATEV stapel generated" }),
+      description: softWarnings.length
+        ? tt({
+            de: `${result.count} Buchungen exportiert (${softWarnings.length} Hinweise – siehe Konsole)`,
+            en: `${result.count} bookings exported (${softWarnings.length} notes – see console)`,
+          })
+        : tt({
+            de: `${result.count} Buchungen exportiert.`,
+            en: `${result.count} bookings exported.`,
+          }),
+    });
+    if (softWarnings.length > 0) {
+      console.warn("[DATEV] Soft warnings:", softWarnings);
+    }
   };
+
 
   const generatePDF = async () => {
     if (filteredReceipts.length === 0) {
@@ -530,6 +615,150 @@ const ExpenseReport = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* ─── DATEV-Export Dialog ────────────────────────────────────────── */}
+      <Dialog open={datevDialogOpen} onOpenChange={setDatevDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {tt({ de: "DATEV-Stapel exportieren", en: "Export DATEV stapel" })}
+            </DialogTitle>
+            <DialogDescription>
+              {tt({
+                de: "Mandanten-Stammdaten für den DATEV-Buchungsstapel (Format 7). Die Eingaben werden lokal gespeichert.",
+                en: "Master data for the DATEV booking stapel (Format 7). Inputs are stored locally.",
+              })}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 gap-3 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="datev_berater_nr" className="text-xs">
+                {tt({ de: "Berater-Nr*", en: "Consultant No*" })}
+              </Label>
+              <Input
+                id="datev_berater_nr"
+                inputMode="numeric"
+                placeholder="z.B. 1001"
+                value={datevForm.berater_nr}
+                onChange={(e) => setDatevForm({ ...datevForm, berater_nr: e.target.value.replace(/\D/g, "").slice(0, 7) })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="datev_mandanten_nr" className="text-xs">
+                {tt({ de: "Mandanten-Nr*", en: "Client No*" })}
+              </Label>
+              <Input
+                id="datev_mandanten_nr"
+                inputMode="numeric"
+                placeholder="z.B. 50001"
+                value={datevForm.mandanten_nr}
+                onChange={(e) => setDatevForm({ ...datevForm, mandanten_nr: e.target.value.replace(/\D/g, "").slice(0, 5) })}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="datev_wj_beginn" className="text-xs">
+                {tt({ de: "Wirtschaftsjahr-Beginn*", en: "Fiscal year start*" })}
+              </Label>
+              <Input
+                id="datev_wj_beginn"
+                type="date"
+                value={datevForm.wj_beginn}
+                onChange={(e) => setDatevForm({ ...datevForm, wj_beginn: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="datev_sachkonten" className="text-xs">
+                {tt({ de: "Sachkontenlänge", en: "Account length" })}
+              </Label>
+              <Select
+                value={String(datevForm.sachkontenlaenge)}
+                onValueChange={(v) => setDatevForm({ ...datevForm, sachkontenlaenge: Number(v) as 4 | 5 | 6 | 7 | 8 })}
+              >
+                <SelectTrigger id="datev_sachkonten"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="4">4 (Standard)</SelectItem>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="6">6</SelectItem>
+                  <SelectItem value="7">7</SelectItem>
+                  <SelectItem value="8">8</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="datev_rahmen" className="text-xs">
+                {tt({ de: "Kontenrahmen", en: "Chart of accounts" })}
+              </Label>
+              <Select
+                value={datevForm.kontenrahmen}
+                onValueChange={(v) => handleKontenrahmenChange(v as Kontenrahmen)}
+              >
+                <SelectTrigger id="datev_rahmen"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SKR03">SKR 03</SelectItem>
+                  <SelectItem value="SKR04">SKR 04</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="datev_gegenkonto" className="text-xs">
+                {tt({ de: "Gegenkonto (Bezahlweg)", en: "Counter-account (payment)" })}
+              </Label>
+              <Input
+                id="datev_gegenkonto"
+                inputMode="numeric"
+                placeholder={`Default: ${DEFAULT_GEGENKONTO[datevForm.kontenrahmen]} (Bank)`}
+                value={datevForm.konto_gegenkonto}
+                onChange={(e) => setDatevForm({ ...datevForm, konto_gegenkonto: e.target.value.replace(/\D/g, "").slice(0, 8) })}
+              />
+            </div>
+
+            <div className="space-y-1.5 col-span-2">
+              <Label htmlFor="datev_bezeichnung" className="text-xs">
+                {tt({ de: "Stapel-Bezeichnung (optional)", en: "Stapel description (optional)" })}
+              </Label>
+              <Input
+                id="datev_bezeichnung"
+                placeholder={`z.B. Belege ${fromDate} – ${toDate}`}
+                value={datevForm.bezeichnung || ""}
+                onChange={(e) => setDatevForm({ ...datevForm, bezeichnung: e.target.value.slice(0, 30) })}
+              />
+            </div>
+
+            <div className="space-y-1.5 col-span-2">
+              <Label htmlFor="datev_encoding" className="text-xs">
+                {tt({ de: "Datei-Encoding", en: "File encoding" })}
+              </Label>
+              <Select value={datevEncoding} onValueChange={(v) => setDatevEncoding(v as "windows-1252" | "utf-8-bom")}>
+                <SelectTrigger id="datev_encoding"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="windows-1252">Windows-1252 ({tt({ de: "DATEV-Standard", en: "DATEV default" })})</SelectItem>
+                  <SelectItem value="utf-8-bom">UTF-8 with BOM</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+            {tt({
+              de: `${filteredReceipts.length} Belege werden als Buchungsstapel exportiert. Pflichtfelder sind mit * markiert.`,
+              en: `${filteredReceipts.length} receipts will be exported as a booking stapel. Required fields marked with *.`,
+            })}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDatevDialogOpen(false)}>
+              {tt({ de: "Abbrechen", en: "Cancel" })}
+            </Button>
+            <Button onClick={performDatevExport}>
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              {tt({ de: "Stapel exportieren", en: "Export stapel" })}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
