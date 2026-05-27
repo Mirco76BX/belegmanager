@@ -217,6 +217,42 @@ export type Database = {
         }
         Relationships: []
       }
+      datev_export_batches: {
+        Row: {
+          created_at: string
+          date_from: string | null
+          date_to: string | null
+          file_name: string | null
+          id: string
+          notes: string | null
+          receipt_count: number
+          total_amount_eur: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_from?: string | null
+          date_to?: string | null
+          file_name?: string | null
+          id?: string
+          notes?: string | null
+          receipt_count?: number
+          total_amount_eur?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_from?: string | null
+          date_to?: string | null
+          file_name?: string | null
+          id?: string
+          notes?: string | null
+          receipt_count?: number
+          total_amount_eur?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       invitations: {
         Row: {
           created_at: string
@@ -288,6 +324,42 @@ export type Database = {
           },
         ]
       }
+      receipt_changes: {
+        Row: {
+          change_type: string
+          changed_by: string | null
+          created_at: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          reason: string | null
+          receipt_id: string
+          user_id: string
+        }
+        Insert: {
+          change_type: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          reason?: string | null
+          receipt_id: string
+          user_id: string
+        }
+        Update: {
+          change_type?: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          reason?: string | null
+          receipt_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       receipt_vat_items: {
         Row: {
           created_at: string
@@ -336,6 +408,8 @@ export type Database = {
           currency: string
           date: string
           description: string | null
+          export_batch_id: string | null
+          exported_at: string | null
           file_path: string | null
           id: string
           license_plate: string | null
@@ -360,6 +434,8 @@ export type Database = {
           currency?: string
           date?: string
           description?: string | null
+          export_batch_id?: string | null
+          exported_at?: string | null
           file_path?: string | null
           id?: string
           license_plate?: string | null
@@ -384,6 +460,8 @@ export type Database = {
           currency?: string
           date?: string
           description?: string | null
+          export_batch_id?: string | null
+          exported_at?: string | null
           file_path?: string | null
           id?: string
           license_plate?: string | null
