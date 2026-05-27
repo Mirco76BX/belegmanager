@@ -17,7 +17,17 @@ serve(async (req) => {
   }
 
   try {
+    // Defense-in-depth: require Authorization header (platform also enforces verify_jwt=true)
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { amount, currency, date } = await req.json();
+
 
     if (!amount || !currency) {
       return new Response(
