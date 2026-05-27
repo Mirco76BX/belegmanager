@@ -487,6 +487,24 @@ export type Database = {
           },
         ]
       }
+      scan_rate_log: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tax_advisor_registrations: {
         Row: {
           id: string
