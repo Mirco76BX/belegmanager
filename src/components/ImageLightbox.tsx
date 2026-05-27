@@ -34,6 +34,18 @@ export default function ImageLightbox({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  // CRITICAL: Radix Dialog (vom Beleg-Detail im Hintergrund) setzt
+  // `pointer-events: none` auf document.body während er offen ist.
+  // Da unsere Lightbox via createPortal an document.body hängt, erbt sie das
+  // → keine Buttons klickbar. Wir überschreiben das während die Lightbox aktiv ist.
+  useEffect(() => {
+    const original = document.body.style.pointerEvents;
+    document.body.style.pointerEvents = "auto";
+    return () => {
+      document.body.style.pointerEvents = original;
+    };
+  }, []);
+
   const reset = () => { setZoom(1); setPos({ x: 0, y: 0 }); };
   const zoomIn = () => setZoom((z) => Math.min(z + 0.5, 5));
   const zoomOut = () => setZoom((z) => Math.max(z - 0.5, 1));
@@ -66,11 +78,15 @@ export default function ImageLightbox({
       className="fixed inset-0 z-[9999] bg-black flex flex-col"
       role="dialog"
       aria-modal="true"
+      // WICHTIG: Radix-Dialog (vom Beleg-Detail) setzt pointer-events:none auf
+      // alle Elemente außerhalb seines DialogContent. Da unser Portal an
+      // document.body hängt, erbt es das. Daher explizit überschreiben.
+      style={{ pointerEvents: "auto" }}
     >
       {/* Top bar — Close-Button. Großer Tap-Bereich, Safe-Area-Top. */}
       <div
         className="flex items-center justify-between px-3 py-2"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 8px)", pointerEvents: "auto" }}
       >
         <div className="flex items-center gap-2">
           <button
@@ -118,6 +134,7 @@ export default function ImageLightbox({
       {/* Image area — clips. Tap outside image (on backdrop) closes. */}
       <div
         className="flex-1 overflow-hidden flex items-center justify-center relative"
+        style={{ pointerEvents: "auto" }}
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
         <img
