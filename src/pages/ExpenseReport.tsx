@@ -14,6 +14,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { FileSpreadsheet, Download } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 import {
   buildDatevStapel,
   downloadDatevCsv,
@@ -514,8 +517,33 @@ const ExpenseReport = () => {
         }
       }
 
-      doc.save(`Report_${fromDate}_${toDate}.pdf`);
-      toast({ title: tt({de:"PDF erstellt!", en:"PDF generated!", tr:"PDF oluşturuldu!", ar:"تم إنشاء PDF!", ru:"PDF создан!"}) });
+      const filename = `Report_${fromDate}_${toDate}.pdf`;
+      if (Capacitor.isNativePlatform()) {
+        // iOS/Android: ins Cache-Verzeichnis schreiben und über Share-Sheet teilen
+        const pdfDataUri = doc.output("datauristring");
+        const base64 = pdfDataUri.split(",")[1];
+        const written = await Filesystem.writeFile({
+          path: filename,
+          data: base64,
+          directory: Directory.Cache,
+        });
+        try {
+          await Share.share({
+            title: "BelegManager Report",
+            text: `Belegabrechnung ${fromDate} – ${toDate}`,
+            url: written.uri,
+            dialogTitle: "Report teilen",
+          });
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : String(e);
+          if (!/cancel|abort/i.test(msg)) throw e;
+        }
+        toast({ title: tt({de:"PDF geteilt", en:"PDF shared"}) });
+      } else {
+        // Web: Browser-Download
+        doc.save(filename);
+        toast({ title: tt({de:"PDF erstellt!", en:"PDF generated!", tr:"PDF oluşturuldu!", ar:"تم إنشاء PDF!", ru:"PDF создан!"}) });
+      }
     } catch (err: any) {
       toast({ title: err.message || "PDF error", variant: "destructive" });
     } finally { setGenerating(false); }
