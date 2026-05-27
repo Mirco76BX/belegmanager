@@ -192,6 +192,87 @@ describe("BU-Schlüssel-Mapping", () => {
   });
 });
 
+describe("Multi-MwSt-Splitting", () => {
+  it("erzeugt pro vat_item eine eigene Buchungszeile (Restaurant 7% + 19%)", () => {
+    const restaurantReceipt: DatevReceipt = {
+      id: "uuid-restaurant",
+      date: "2026-05-16",
+      amount: 157.00,
+      currency: "EUR",
+      description: "CAFE DEL SOL",
+      tax_category: "bewirtung",
+      vat_items: [
+        { vat_rate: 7,  vat_amount: 4.87,  net_amount: 69.63, label: "Speisen" },
+        { vat_rate: 19, vat_amount: 11.26, net_amount: 59.24, label: "Getränke" },
+      ],
+    };
+    const result = buildDatevStapel({
+      receipts: [restaurantReceipt],
+      mandant: MANDANT_OK,
+      datumVon: "2026-05-01",
+      datumBis: "2026-05-31",
+      exportiertVon: "t@e.com",
+    });
+    expect(result.count).toBe(2); // 2 Buchungszeilen aus 1 Beleg
+    const lines = result.csv.split(/\r\n/).filter(Boolean);
+    // Zeile 1 = Vorlauf, Zeile 2 = Spalten-Header, Zeile 3+4 = Buchungen
+    expect(lines.length).toBeGreaterThanOrEqual(4);
+    const buchung1 = lines[2];
+    const buchung2 = lines[3];
+    expect(buchung1).toContain("74,50"); // Brutto Speisen: 69,63 + 4,87
+    expect(buchung1).toContain('"8"');    // BU-Schlüssel 7%
+    expect(buchung2).toContain("70,50"); // Brutto Getränke: 59,24 + 11,26
+    expect(buchung2).toContain('"9"');    // BU-Schlüssel 19%
+  });
+
+  it("nutzt vat_rate-Fallback aus Tax-Category, wenn vat_rate fehlt", () => {
+    const receipt: DatevReceipt = {
+      id: "uuid-fallback",
+      date: "2026-05-15",
+      amount: 100.00,
+      description: "Bewirtung ohne MwSt-Angabe",
+      tax_category: "bewirtung",
+      // vat_rate fehlt absichtlich
+    };
+    const result = buildDatevStapel({
+      receipts: [receipt],
+      mandant: MANDANT_OK,
+      datumVon: "2026-05-01",
+      datumBis: "2026-05-31",
+      exportiertVon: "t@e.com",
+    });
+    const buchung = result.csv.split(/\r\n/).filter(Boolean)[2];
+    // Bewirtung-Default ist 19% → BU-Schlüssel 9
+    expect(buchung).toContain('"9"');
+  });
+
+  it("berechnet Fremdwährungs-Kurs (Bali-Beispiel: EUR ↔ IDR)", () => {
+    const baliReceipt: DatevReceipt = {
+      id: "uuid-bali",
+      date: "2026-05-01",
+      amount: 4077700,        // IDR
+      amount_eur: 199.81,
+      currency: "IDR",
+      description: "Amankila Restaurant",
+      tax_category: "bewirtung",
+    };
+    const result = buildDatevStapel({
+      receipts: [baliReceipt],
+      mandant: MANDANT_OK,
+      datumVon: "2026-05-01",
+      datumBis: "2026-05-31",
+      exportiertVon: "t@e.com",
+    });
+    const buchung = result.csv.split(/\r\n/).filter(Boolean)[2];
+    // Kurs = 4077700 / 199.81 ≈ 20408,388469 (in deutschem Komma-Format)
+    expect(buchung).toContain("20408,388469");
+    // Basis-Umsatz in IDR
+    expect(buchung).toContain("4077700,00");
+    // WKZ Basis = IDR
+    expect(buchung).toContain('"IDR"');
+  });
+});
+
 describe("validateDatevCsv — Negativ-Tests", () => {
   it("erkennt fehlenden EXTF-Magic", () => {
     const csv = `"BAD";700;21;"Buchungsstapel";7;20260518123456000;;"BM";"x";;1001;50001;20260101;4;20260501;20260531;"Test";"";1;0;0;"EUR";;;;;;;;\r\n${"\"x\";".repeat(19)}\r\n`;

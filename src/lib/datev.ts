@@ -32,17 +32,30 @@ export interface DatevMandantSettings {
   diktatkuerzel?: string;    // optional, max 2 Zeichen
 }
 
+/**
+ * Einzelne MwSt-Position eines Belegs (z.B. bei Restaurant-Rechnungen mit
+ * gemischten Sätzen 7% Speisen + 19% Getränke). Wenn vorhanden, wird
+ * jede Position als eigene Buchung exportiert.
+ */
+export interface DatevVatItem {
+  vat_rate: number;        // 7, 19, 0
+  vat_amount: number;      // MwSt-Betrag in EUR
+  net_amount?: number;     // Netto-Betrag in EUR (optional, wird sonst berechnet)
+  label?: string;          // z.B. "Speisen", "Getränke"
+}
+
 export interface DatevReceipt {
   id: string;
   date: string;             // YYYY-MM-DD
   amount: number | null;    // brutto in EUR (oder Originalwährung)
   amount_eur?: number | null;
   currency?: string;
-  vat_rate?: number | null; // 0, 7, 19
+  vat_rate?: number | null; // 0, 7, 19 — wird nur genutzt wenn vat_items leer ist
   description?: string | null;
   tax_category?: string | null;
   belegnummer?: string;     // optional override für Belegfeld 1
   laufende_nr?: number;     // wird vom Generator gesetzt
+  vat_items?: DatevVatItem[]; // Multi-MwSt-Positionen (optional)
 }
 
 export interface DatevExportOptions {
@@ -52,13 +65,25 @@ export interface DatevExportOptions {
   datumBis: string;         // YYYY-MM-DD
   exportiertVon: string;    // Email des Exportierenden
   herkunft?: string;        // 2-Zeichen-Kürzel, default "BM"
+  /**
+   * GoBD-Modus:
+   *  - "test":      Generiert eine CSV, aber Belege werden NICHT festgeschrieben.
+   *                 Dateiname enthält "TEST_". Wird NICHT in datev_export_batches geloggt.
+   *  - "produktiv": Vollwertiger Export — Belege bekommen accounting_status="exported",
+   *                 Batch wird geloggt, kein nachträgliches Editieren möglich.
+   * Default: "produktiv" (sicherste Variante)
+   */
+  mode?: "test" | "produktiv";
 }
 
 export interface DatevExportResult {
   csv: string;              // fertige CSV
   filename: string;         // empfohlener Dateiname
-  count: number;            // Anzahl gebuchter Belege
-  warnings: string[];       // z.B. Belege ohne Mapping
+  count: number;            // Anzahl gebuchter Buchungszeilen (kann > Belege bei Multi-MwSt)
+  receiptIds: string[];     // Belege im Export (für Festschreibung)
+  warnings: string[];       // soft hints
+  errors: string[];         // hard errors — wenn nicht leer, sollte CSV NICHT verwendet werden
+  mode: "test" | "produktiv";
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -79,6 +104,7 @@ const KONTEN_MAPPING: Record<string, { skr03: string; skr04: string }> = {
   telekommunikation:          { skr03: "4920", skr04: "6805" }, // Telefon
   fortbildung:                { skr03: "4946", skr04: "6840" }, // Fortbildung
   versicherung:               { skr03: "4360", skr04: "6420" }, // Versicherungen
+  geschenke:                  { skr03: "4630", skr04: "6610" }, // Geschenke an Geschäftspartner (bis 35 € abziehbar)
   sonstiges:                  { skr03: "4900", skr04: "6300" }, // Sonstige betriebliche Aufwendungen
 };
 
@@ -117,6 +143,42 @@ export function buSchluesselForVatRate(vatRate: number | null | undefined): stri
   if (vatRate === 19) return "9";
   if (vatRate === 7) return "8";
   return ""; // 0% oder unklar → leer lassen
+}
+
+/**
+ * Standard-USt-Satz pro Tax-Category (Fallback, wenn vat_rate fehlt).
+ * Diese Werte spiegeln die gängigen deutschen USt-Sätze für die jeweiligen
+ * Belegtypen wider und werden im Konfigurations-Modul taxCategories.ts
+ * synchron gepflegt.
+ */
+const DEFAULT_VAT_RATE_BY_CATEGORY: Record<string, number> = {
+  reisekosten_uebernachtung: 7,
+  reisekosten_fahrt: 7,
+  reisekosten_nebenkosten: 19,
+  verpflegungsmehraufwand: 0,
+  bewirtung: 19,
+  tankkosten: 19,
+  bueromaterial: 19,
+  telekommunikation: 19,
+  fortbildung: 19,
+  versicherung: 0,        // Versicherungen sind meist USt-frei
+  geschenke: 19,
+  sonstiges: 19,
+};
+
+/**
+ * Gibt den effektiven USt-Satz zurück: erst vat_rate, dann Tax-Category-Default.
+ * Wenn beide fehlen, undefined.
+ */
+export function effectiveVatRate(
+  vatRate: number | null | undefined,
+  taxCategory: string | null | undefined,
+): number | undefined {
+  if (vatRate != null && !isNaN(vatRate)) return vatRate;
+  if (taxCategory && DEFAULT_VAT_RATE_BY_CATEGORY[taxCategory] != null) {
+    return DEFAULT_VAT_RATE_BY_CATEGORY[taxCategory];
+  }
+  return undefined;
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -159,6 +221,40 @@ function quote(s: string): string {
 
 function unquoted(n: number | string): string {
   return String(n);
+}
+
+/**
+ * Ersetzt Unicode-Zeichen, die in Win-1252 fehlen, durch passende Pendants.
+ * Wichtig vor allem für Buchungstexte (Pfeile, geschütztes Leerzeichen, …).
+ *
+ * Anwendung NUR auf user-generierte Text-Felder (Buchungstext, Belegfeld 1).
+ * Das Vorlauf-/Spalten-Header-Layout darf NICHT angefasst werden.
+ */
+export function sanitizeForDatev(text: string): string {
+  if (!text) return text;
+  const map: Record<string, string> = {
+    "→": "->",  // → RIGHTWARDS ARROW
+    "←": "<-",  // ← LEFTWARDS ARROW
+    "↑": "^",   // ↑ UPWARDS ARROW
+    "↓": "v",   // ↓ DOWNWARDS ARROW
+    "↔": "<->", // ↔ LEFT-RIGHT ARROW
+    "⇒": "=>",  // ⇒ RIGHTWARDS DOUBLE ARROW
+    "⇐": "<=",  // ⇐ LEFTWARDS DOUBLE ARROW
+    "➡": "->",  // ➡ BLACK RIGHTWARDS ARROW
+    "✓": "OK",  // ✓ CHECK MARK
+    "✔": "OK",  // ✔ HEAVY CHECK MARK
+    "✗": "X",   // ✗ BALLOT X
+    "✘": "X",   // ✘ HEAVY BALLOT X
+    " ": " ",   //   NO-BREAK SPACE → reguläres Space (DATEV mag's plain)
+    "​": "",    // Zero-width space → entfernen
+    "‎": "",    // LRM → entfernen
+    "‏": "",    // RLM → entfernen
+  };
+  let out = "";
+  for (const ch of text) {
+    out += Object.prototype.hasOwnProperty.call(map, ch) ? map[ch] : ch;
+  }
+  return out;
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -237,50 +333,160 @@ function buildSpaltenHeader(): string {
 //   Buchungs-Zeile
 // ───────────────────────────────────────────────────────────────────────────
 
-function buildBuchung(receipt: DatevReceipt, mandant: DatevMandantSettings, lfdNr: number): { row: string; warnings: string[] } {
+/**
+ * Erzeugt 1..N Buchungszeilen pro Beleg:
+ *  - Wenn vat_items.length > 1: pro MwSt-Position eine eigene Buchung (DATEV-Standard)
+ *  - Sonst: eine Buchungszeile mit Gesamtbetrag + effektivem BU-Schlüssel
+ *
+ * Außerdem:
+ *  - Fremdwährungs-Kurs wird berechnet, wenn currency != EUR und amount/amount_eur da
+ *  - VSt-Fallback aus Tax-Category-Default, wenn vat_rate fehlt
+ */
+function buildBuchungen(receipt: DatevReceipt, mandant: DatevMandantSettings, lfdNr: number): { rows: string[]; warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
-  const amt = receipt.amount_eur ?? receipt.amount ?? 0;
-  if (amt <= 0) warnings.push(`Beleg ${receipt.id.slice(0, 8)}: Betrag ist 0 oder negativ`);
+  const errors: string[] = [];
+  const totalEur = receipt.amount_eur ?? receipt.amount ?? 0;
+  if (totalEur <= 0) errors.push(`Beleg ${receipt.id.slice(0, 8)}: Betrag ist 0 oder negativ (${totalEur.toFixed(2)} €) — Beleg vor Export prüfen.`);
 
   const konto = kontoForTaxCategory(receipt.tax_category, mandant.kontenrahmen);
   if (!receipt.tax_category) warnings.push(`Beleg ${receipt.id.slice(0, 8)}: keine Kategorie → Fallback-Konto ${konto}`);
 
-  const buKey = buSchluesselForVatRate(receipt.vat_rate);
-
-  // Belegfeld 1: laufende Nummer (mind. 4-stellig), max 12 Zeichen alphanumerisch
   const belegnummer = (receipt.belegnummer || String(lfdNr).padStart(4, "0")).slice(0, 12);
+  const bText = sanitizeForDatev((receipt.description || "").slice(0, 60));
 
-  const isForex = receipt.currency && receipt.currency !== "EUR";
-  const wkz = isForex ? receipt.currency || "" : ""; // bei EUR leer lassen
-  const basisUmsatz = isForex && receipt.amount ? formatBetrag(receipt.amount) : "";
-  const wkzBasis = isForex ? receipt.currency || "" : "";
+  // Fremdwährung: Kurs ausrechnen wenn möglich
+  const isForex = !!receipt.currency && receipt.currency !== "EUR";
+  let wkzBasis = "";
+  let kursStr = "";
+  let basisUmsatzStr = "";
+  if (isForex && receipt.amount && receipt.amount_eur && receipt.amount_eur > 0) {
+    wkzBasis = receipt.currency!;
+    basisUmsatzStr = formatBetrag(receipt.amount);
+    // DATEV-Kurs = Basis-Umsatz (Fremdwährung) / Umsatz (EUR), 6 Nachkommastellen
+    const kurs = receipt.amount / receipt.amount_eur;
+    kursStr = kurs.toFixed(6).replace(".", ",");
+  } else if (isForex && receipt.amount) {
+    // Fremdwährung ohne EUR-Wert → wenigstens Basis-Umsatz schreiben
+    wkzBasis = receipt.currency!;
+    basisUmsatzStr = formatBetrag(receipt.amount);
+    warnings.push(`Beleg ${receipt.id.slice(0, 8)}: Fremdwährung ${receipt.currency} ohne EUR-Umrechnung → Kurs fehlt`);
+  }
 
-  // Buchungstext: max 60 Zeichen
-  const bText = (receipt.description || "").slice(0, 60);
+  const rows: string[] = [];
 
+  // ─── Multi-MwSt: pro vat_item eine Buchungszeile ───
+  if (receipt.vat_items && receipt.vat_items.length > 1) {
+    // GoBD-Schicht A: Hard-Block bei Daten-Inkonsistenz.
+    // Wenn Summe der MwSt-Brutto-Positionen NICHT zur receipt.amount passt
+    // (Toleranz 5 Cent für Rundungsdifferenzen), darf der Export NICHT
+    // durchlaufen — sonst landen falsche Buchungen in der FiBu.
+    const sumBrutto = receipt.vat_items.reduce((s, it) => s + (it.net_amount ?? 0) + it.vat_amount, 0);
+    const expected = receipt.amount_eur ?? receipt.amount ?? 0;
+    const diff = sumBrutto - expected;
+    if (Math.abs(diff) > 0.05) {
+      errors.push(
+        `Beleg ${receipt.id.slice(0, 8)} "${(receipt.description || "").slice(0, 30)}": ` +
+        `Summe MwSt-Positionen (${sumBrutto.toFixed(2)} €) weicht von Gesamtbetrag (${expected.toFixed(2)} €) ab. ` +
+        `Differenz ${diff.toFixed(2)} €. ` +
+        `Bitte Beleg-Daten manuell prüfen und MwSt-Positionen korrigieren, bevor du exportierst.`,
+      );
+      // Trotzdem keine Buchungs-Zeilen für diesen Beleg generieren
+      return { rows: [], warnings, errors };
+    }
+
+    receipt.vat_items.forEach((item, idx) => {
+      const itemBrutto = (item.net_amount ?? 0) + item.vat_amount;
+      const itemBuKey = buSchluesselForVatRate(item.vat_rate);
+      if (!itemBuKey && item.vat_rate !== 0) {
+        warnings.push(`Beleg ${receipt.id.slice(0, 8)} Position ${idx + 1}: USt-Satz ${item.vat_rate}% nicht in BU-Schlüssel-Mapping`);
+      }
+      // Label-Suffix: hat Vorrang vor langer Beschreibung. Wir reservieren
+      // Platz für das Suffix und kürzen die Beschreibung entsprechend, damit
+      // das Label NICHT abgeschnitten wird (sonst sehen Steuerberater "(A").
+      const rawLabel = item.label || `Pos ${idx + 1}`;
+      const itemLabelFull = ` (${rawLabel})`;
+      const maxBeschr = Math.max(0, 60 - itemLabelFull.length);
+      const truncBeschr = bText.length > maxBeschr ? bText.slice(0, Math.max(0, maxBeschr - 1)) + "…" : bText;
+      const itemText = sanitizeForDatev(truncBeschr + itemLabelFull);
+      rows.push(buildBuchungRow({
+        amtEur: itemBrutto,
+        konto,
+        gegenkonto: mandant.konto_gegenkonto,
+        buKey: itemBuKey,
+        belegdatum: formatBelegdatum(receipt.date),
+        belegnummer,
+        buchungstext: itemText,
+        kursStr,
+        basisUmsatzStr: "", // bei Multi-MwSt nur einmal pro Beleg, hier weglassen
+        wkzBasis: "",
+      }));
+    });
+  } else {
+    // ─── Single-Line-Buchung (keine oder eine MwSt-Position) ───
+    // Fallback-Logik: erst vat_items[0], dann receipt.vat_rate, dann Category-Default
+    const singleItem = receipt.vat_items?.[0];
+    const effVat = singleItem
+      ? singleItem.vat_rate
+      : effectiveVatRate(receipt.vat_rate, receipt.tax_category);
+    const buKey = buSchluesselForVatRate(effVat);
+    if (!buKey && effVat !== 0 && effVat !== undefined) {
+      warnings.push(`Beleg ${receipt.id.slice(0, 8)}: USt-Satz ${effVat}% nicht in BU-Schlüssel-Mapping`);
+    }
+    if (buKey === "" && receipt.vat_rate == null && receipt.tax_category) {
+      warnings.push(`Beleg ${receipt.id.slice(0, 8)}: vat_rate fehlt, Fallback aus Tax-Category genutzt`);
+    }
+    rows.push(buildBuchungRow({
+      amtEur: totalEur,
+      konto,
+      gegenkonto: mandant.konto_gegenkonto,
+      buKey,
+      belegdatum: formatBelegdatum(receipt.date),
+      belegnummer,
+      buchungstext: bText,
+      kursStr,
+      basisUmsatzStr,
+      wkzBasis,
+    }));
+  }
+
+  return { rows, warnings, errors };
+}
+
+/** Niedrigerer Helper: baut eine einzelne CSV-Zeile aus normalisierten Feldern. */
+function buildBuchungRow(p: {
+  amtEur: number;
+  konto: string;
+  gegenkonto: string;
+  buKey: string;
+  belegdatum: string;
+  belegnummer: string;
+  buchungstext: string;
+  kursStr: string;
+  basisUmsatzStr: string;
+  wkzBasis: string;
+}): string {
   const fields = [
-    formatBetrag(amt),                              // 1  Umsatz
+    formatBetrag(p.amtEur),                         // 1  Umsatz (EUR brutto)
     quote("S"),                                     // 2  Soll/Haben (Aufwand → Soll)
     quote("EUR"),                                   // 3  WKZ Umsatz
-    "",                                             // 4  Kurs (nur Fremdwährung)
-    basisUmsatz,                                    // 5  Basis-Umsatz
-    quote(wkzBasis),                                // 6  WKZ Basis-Umsatz
-    unquoted(konto),                                // 7  Konto (Aufwand)
-    unquoted(mandant.konto_gegenkonto),             // 8  Gegenkonto (Bank/Kasse/Privat)
-    quote(buKey),                                   // 9  BU-Schlüssel
-    unquoted(formatBelegdatum(receipt.date)),       // 10 Belegdatum TTMM
-    quote(belegnummer),                             // 11 Belegfeld 1 (laufende Nr / Belegnr)
+    p.kursStr,                                      // 4  Kurs (Fremdwährung)
+    p.basisUmsatzStr,                               // 5  Basis-Umsatz (Fremdwährung)
+    quote(p.wkzBasis),                              // 6  WKZ Basis-Umsatz
+    unquoted(p.konto),                              // 7  Konto (Aufwand)
+    unquoted(p.gegenkonto),                         // 8  Gegenkonto (Bank/Kasse/Privat)
+    quote(p.buKey),                                 // 9  BU-Schlüssel
+    unquoted(p.belegdatum),                         // 10 Belegdatum TTMM
+    quote(p.belegnummer),                           // 11 Belegfeld 1
     "",                                             // 12 Belegfeld 2
     "",                                             // 13 Skonto
-    quote(bText),                                   // 14 Buchungstext
+    quote(p.buchungstext),                          // 14 Buchungstext
     "",                                             // 15 Postensperre
     "",                                             // 16 Diverse Adressnummer
     "",                                             // 17 Geschäftspartnerbank
     "",                                             // 18 Sachverhalt
     "",                                             // 19 Zinssperre
   ];
-
-  return { row: fields.join(";"), warnings };
+  return fields.join(";");
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -289,38 +495,51 @@ function buildBuchung(receipt: DatevReceipt, mandant: DatevMandantSettings, lfdN
 
 export function buildDatevStapel(opts: DatevExportOptions): DatevExportResult {
   const allWarnings: string[] = [];
+  const allErrors: string[] = [];
+  const mode: "test" | "produktiv" = opts.mode ?? "produktiv";
 
-  // Validierung Mandanten-Stammdaten
+  // Validierung Mandanten-Stammdaten (Hard-Errors)
   if (!opts.mandant.berater_nr || !/^\d{4,7}$/.test(opts.mandant.berater_nr)) {
-    allWarnings.push("Berater-Nr fehlt oder ungültig (muss 4–7 Ziffern haben)");
+    allErrors.push("Berater-Nr fehlt oder ungültig (muss 4–7 Ziffern haben)");
   }
   if (!opts.mandant.mandanten_nr || !/^\d{1,5}$/.test(opts.mandant.mandanten_nr)) {
-    allWarnings.push("Mandanten-Nr fehlt oder ungültig (muss 1–5 Ziffern haben)");
+    allErrors.push("Mandanten-Nr fehlt oder ungültig (muss 1–5 Ziffern haben)");
   }
   if (!opts.mandant.wj_beginn || !/^\d{4}-\d{2}-\d{2}$/.test(opts.mandant.wj_beginn)) {
-    allWarnings.push("WJ-Beginn fehlt oder ungültiges Format (erwartet: YYYY-MM-DD)");
+    allErrors.push("WJ-Beginn fehlt oder ungültiges Format (erwartet: YYYY-MM-DD)");
   }
 
   const vorlauf = buildVorlauf(opts);
   const header = buildSpaltenHeader();
 
   const buchungen: string[] = [];
-  opts.receipts.forEach((r, i) => {
-    const { row, warnings } = buildBuchung(r, opts.mandant, i + 1);
-    buchungen.push(row);
+  const receiptIds: string[] = [];
+  let lfdNr = 1;
+  opts.receipts.forEach((r) => {
+    const { rows, warnings, errors } = buildBuchungen(r, opts.mandant, lfdNr);
+    buchungen.push(...rows);
     allWarnings.push(...warnings);
+    allErrors.push(...errors);
+    if (rows.length > 0) receiptIds.push(r.id);
+    lfdNr++; // pro Beleg eine Belegnummer, auch wenn der Beleg mehrere Buchungs-Zeilen produziert
   });
 
   // Zeilenende: CRLF (DATEV-Standard auf Windows-Zielen)
   const csv = [vorlauf, header, ...buchungen].join("\r\n") + "\r\n";
 
-  const filename = `DATEV_${opts.mandant.berater_nr}_${opts.mandant.mandanten_nr}_${formatDateYYYYMMDD(opts.datumVon)}_${formatDateYYYYMMDD(opts.datumBis)}.csv`;
+  // Test-Mode hat klar erkennbares Filename-Prefix, damit Steuerberater nicht
+  // versehentlich Test-Stapel importieren
+  const prefix = mode === "test" ? "DATEV_TEST" : "DATEV";
+  const filename = `${prefix}_${opts.mandant.berater_nr}_${opts.mandant.mandanten_nr}_${formatDateYYYYMMDD(opts.datumVon)}_${formatDateYYYYMMDD(opts.datumBis)}.csv`;
 
   return {
     csv,
     filename,
-    count: opts.receipts.length,
+    count: buchungen.length,    // Anzahl Buchungs-Zeilen (kann > receipts.length sein bei Multi-MwSt)
+    receiptIds,
     warnings: allWarnings,
+    errors: allErrors,
+    mode,
   };
 }
 
@@ -419,12 +638,36 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
  */
 function encodeWin1252(text: string): Uint8Array {
   // Win-1252 erweitert ISO-8859-1 um 0x80–0x9F mit z.B. €, ƒ, „, ", …
-  // Wir mappen die wichtigsten:
+  // ALLE Schlüssel als \uXXXX-Escapes — esbuild interpretiert sonst die
+  // Smart-Quotes (U+201C/201D) als reguläre String-Delimiter und bricht ab.
   const extras: Record<string, number> = {
-    "€": 0x80, "‚": 0x82, "ƒ": 0x83, "„": 0x84, "…": 0x85, "†": 0x86, "‡": 0x87,
-    "ˆ": 0x88, "‰": 0x89, "Š": 0x8A, "‹": 0x8B, "Œ": 0x8C, "Ž": 0x8E,
-    "'": 0x91, "'": 0x92, """: 0x93, """: 0x94, "•": 0x95, "–": 0x96, "—": 0x97,
-    "˜": 0x98, "™": 0x99, "š": 0x9A, "›": 0x9B, "œ": 0x9C, "ž": 0x9E, "Ÿ": 0x9F,
+    "€": 0x80, // € EURO SIGN
+    "‚": 0x82, // ‚ SINGLE LOW-9 QUOTATION MARK
+    "ƒ": 0x83, // ƒ LATIN SMALL LETTER F WITH HOOK
+    "„": 0x84, // „ DOUBLE LOW-9 QUOTATION MARK
+    "…": 0x85, // … HORIZONTAL ELLIPSIS
+    "†": 0x86, // † DAGGER
+    "‡": 0x87, // ‡ DOUBLE DAGGER
+    "ˆ": 0x88, // ˆ MODIFIER LETTER CIRCUMFLEX
+    "‰": 0x89, // ‰ PER MILLE SIGN
+    "Š": 0x8A, // Š LATIN CAPITAL S WITH CARON
+    "‹": 0x8B, // ‹ SINGLE LEFT-POINTING ANGLE QUOTATION
+    "Œ": 0x8C, // Œ LATIN CAPITAL LIGATURE OE
+    "Ž": 0x8E, // Ž LATIN CAPITAL Z WITH CARON
+    "\u2018": 0x91, // U+2018 LEFT SINGLE QUOTATION MARK
+    "\u2019": 0x92, // U+2019 RIGHT SINGLE QUOTATION MARK
+    "\u201C": 0x93, // U+201C LEFT DOUBLE QUOTATION MARK
+    "\u201D": 0x94, // U+201D RIGHT DOUBLE QUOTATION MARK
+    "•": 0x95, // • BULLET
+    "–": 0x96, // – EN DASH
+    "—": 0x97, // — EM DASH
+    "˜": 0x98, // ˜ SMALL TILDE
+    "™": 0x99, // ™ TRADE MARK SIGN
+    "š": 0x9A, // š LATIN SMALL S WITH CARON
+    "›": 0x9B, // › SINGLE RIGHT-POINTING ANGLE QUOTATION
+    "œ": 0x9C, // œ LATIN SMALL LIGATURE OE
+    "ž": 0x9E, // ž LATIN SMALL Z WITH CARON
+    "Ÿ": 0x9F, // Ÿ LATIN CAPITAL Y WITH DIAERESIS
   };
   const out: number[] = [];
   for (const ch of text) {

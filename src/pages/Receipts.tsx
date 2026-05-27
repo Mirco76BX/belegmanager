@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Camera, Receipt as ReceiptIcon, Trash2, Pencil, ScanLine } from "lucide-react";
 import ScanWizard from "@/components/ScanWizard";
 import ReceiptsInlineTable from "@/components/ReceiptsInlineTable";
+import { TAX_CATEGORIES } from "@/lib/taxCategories";
 
 interface VatItem {
   id: string;
@@ -40,6 +41,10 @@ interface Receipt {
   vat_amount?: number | null;
   vat_rate?: number | null;
   amount_eur?: number | null;
+  tax_category?: string | null;
+  accounting_status?: "open" | "ready" | "exported" | "verbucht" | null;
+  export_batch_id?: string | null;
+  exported_at?: string | null;
 }
 
 interface Company {
@@ -74,6 +79,7 @@ const Receipts = () => {
   const [editCompanyId, setEditCompanyId] = useState("");
   const [editLicensePlate, setEditLicensePlate] = useState("");
   const [editMileage, setEditMileage] = useState("");
+  const [editTaxCategory, setEditTaxCategory] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"general" | "fuel">("general");
 
@@ -125,6 +131,7 @@ const Receipts = () => {
     setEditCompanyId(detailReceipt.company_id || "");
     setEditLicensePlate(detailReceipt.license_plate || "");
     setEditMileage(detailReceipt.mileage?.toString() || "");
+    setEditTaxCategory(detailReceipt.tax_category || "");
     setIsEditing(true);
   };
 
@@ -132,11 +139,45 @@ const Receipts = () => {
 
   const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!detailReceipt) return;
+    if (!detailReceipt || !user) return;
+
+    // GoBD-Schicht B: Festgeschriebene Belege dürfen nicht geändert werden.
+    // (Datenbank-Trigger blockt es ohnehin, hier nur User-freundliche Warnung.)
+    if (detailReceipt.accounting_status === "exported" || detailReceipt.accounting_status === "verbucht") {
+      toast({
+        title: tt({ de: "Beleg ist festgeschrieben", en: "Receipt is locked" }),
+        description: tt({
+          de: "Dieser Beleg wurde bereits in einem DATEV-Stapel exportiert. Änderungen sind nach GoBD nicht erlaubt.",
+          en: "This receipt was already exported in a DATEV stapel. Changes are not allowed per GoBD.",
+        }),
+        variant: "destructive",
+      });
+      return;
+    }
+
     setEditSaving(true);
+
+    // GoBD-Schicht C: Vorher/Nachher-Diff für Audit-Log berechnen.
+    const auditFields: Array<{ field: string; oldVal: string | null; newVal: string | null }> = [];
+    const pushIfChanged = (field: string, oldRaw: unknown, newRaw: unknown) => {
+      const oldStr = oldRaw == null || oldRaw === "" ? null : String(oldRaw);
+      const newStr = newRaw == null || newRaw === "" ? null : String(newRaw);
+      if (oldStr !== newStr) auditFields.push({ field, oldVal: oldStr, newVal: newStr });
+    };
+    pushIfChanged("company_id", detailReceipt.company_id, editCompanyId || null);
+    pushIfChanged("tax_category", detailReceipt.tax_category, editTaxCategory || null);
+    if (isFuel(detailReceipt)) {
+      pushIfChanged("license_plate", detailReceipt.license_plate, editLicensePlate || null);
+      pushIfChanged("mileage", detailReceipt.mileage, editMileage ? parseFloat(editMileage) : null);
+    } else {
+      pushIfChanged("person_met", detailReceipt.person_met, editPersonMet || null);
+      pushIfChanged("organization", detailReceipt.organization, editOrganization || null);
+      pushIfChanged("meeting_purpose", detailReceipt.meeting_purpose, editMeetingPurpose || null);
+    }
 
     const updateData: any = {
       company_id: editCompanyId || null,
+      tax_category: editTaxCategory || null,
       status: "complete",
     };
 
@@ -152,11 +193,36 @@ const Receipts = () => {
     const { error } = await supabase.from("receipts").update(updateData).eq("id", detailReceipt.id);
     if (error) {
       toast({ title: error.message, variant: "destructive" });
-    } else {
-      toast({ title: tt({de:"Gespeichert", en:"Saved", tr:"Kaydedildi", ar:"تم الحفظ", ru:"Сохранено"}) });
-      setDetailOpen(false);
-      fetchData();
+      setEditSaving(false);
+      return;
     }
+
+    // GoBD-Schicht C: Audit-Einträge schreiben (nur wenn etwas geändert wurde)
+    if (auditFields.length > 0) {
+      const auditRows = auditFields.map((f) => ({
+        receipt_id: detailReceipt.id,
+        user_id: user.id,
+        field_name: f.field,
+        old_value: f.oldVal,
+        new_value: f.newVal,
+        change_type: "edit",
+      }));
+      const { error: auditErr } = await supabase.from("receipt_changes").insert(auditRows);
+      if (auditErr) {
+        // Audit-Fehler nicht silent fressen — User soll wissen, dass die
+        // Änderung zwar gespeichert, aber nicht GoBD-protokolliert ist.
+        console.warn("[GoBD] Audit-Log fehlgeschlagen:", auditErr);
+        toast({
+          title: tt({ de: "Gespeichert, aber Audit-Log fehlgeschlagen", en: "Saved, but audit log failed" }),
+          description: auditErr.message,
+          variant: "destructive",
+        });
+      }
+    }
+
+    toast({ title: tt({de:"Gespeichert", en:"Saved", tr:"Kaydedildi", ar:"تم الحفظ", ru:"Сохранено"}) });
+    setDetailOpen(false);
+    fetchData();
     setEditSaving(false);
   };
 
@@ -473,12 +539,36 @@ const Receipts = () => {
                 </div>
               </div>
 
+              {(detailReceipt.accounting_status === "exported" || detailReceipt.accounting_status === "verbucht") && (
+                <div className="rounded-md border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-xs space-y-1">
+                  <p className="font-semibold text-amber-900 dark:text-amber-200">
+                    🔒 {tt({ de: "Beleg ist festgeschrieben (GoBD)", en: "Receipt is locked (GoBD)" })}
+                  </p>
+                  <p className="text-amber-800 dark:text-amber-300 leading-relaxed">
+                    {tt({
+                      de: "Dieser Beleg wurde bereits in einem DATEV-Stapel exportiert. Nach § 146 Abs. 4 AO / GoBD sind Änderungen nicht mehr erlaubt. Für Korrekturen bitte einen Storno-Beleg anlegen.",
+                      en: "This receipt was already exported in a DATEV stapel. Per § 146 AO / GoBD, changes are no longer allowed. Please create a correction receipt instead.",
+                    })}
+                  </p>
+                </div>
+              )}
+
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" className="flex-1 gap-2" onClick={startEditing}>
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={startEditing}
+                  disabled={detailReceipt.accounting_status === "exported" || detailReceipt.accounting_status === "verbucht"}
+                >
                   <Pencil className="h-4 w-4" />
                   {t("general.edit")}
                 </Button>
-                <Button variant="outline" className="gap-2 text-destructive hover:text-destructive" onClick={() => handleDelete(detailReceipt.id, detailReceipt.file_path)}>
+                <Button
+                  variant="outline"
+                  className="gap-2 text-destructive hover:text-destructive"
+                  onClick={() => handleDelete(detailReceipt.id, detailReceipt.file_path)}
+                  disabled={detailReceipt.accounting_status === "exported" || detailReceipt.accounting_status === "verbucht"}
+                >
                   <Trash2 className="h-4 w-4" />
                   {t("general.delete")}
                 </Button>
@@ -511,6 +601,25 @@ const Receipts = () => {
                   <SelectTrigger className="h-10"><SelectValue placeholder="–" /></SelectTrigger>
                   <SelectContent position="popper" sideOffset={4} className="max-h-48">
                     {companies.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-sm">
+                  {tt({de:"Steuer-Kategorie", en:"Tax category", tr:"Vergi kategorisi", ar:"الفئة الضريبية", ru:"Налоговая категория"})}
+                </Label>
+                <Select value={editTaxCategory} onValueChange={setEditTaxCategory}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder={tt({de:"Keine Kategorie", en:"No category", tr:"Kategori yok", ar:"بدون فئة", ru:"Без категории"})} />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4} className="max-h-56">
+                    {TAX_CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        <span className="mr-1.5">{c.icon}</span>
+                        {lang === "de" ? c.label.de : c.label.en}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

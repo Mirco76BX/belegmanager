@@ -43,6 +43,13 @@ function saveDatevSettings(s: DatevMandantSettings) {
   }
 }
 
+interface VatItem {
+  vat_rate: number;
+  vat_amount: number;
+  net_amount: number | null;
+  label: string | null;
+}
+
 interface Receipt {
   id: string;
   date: string;
@@ -60,6 +67,7 @@ interface Receipt {
   status?: string;
   tax_category?: string | null;
   accounting_status?: string;
+  vat_items?: VatItem[];
 }
 
 interface Company {
@@ -106,6 +114,8 @@ const ExpenseReport = () => {
     };
   });
   const [datevEncoding, setDatevEncoding] = useState<"windows-1252" | "utf-8-bom">("windows-1252");
+  const [datevMode, setDatevMode] = useState<"test" | "produktiv">("test");
+  const [datevErrors, setDatevErrors] = useState<string[]>([]);
 
 
   const fetchData = async () => {
@@ -116,7 +126,30 @@ const ExpenseReport = () => {
       supabase.from("companies").select("id, name"),
       supabase.from("profiles").select("first_name, last_name, display_name, email").eq("id", user.id).single(),
     ]);
-    if (receiptsRes.data) setReceipts(receiptsRes.data);
+
+    let receiptsWithVat: Receipt[] = [];
+    if (receiptsRes.data && receiptsRes.data.length > 0) {
+      // Multi-MwSt-Positionen für jeden Beleg laden (für sauberen DATEV-Export)
+      const receiptIds = receiptsRes.data.map((r: { id: string }) => r.id);
+      const { data: vatRows } = await supabase
+        .from("receipt_vat_items")
+        .select("receipt_id, vat_rate, vat_amount, net_amount, label")
+        .in("receipt_id", receiptIds);
+
+      const vatMap = new Map<string, VatItem[]>();
+      (vatRows || []).forEach((v: { receipt_id: string; vat_rate: number; vat_amount: number; net_amount: number | null; label: string | null }) => {
+        const list = vatMap.get(v.receipt_id) || [];
+        list.push({ vat_rate: v.vat_rate, vat_amount: v.vat_amount, net_amount: v.net_amount, label: v.label });
+        vatMap.set(v.receipt_id, list);
+      });
+
+      receiptsWithVat = receiptsRes.data.map((r: Receipt) => ({
+        ...r,
+        vat_items: vatMap.get(r.id),
+      }));
+    }
+
+    setReceipts(receiptsWithVat);
     if (companiesRes.data) setCompanies(companiesRes.data);
     if (profileRes.data) setProfile(profileRes.data);
     setLoading(false);
@@ -255,6 +288,7 @@ const ExpenseReport = () => {
   const performDatevExport = async () => {
     // Stammdaten cachen für den nächsten Export
     saveDatevSettings(datevForm);
+    setDatevErrors([]);
 
     const result = buildDatevStapel({
       receipts: filteredReceipts.map((r) => ({
@@ -266,26 +300,39 @@ const ExpenseReport = () => {
         vat_rate: r.vat_rate ?? null,
         description: r.description,
         tax_category: r.tax_category ?? null,
+        vat_items: r.vat_items?.map(v => ({
+          vat_rate: v.vat_rate,
+          vat_amount: v.vat_amount,
+          net_amount: v.net_amount ?? undefined,
+          label: v.label ?? undefined,
+        })),
       })),
       mandant: datevForm,
       datumVon: fromDate,
       datumBis: toDate,
       exportiertVon: profile?.email || user?.email || "BelegManager",
       herkunft: "BM",
+      mode: datevMode,
     });
 
-    const hardErrors = result.warnings.filter((w) =>
-      /Berater-Nr|Mandanten-Nr|WJ-Beginn/.test(w),
-    );
-    if (hardErrors.length > 0) {
+    // GoBD-Schicht A: Hard-Errors blockieren den Export komplett.
+    if (result.errors.length > 0) {
+      setDatevErrors(result.errors);
       toast({
-        title: tt({ de: "DATEV-Stammdaten ungültig", en: "DATEV master data invalid" }),
-        description: hardErrors.join(" • "),
+        title: tt({
+          de: "Export blockiert wegen Daten-Inkonsistenz",
+          en: "Export blocked due to data inconsistency",
+        }),
+        description: tt({
+          de: `${result.errors.length} Fehler — siehe Dialog. Belege bitte korrigieren.`,
+          en: `${result.errors.length} errors — see dialog. Please fix the receipts.`,
+        }),
         variant: "destructive",
       });
       return;
     }
 
+    // Datei runterladen / via iOS Share Sheet teilen
     try {
       await downloadDatevCsv(result, datevEncoding);
     } catch (err: unknown) {
@@ -297,24 +344,74 @@ const ExpenseReport = () => {
       });
       return;
     }
-    setDatevDialogOpen(false);
 
-    const softWarnings = result.warnings.filter((w) => !hardErrors.includes(w));
-    toast({
-      title: tt({ de: "DATEV-Stapel erstellt", en: "DATEV stapel generated" }),
-      description: softWarnings.length
-        ? tt({
-            de: `${result.count} Buchungen exportiert (${softWarnings.length} Hinweise – siehe Konsole)`,
-            en: `${result.count} bookings exported (${softWarnings.length} notes – see console)`,
+    // GoBD-Schicht B: Nur im Produktiv-Modus werden Belege festgeschrieben +
+    // ein Audit-Batch in datev_export_batches angelegt.
+    if (datevMode === "produktiv" && result.receiptIds.length > 0 && user) {
+      try {
+        // 1) Export-Batch dokumentieren
+        const { data: batch, error: batchErr } = await supabase
+          .from("datev_export_batches")
+          .insert({
+            user_id: user.id,
+            berater_nr: datevForm.berater_nr,
+            mandanten_nr: datevForm.mandanten_nr,
+            wj_beginn: datevForm.wj_beginn,
+            date_from: fromDate,
+            date_to: toDate,
+            kontenrahmen: datevForm.kontenrahmen,
+            receipt_count: result.receiptIds.length,
+            buchung_count: result.count,
+            filename: result.filename,
           })
-        : tt({
-            de: `${result.count} Buchungen exportiert.`,
-            en: `${result.count} bookings exported.`,
+          .select("id")
+          .single();
+        if (batchErr) throw batchErr;
+        // 2) Belege festschreiben (Trigger schreibt automatisch Audit-Log)
+        const { error: updErr } = await supabase
+          .from("receipts")
+          .update({
+            accounting_status: "exported",
+            export_batch_id: batch.id,
+            exported_at: new Date().toISOString(),
+          })
+          .in("id", result.receiptIds);
+        if (updErr) throw updErr;
+
+        toast({
+          title: tt({ de: "DATEV-Stapel festgeschrieben", en: "DATEV stapel locked" }),
+          description: tt({
+            de: `${result.count} Buchungen aus ${result.receiptIds.length} Belegen exportiert. Belege sind jetzt schreibgeschützt (GoBD).`,
+            en: `${result.count} bookings from ${result.receiptIds.length} receipts exported. Receipts are now read-only (GoBD).`,
           }),
-    });
-    if (softWarnings.length > 0) {
-      console.warn("[DATEV] Soft warnings:", softWarnings);
+        });
+        // Receipts neu laden, damit "Exportiert"-Status in der UI sichtbar wird
+        await fetchData();
+      } catch (dbErr) {
+        const msg = dbErr instanceof Error ? dbErr.message : String(dbErr);
+        toast({
+          title: tt({
+            de: "Datei wurde erstellt, aber Festschreibung fehlgeschlagen",
+            en: "File created, but locking failed",
+          }),
+          description: msg + " — Belege sind noch editierbar.",
+          variant: "destructive",
+        });
+      }
+    } else if (datevMode === "test") {
+      toast({
+        title: tt({ de: "Test-Stapel erstellt", en: "Test stapel generated" }),
+        description: tt({
+          de: `${result.count} Buchungen aus ${result.receiptIds.length} Belegen. KEIN Schreibschutz — Belege bleiben editierbar. Dateiname beginnt mit DATEV_TEST_.`,
+          en: `${result.count} bookings from ${result.receiptIds.length} receipts. No lock — receipts stay editable. Filename starts with DATEV_TEST_.`,
+        }),
+      });
     }
+
+    if (result.warnings.length > 0) {
+      console.warn("[DATEV] Soft warnings:", result.warnings);
+    }
+    setDatevDialogOpen(false);
   };
 
 
@@ -739,7 +836,57 @@ const ExpenseReport = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* GoBD-Schicht B: Test- vs. Produktiv-Modus */}
+            <div className="space-y-1.5 col-span-2 rounded-md border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 p-3">
+              <Label htmlFor="datev_mode" className="text-xs font-semibold">
+                {tt({ de: "Export-Modus (GoBD)", en: "Export mode (GoBD)" })}
+              </Label>
+              <Select value={datevMode} onValueChange={(v) => setDatevMode(v as "test" | "produktiv")}>
+                <SelectTrigger id="datev_mode"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="test">
+                    🧪 {tt({ de: "Test-Export (Belege bleiben editierbar)", en: "Test export (receipts stay editable)" })}
+                  </SelectItem>
+                  <SelectItem value="produktiv">
+                    🔒 {tt({ de: "Produktiv-Export (Belege werden festgeschrieben)", en: "Production export (receipts get locked)" })}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                {datevMode === "test"
+                  ? tt({
+                      de: "Datei beginnt mit „DATEV_TEST_". Belege werden NICHT festgeschrieben. Zum gefahrlosen Probieren.",
+                      en: 'Filename starts with "DATEV_TEST_". Receipts are NOT locked. Safe for testing.',
+                    })
+                  : tt({
+                      de: "Belege werden nach § 146 AO / GoBD festgeschrieben und können danach NICHT mehr bearbeitet werden.",
+                      en: "Receipts will be locked per § 146 AO / GoBD and can NO LONGER be edited afterwards.",
+                    })}
+              </p>
+            </div>
           </div>
+
+          {/* Hard-Errors aus dem letzten Export-Versuch */}
+          {datevErrors.length > 0 && (
+            <div className="rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-xs text-destructive space-y-1">
+              <p className="font-semibold">
+                {tt({
+                  de: `Export blockiert — ${datevErrors.length} Fehler in den Daten:`,
+                  en: `Export blocked — ${datevErrors.length} errors in the data:`,
+                })}
+              </p>
+              <ul className="list-disc pl-4 space-y-0.5">
+                {datevErrors.map((e, i) => <li key={i}>{e}</li>)}
+              </ul>
+              <p className="pt-1">
+                {tt({
+                  de: "Bitte die genannten Belege öffnen und Daten korrigieren, dann erneut exportieren.",
+                  en: "Please open the listed receipts, fix the data, and try again.",
+                })}
+              </p>
+            </div>
+          )}
 
           <div className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
             {tt({
@@ -749,12 +896,17 @@ const ExpenseReport = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDatevDialogOpen(false)}>
+            <Button variant="outline" onClick={() => { setDatevDialogOpen(false); setDatevErrors([]); }}>
               {tt({ de: "Abbrechen", en: "Cancel" })}
             </Button>
-            <Button onClick={performDatevExport}>
+            <Button
+              onClick={performDatevExport}
+              variant={datevMode === "produktiv" ? "default" : "secondary"}
+            >
               <FileSpreadsheet className="mr-2 h-4 w-4" />
-              {tt({ de: "Stapel exportieren", en: "Export stapel" })}
+              {datevMode === "produktiv"
+                ? tt({ de: "Festschreiben & exportieren", en: "Lock & export" })
+                : tt({ de: "Test-Stapel erstellen", en: "Create test stapel" })}
             </Button>
           </DialogFooter>
         </DialogContent>
