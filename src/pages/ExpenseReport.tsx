@@ -653,7 +653,24 @@ const ExpenseReport = () => {
                    {filteredReceipts.map((r) => (
                      <TableRow key={r.id}>
                        <TableCell className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(locale)}</TableCell>
-                       <TableCell className="font-mono text-right whitespace-nowrap">{r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}</TableCell>
+                       <TableCell className="font-mono text-right whitespace-nowrap">
+                         {(() => {
+                           const isForex = r.currency && r.currency !== "EUR";
+                           const eur = r.amount_eur ?? r.amount;
+                           if (eur == null) return "–";
+                           if (isForex && r.amount != null && r.amount_eur != null) {
+                             return (
+                               <>
+                                 <span>{r.amount_eur.toFixed(2)} €</span>
+                                 <span className="block text-[10px] text-muted-foreground font-normal">
+                                   {r.amount.toFixed(2)}&nbsp;{r.currency}
+                                 </span>
+                               </>
+                             );
+                           }
+                           return `${eur.toFixed(2)} €`;
+                         })()}
+                       </TableCell>
                        <TableCell className="font-mono text-right whitespace-nowrap text-muted-foreground">
                          {r.vat_amount != null ? `${r.vat_amount.toFixed(2)} €` : "–"}
                          {r.vat_rate != null ? ` (${r.vat_rate}%)` : ""}
@@ -679,7 +696,17 @@ const ExpenseReport = () => {
                 <div key={r.id} className="px-4 py-3 space-y-1">
                    <div className="flex items-center justify-between">
                      <span className="text-sm text-muted-foreground">{new Date(r.date).toLocaleDateString(locale)}</span>
-                     <span className="font-mono text-sm font-semibold whitespace-nowrap">{r.amount != null ? `${r.amount.toFixed(2)} €` : "–"}</span>
+                     <span className="font-mono text-sm font-semibold whitespace-nowrap">
+                       {(() => {
+                         const isForex = r.currency && r.currency !== "EUR";
+                         const eur = r.amount_eur ?? r.amount;
+                         if (eur == null) return "–";
+                         if (isForex && r.amount != null && r.amount_eur != null) {
+                           return `${r.amount_eur.toFixed(2)} € (${r.amount.toFixed(2)} ${r.currency})`;
+                         }
+                         return `${eur.toFixed(2)} €`;
+                       })()}
+                     </span>
                    </div>
                    {r.vat_amount != null && (
                      <div className="flex items-center justify-between text-xs text-muted-foreground">
