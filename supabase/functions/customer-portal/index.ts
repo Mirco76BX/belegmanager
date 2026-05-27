@@ -35,7 +35,17 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     if (customers.data.length === 0) throw new Error("No Stripe customer found for this user");
 
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const ALLOWED_ORIGINS = [
+      "https://belegmanager.online",
+      "https://www.belegmanager.online",
+      "https://belegmanager.lovable.app",
+      "http://localhost:8080",
+      "http://localhost:3000",
+    ];
+    const requestOrigin = req.headers.get("origin") || "";
+    const origin = ALLOWED_ORIGINS.includes(requestOrigin)
+      ? requestOrigin
+      : "https://belegmanager.online";
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customers.data[0].id,
       return_url: `${origin}/pricing`,
