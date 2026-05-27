@@ -487,6 +487,36 @@ export type Database = {
           },
         ]
       }
+      tax_advisor_registrations: {
+        Row: {
+          id: string
+          kanzlei: string
+          notes: string | null
+          registered_at: string
+          revoked_at: string | null
+          revoked_by: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          kanzlei: string
+          notes?: string | null
+          registered_at?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          kanzlei?: string
+          notes?: string | null
+          registered_at?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -534,6 +564,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_advisor_link: { Args: { _client_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -542,6 +573,7 @@ export type Database = {
         Returns: boolean
       }
       is_tax_advisor: { Args: { _user_id: string }; Returns: boolean }
+      register_as_tax_advisor: { Args: { _kanzlei: string }; Returns: string }
       update_receipt_accounting_status: {
         Args: { _receipt_id: string; _status: string }
         Returns: undefined
