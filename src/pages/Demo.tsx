@@ -273,13 +273,14 @@ const Demo = () => {
                   });
                   if (error) throw error;
                   if (data.user) {
-                    await supabase.from("profiles").upsert({
-                      id: data.user.id,
-                      email: regForm.email.trim(),
-                      is_tax_advisor: true,
-                      kanzlei: regForm.kanzlei.trim(),
+                    // Display-Name darf der User selbst setzen; is_tax_advisor + kanzlei laufen über die SECURITY DEFINER RPC
+                    await supabase.from("profiles").update({
                       display_name: regForm.name.trim(),
-                    }, { onConflict: "id" });
+                    }).eq("id", data.user.id);
+                    const { error: rpcError } = await supabase.rpc("register_as_tax_advisor", {
+                      _kanzlei: regForm.kanzlei.trim(),
+                    });
+                    if (rpcError) throw rpcError;
                   }
                   setRegDone(true);
                 } catch (err: any) { setRegError(err.message); }
