@@ -326,33 +326,45 @@ export type Database = {
       }
       receipt_changes: {
         Row: {
+          change_reason: string | null
           change_type: string
           changed_by: string | null
           created_at: string
+          field_name: string | null
           id: string
+          new_value: string | null
           new_values: Json | null
+          old_value: string | null
           old_values: Json | null
           reason: string | null
           receipt_id: string
           user_id: string
         }
         Insert: {
+          change_reason?: string | null
           change_type: string
           changed_by?: string | null
           created_at?: string
+          field_name?: string | null
           id?: string
+          new_value?: string | null
           new_values?: Json | null
+          old_value?: string | null
           old_values?: Json | null
           reason?: string | null
           receipt_id: string
           user_id: string
         }
         Update: {
+          change_reason?: string | null
           change_type?: string
           changed_by?: string | null
           created_at?: string
+          field_name?: string | null
           id?: string
+          new_value?: string | null
           new_values?: Json | null
+          old_value?: string | null
           old_values?: Json | null
           reason?: string | null
           receipt_id?: string
