@@ -883,7 +883,7 @@ const ExpenseReport = () => {
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 {datevMode === "test"
                   ? tt({
-                      de: "Datei beginnt mit „DATEV_TEST_". Belege werden NICHT festgeschrieben. Zum gefahrlosen Probieren.",
+                      de: "Datei beginnt mit „DATEV_TEST_“. Belege werden NICHT festgeschrieben. Zum gefahrlosen Probieren.",
                       en: 'Filename starts with "DATEV_TEST_". Receipts are NOT locked. Safe for testing.',
                     })
                   : tt({
