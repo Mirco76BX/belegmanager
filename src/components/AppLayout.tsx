@@ -7,7 +7,13 @@ const AppLayout = () => {
     <div className="flex h-screen overflow-hidden bg-background">
       <AppSidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto pt-[52px] pb-[68px] md:pt-0 md:pb-0">
+        <main
+          className="flex-1 overflow-y-auto md:pt-0 md:pb-0"
+          style={{
+            paddingTop: 'calc(env(safe-area-inset-top) + 52px)',
+            paddingBottom: 'calc(env(safe-area-inset-bottom) + 68px)',
+          }}
+        >
           <div className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-8">
             <Outlet />
           </div>

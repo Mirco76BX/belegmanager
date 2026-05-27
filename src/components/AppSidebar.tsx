@@ -119,7 +119,7 @@ const AppSidebar = () => {
       </aside>
 
       {/* Mobile Header */}
-      <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-sidebar px-4 py-3">
+      <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-sidebar px-4 py-3 safe-area-top">
         <button onClick={() => navigate("/")} className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
             <FileText className="h-4 w-4 text-sidebar-primary-foreground" />
@@ -138,7 +138,7 @@ const AppSidebar = () => {
 
       {/* Mobile Dropdown Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed top-[52px] left-0 right-0 z-40 bg-sidebar border-b border-sidebar-border px-4 py-3 space-y-1 animate-fade-in">
+        <div className="md:hidden fixed left-0 right-0 z-40 bg-sidebar border-b border-sidebar-border px-4 py-3 space-y-1 animate-fade-in" style={{ top: 'calc(env(safe-area-inset-top) + 52px)' }}>
           {isAdmin && (
             <button
               onClick={() => { navigate("/admin/users"); setMobileMenuOpen(false); }}

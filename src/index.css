@@ -100,6 +100,25 @@
   .font-mono {
     font-family: 'IBM Plex Mono', monospace;
   }
+
+  /* iOS safe-area helpers — required for iPhone notch / Dynamic Island */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+  /* Offset for fixed bottom-nav: top of next page-section sits below the nav */
+  .mobile-page-pad {
+    padding-top: calc(env(safe-area-inset-top) + 3.5rem);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 5rem);
+  }
 }
 
 /* Fix native date input for iOS and mobile */

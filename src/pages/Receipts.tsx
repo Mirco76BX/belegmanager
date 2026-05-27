@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Camera, Receipt as ReceiptIcon, Trash2, Pencil, ScanLine } from "lucide-react";
+import { Camera, Receipt as ReceiptIcon, Trash2, Pencil, ScanLine, Search } from "lucide-react";
 import ScanWizard from "@/components/ScanWizard";
 import ReceiptsInlineTable from "@/components/ReceiptsInlineTable";
 import { TAX_CATEGORIES } from "@/lib/taxCategories";
@@ -66,6 +66,8 @@ const Receipts = () => {
   const [defaultCompanyId, setDefaultCompanyId] = useState<string | null>(null);
   const [filterCompanyId, setFilterCompanyId] = useState<string>("all");
   const [filterMonth, setFilterMonth] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [imageLightboxOpen, setImageLightboxOpen] = useState(false);
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailReceipt, setDetailReceipt] = useState<Receipt | null>(null);
@@ -226,6 +228,72 @@ const Receipts = () => {
     setEditSaving(false);
   };
 
+  /**
+   * GoBD-konformes Zurücksetzen der MwSt-Positionen:
+   * Wenn der OCR-Scanner inkonsistente MwSt-Positionen erfasst hat (Summe der vat_items
+   * weicht vom Brutto ab), kann der User sie hier zurücksetzen. Der DATEV-Export
+   * fällt dann auf den Default-MwSt-Satz aus der Tax-Category zurück.
+   * Audit-Log wird geschrieben (jede gelöschte Position).
+   */
+  const handleResetVatItems = async () => {
+    if (!detailReceipt || !user || detailVatItems.length === 0) return;
+    if (detailReceipt.accounting_status === "exported" || detailReceipt.accounting_status === "verbucht") {
+      toast({
+        title: tt({ de: "Beleg ist festgeschrieben", en: "Receipt is locked" }),
+        description: tt({
+          de: "MwSt-Positionen festgeschriebener Belege können nicht geändert werden.",
+          en: "VAT items of locked receipts cannot be changed.",
+        }),
+        variant: "destructive",
+      });
+      return;
+    }
+    const confirmMsg = tt({
+      de: `${detailVatItems.length} MwSt-Position(en) entfernen? Der DATEV-Export verwendet danach den Default-MwSt-Satz aus der Steuer-Kategorie.`,
+      en: `Remove ${detailVatItems.length} VAT item(s)? The DATEV export will fall back to the default VAT rate from the tax category.`,
+    });
+    if (!window.confirm(confirmMsg)) return;
+
+    // Audit-Log VOR dem Löschen schreiben — wir loggen die Werte der gelöschten Positionen.
+    const auditRows = detailVatItems.map((vi) => ({
+      receipt_id: detailReceipt.id,
+      user_id: user.id,
+      field_name: `vat_item:${vi.vat_rate}%`,
+      old_value: `${vi.vat_amount.toFixed(2)}€ (label: ${vi.label || "–"}, netto: ${vi.net_amount ?? "–"})`,
+      new_value: null,
+      change_type: "delete",
+    }));
+    const { error: auditErr } = await supabase.from("receipt_changes").insert(auditRows);
+    if (auditErr) {
+      console.warn("[GoBD] Audit-Log vor vat_items-Reset fehlgeschlagen:", auditErr);
+      toast({
+        title: tt({ de: "Audit-Log fehlgeschlagen", en: "Audit log failed" }),
+        description: auditErr.message,
+        variant: "destructive",
+      });
+      return; // Ohne Audit-Log NICHT löschen — GoBD-Konformität
+    }
+
+    const { error: delErr } = await supabase
+      .from("receipt_vat_items")
+      .delete()
+      .eq("receipt_id", detailReceipt.id);
+    if (delErr) {
+      toast({ title: delErr.message, variant: "destructive" });
+      return;
+    }
+
+    setDetailVatItems([]);
+    toast({
+      title: tt({ de: "MwSt-Positionen entfernt", en: "VAT items removed" }),
+      description: tt({
+        de: "DATEV-Export verwendet jetzt den Default-Satz der Steuer-Kategorie.",
+        en: "DATEV export will now use the default rate from the tax category.",
+      }),
+    });
+    fetchData();
+  };
+
   const handleDelete = async (id: string, filePath: string | null) => {
     if (filePath) await supabase.storage.from("receipts").remove([filePath]);
     const { error } = await supabase.from("receipts").delete().eq("id", id);
@@ -253,8 +321,24 @@ const Receipts = () => {
   const filteredByCompany = filterCompanyId === "all" ? receipts
     : filterCompanyId === "none" ? receipts.filter(r => !r.company_id)
     : receipts.filter(r => r.company_id === filterCompanyId);
-  const filtered = filterMonth === "all" ? filteredByCompany
+  const filteredByMonth = filterMonth === "all" ? filteredByCompany
     : filteredByCompany.filter(r => r.date.substring(0, 7) === filterMonth);
+  // Volltext-Suche: durchsucht Description, Lieferant, Person, Anlass, Organisation, Kennzeichen
+  const q = searchQuery.trim().toLowerCase();
+  const filtered = q === "" ? filteredByMonth : filteredByMonth.filter(r => {
+    const hay = [
+      r.description,
+      r.supplier_name,
+      r.person_met,
+      r.meeting_purpose,
+      r.organization,
+      r.license_plate,
+      companies.find(c => c.id === r.company_id)?.name,
+      r.amount?.toString(),
+      r.amount_eur?.toString(),
+    ].filter(Boolean).join(" ").toLowerCase();
+    return hay.includes(q);
+  });
   const generalReceipts = filtered.filter(r => r.receipt_type !== "fuel");
   const fuelReceipts = filtered.filter(r => r.receipt_type === "fuel");
 
@@ -316,6 +400,26 @@ const Receipts = () => {
 
       {receipts.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[180px]">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              type="search"
+              placeholder={tt({ de: "Suchen: Lieferant, Beschreibung, Betrag…", en: "Search: supplier, description, amount…" })}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-9 pl-8 pr-8 text-sm"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </div>
           <Select value={filterCompanyId} onValueChange={setFilterCompanyId}>
             <SelectTrigger className="h-9 w-[200px] text-sm">
               <SelectValue placeholder={tt({de:"Alle Organisationen", en:"All organizations", tr:"Tüm kuruluşlar", ar:"جميع المنظمات", ru:"Все организации"})} />
@@ -432,6 +536,33 @@ const Receipts = () => {
         onCompaniesChanged={fetchData}
       />
 
+      {/* Vollbild-Lightbox für Beleg-Foto */}
+      {imageLightboxOpen && detailImageUrl && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 flex flex-col"
+          onClick={() => setImageLightboxOpen(false)}
+        >
+          <div className="flex justify-end p-4 safe-area-top" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setImageLightboxOpen(false)}
+              className="rounded-full bg-white/15 text-white px-3 py-1.5 text-sm backdrop-blur-sm hover:bg-white/25"
+            >
+              {tt({ de: "Schließen", en: "Close" })} ×
+            </button>
+          </div>
+          <div className="flex-1 overflow-auto flex items-center justify-center p-4 safe-area-bottom">
+            <img
+              src={detailImageUrl}
+              alt="Receipt full"
+              className="max-w-full max-h-full object-contain select-none"
+              style={{ touchAction: "pinch-zoom" }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
+
       <Dialog open={detailOpen} onOpenChange={(o) => { if (!o) { setDetailOpen(false); setIsEditing(false); } }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -445,7 +576,17 @@ const Receipts = () => {
           {!isEditing && detailReceipt && (
             <div className="space-y-4">
               {detailImageUrl && (
-                <img src={detailImageUrl} alt="Receipt" className="w-full max-h-48 object-contain rounded-lg border bg-muted" />
+                <button
+                  type="button"
+                  onClick={() => setImageLightboxOpen(true)}
+                  className="block w-full group relative"
+                  aria-label={tt({ de: "Beleg vergrößern", en: "View receipt full size" })}
+                >
+                  <img src={detailImageUrl} alt="Receipt" className="w-full max-h-48 object-contain rounded-lg border bg-muted transition group-hover:opacity-90 group-active:opacity-80" />
+                  <div className="absolute bottom-1 right-1 rounded-md bg-black/60 text-white text-[10px] px-1.5 py-0.5">
+                    {tt({ de: "Tippen zum Vergrößern", en: "Tap to zoom" })}
+                  </div>
+                </button>
               )}
 
               <div className="space-y-2.5">
@@ -470,6 +611,40 @@ const Receipts = () => {
                        <span className="text-muted-foreground">{tt({de:"MwSt. gesamt", en:"Total VAT"})}</span>
                        <span className="font-mono">{detailVatItems.reduce((s, i) => s + i.vat_amount, 0).toFixed(2)} €</span>
                      </div>
+                     {(() => {
+                       // GoBD-Schicht A: Diskrepanz-Check zwischen vat_items-Brutto und Beleg-Brutto
+                       const itemsBrutto = detailVatItems.reduce((s, vi) => s + (vi.net_amount != null ? vi.net_amount + vi.vat_amount : vi.vat_amount * (1 + 100/(vi.vat_rate || 19))), 0);
+                       const receiptBrutto = detailReceipt.amount_eur ?? detailReceipt.amount ?? 0;
+                       const diff = itemsBrutto - receiptBrutto;
+                       const isMismatch = Math.abs(diff) > 0.02;
+                       const isLocked = detailReceipt.accounting_status === "exported" || detailReceipt.accounting_status === "verbucht";
+                       return (
+                         <>
+                           {isMismatch && (
+                             <div className="rounded-md border border-destructive bg-destructive/10 px-2 py-1.5 text-xs text-destructive mt-2">
+                               {tt({
+                                 de: `⚠ Summe der MwSt-Positionen (${itemsBrutto.toFixed(2)} €) weicht vom Brutto (${receiptBrutto.toFixed(2)} €) ab. Differenz ${diff.toFixed(2)} €. DATEV-Export ist blockiert. Setze die Positionen unten zurück oder korrigiere den Beleg-Brutto.`,
+                                 en: `⚠ Sum of VAT items (${itemsBrutto.toFixed(2)} €) differs from gross (${receiptBrutto.toFixed(2)} €). Diff ${diff.toFixed(2)} €. DATEV export blocked. Reset the items below or fix the gross amount.`,
+                               })}
+                             </div>
+                           )}
+                           {!isLocked && (
+                             <Button
+                               type="button"
+                               variant="outline"
+                               size="sm"
+                               className="w-full mt-2 text-xs"
+                               onClick={handleResetVatItems}
+                             >
+                               {tt({
+                                 de: "MwSt-Positionen zurücksetzen (Default-Satz verwenden)",
+                                 en: "Reset VAT items (use default rate)",
+                               })}
+                             </Button>
+                           )}
+                         </>
+                       );
+                     })()}
                    </div>
                  ) : (detailReceipt.vat_amount != null || detailReceipt.vat_rate != null) && (
                    <div className="flex justify-between text-sm">
