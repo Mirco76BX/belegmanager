@@ -742,7 +742,7 @@ const ExpenseReport = () => {
 
       {/* ─── DATEV-Export Dialog ────────────────────────────────────────── */}
       <Dialog open={datevDialogOpen} onOpenChange={setDatevDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {tt({ de: "DATEV-Stapel exportieren", en: "Export DATEV stapel" })}

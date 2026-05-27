@@ -36,7 +36,7 @@ const Dashboard = () => {
       supabase.from("receipts").select("id, date, amount, amount_eur, description", { count: "exact" }),
       supabase.from("receipts").select("id").gte("date", monthStart),
       supabase.from("companies").select("id", { count: "exact" }),
-      supabase.from("receipts").select("id, date, amount, description").order("created_at", { ascending: false }).limit(5),
+      supabase.from("receipts").select("id, date, amount, amount_eur, currency, description").order("created_at", { ascending: false }).limit(5),
       supabase.from("receipts").select("date, amount, amount_eur").gte("date", sixMonthsAgo),
     ]).then(([allRes, monthRes, compRes, recentRes, chartRes]) => {
       setTotalReceipts(allRes.count || 0);
@@ -137,9 +137,22 @@ const Dashboard = () => {
                       {new Date(r.date).toLocaleDateString(locale)}
                     </p>
                   </div>
-                  <span className="font-mono text-sm font-medium whitespace-nowrap shrink-0">
-                    {r.amount != null ? `${Number(r.amount).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` : "–"}
-                  </span>
+                  <div className="font-mono text-sm font-medium whitespace-nowrap shrink-0 text-right flex flex-col items-end">
+                    {(() => {
+                      const eur = r.amount_eur != null ? Number(r.amount_eur) : (r.currency === "EUR" || r.currency == null ? Number(r.amount ?? 0) : null);
+                      if (eur == null) return <span>–</span>;
+                      const eurStr = `${eur.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+                      const isForex = r.currency && r.currency !== "EUR" && r.amount_eur != null;
+                      if (!isForex) return <span>{eurStr}</span>;
+                      const orig = `${Number(r.amount).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${r.currency}`;
+                      return (
+                        <>
+                          <span>{eurStr}</span>
+                          <span className="text-[10px] text-muted-foreground font-normal">{orig}</span>
+                        </>
+                      );
+                    })()}
+                  </div>
                 </div>
               ))}
             </div>
