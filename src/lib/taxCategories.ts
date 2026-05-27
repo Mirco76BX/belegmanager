@@ -165,14 +165,55 @@ export function getRequiredFields(taxCategory: string | null): string[] {
 export function guessTaxCategoryFromPurpose(purpose: string | null): string | null {
   if (!purpose) return null;
   const lower = purpose.toLowerCase();
-  if (lower.includes("bewirtung") || lower.includes("geschäftsessen")) return "bewirtung";
+  if (lower.includes("bewirtung") || lower.includes("geschäftsessen") || lower.includes("business meal")) return "bewirtung";
   if (lower.includes("tanken") || lower.includes("fuel")) return "tankkosten";
+  if (lower.includes("reise") && lower.includes("nebenkost")) return "reisekosten_nebenkosten";
+  if (lower.includes("reise") && (lower.includes("übernacht") || lower.includes("hotel"))) return "reisekosten_uebernachtung";
+  if (lower.includes("reise") && (lower.includes("fahrt") || lower.includes("bahn") || lower.includes("flug"))) return "reisekosten_fahrt";
   if (lower.includes("reise")) return "reisekosten_nebenkosten";
-  if (lower.includes("büro")) return "bueromaterial";
-  if (lower.includes("fortbildung") || lower.includes("training")) return "fortbildung";
-  if (lower.includes("telefon") || lower.includes("internet")) return "telekommunikation";
-  if (lower.includes("akquise")) return "bewirtung";
+  if (lower.includes("büromaterial") || lower.includes("bürobedarf") || lower.includes("office supplies")) return "bueromaterial";
+  if (lower.includes("fortbildung") || lower.includes("weiterbildung") || lower.includes("training") || lower.includes("seminar") || lower.includes("workshop") || lower.includes("kurs") || lower.includes("schulung")) return "fortbildung";
+  if (lower.includes("telefon") || lower.includes("internet") || lower.includes("provider")) return "telekommunikation";
+  if (lower.includes("akquise") || lower.includes("kundengewinnung")) return "bewirtung";
+  if (lower.includes("software") || lower.includes("saas") || lower.includes("abo") || lower.includes("lizenz")) return "software_saas";
+  if (lower.includes("miete") || lower.includes("raumkost")) return "miete_raum";
+  if (lower.includes("werbung") || lower.includes("marketing") || lower.includes("anzeige")) return "werbung_marketing";
+  if (lower.includes("beratung") || lower.includes("anwalt") || lower.includes("steuerberater") || lower.includes("notar")) return "beratung_recht";
+  if (lower.includes("porto") || lower.includes("versand") || lower.includes("paket")) return "porto_versand";
+  if (lower.includes("reparatur") || lower.includes("wartung") || lower.includes("instandhaltung")) return "reparatur_wartung";
+  if (lower.includes("geschenk") || lower.includes("präsent")) return "geschenke";
+  if (lower.includes("versicherung")) return "versicherung";
   return null;
+}
+
+/**
+ * Erkennt Inkonsistenzen zwischen meeting_purpose / description und gesetzter tax_category.
+ * Liefert einen Hinweistext oder null wenn alles konsistent ist.
+ * Verwendet für GoBD-relevante Konsistenz-Warnungen im PDF und im Edit-Dialog.
+ *
+ * Beispiel: Tax-Category "bewirtung" mit Purpose "Fortbildung" → liefert Hinweis,
+ * dass die Tax-Category möglicherweise auf "fortbildung" gehört.
+ */
+export function detectTaxCategoryInconsistency(
+  taxCategory: string | null | undefined,
+  purpose: string | null | undefined,
+  description: string | null | undefined = null,
+): { suggested: string; reason: string } | null {
+  if (!taxCategory) return null;
+  // Erst den Purpose, dann die Description abgrasen
+  const guessed = guessTaxCategoryFromPurpose(purpose ?? null)
+    ?? (description ? guessTaxCategoryFromPurpose(description) : null);
+  if (!guessed) return null;
+  if (guessed === taxCategory) return null;
+
+  const labelFor = (key: string) => {
+    const c = TAX_CATEGORIES.find((x) => x.value === key);
+    return c?.label.de ?? key;
+  };
+  return {
+    suggested: guessed,
+    reason: `Der angegebene Zweck/die Beschreibung deutet auf „${labelFor(guessed)}" hin, aber die Kategorie ist „${labelFor(taxCategory)}".`,
+  };
 }
 
 /**

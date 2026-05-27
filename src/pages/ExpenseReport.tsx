@@ -21,9 +21,11 @@ import {
   buildDatevStapel,
   downloadDatevCsv,
   DEFAULT_GEGENKONTO,
+  kontoForTaxCategory,
   type DatevMandantSettings,
   type Kontenrahmen,
 } from "@/lib/datev";
+import { detectTaxCategoryInconsistency } from "@/lib/taxCategories";
 
 // localStorage-Key, damit der User die DATEV-Stammdaten nicht jedes Mal neu eintippen muss
 const DATEV_SETTINGS_KEY = "belegmanager.datev_settings.v1";
@@ -207,13 +209,28 @@ const ExpenseReport = () => {
   filteredReceipts.forEach(r => { statusCounts[getReceiptStatus(r)]++; });
 
   const getTableHeaders = () => [
-    t("receipts.date"), t("receipts.amount"), "MwSt.", "MwSt.-%", t("receipts.description"),
-    t("receipts.company"), t("receipts.person"), tt({de:"Zweck", en:"Purpose", tr:"Amaç", ar:"الغرض", ru:"Цель"}),
+    tt({de:"Beleg-Nr", en:"Doc-No"}),
+    t("receipts.date"),
+    tt({de:"Konto", en:"Account"}),
+    t("receipts.amount"), "MwSt.", "MwSt.-%",
+    t("receipts.description"),
+    t("receipts.company"), t("receipts.person"),
+    tt({de:"Zweck", en:"Purpose", tr:"Amaç", ar:"الغرض", ru:"Цель"}),
     "Status",
   ];
 
+  /** Bildet "7%+19%" / "0%+7%+19%" bei Multi-MwSt-Belegen, sonst "X%" oder "–". */
+  const formatVatRate = (r: Receipt): string => {
+    if (r.vat_items && r.vat_items.length > 1) {
+      const rates = Array.from(new Set(r.vat_items.map(v => v.vat_rate)))
+        .sort((a, b) => a - b);
+      return rates.map(rt => `${rt}%`).join("+");
+    }
+    return r.vat_rate != null ? `${r.vat_rate}%` : "–";
+  };
+
   const getTableRows = () =>
-    filteredReceipts.map((r) => {
+    filteredReceipts.map((r, idx) => {
       const isForex = r.currency && r.currency !== "EUR";
       const amountStr = r.amount != null
         ? isForex
@@ -224,13 +241,22 @@ const ExpenseReport = () => {
       const sLabel = s === "incomplete" ? (lang === "de" ? "Unvollständig" : "Incomplete")
         : s === "ready" ? (lang === "de" ? "Bereit" : "Ready")
         : (lang === "de" ? "Exportiert" : "Exported");
+      const belegNr = String(idx + 1).padStart(4, "0");
+      const konto = kontoForTaxCategory(r.tax_category, datevForm.kontenrahmen);
+      // Konsistenz-Check: passt der Zweck zur Tax-Category?
+      const inconsistency = detectTaxCategoryInconsistency(r.tax_category, r.meeting_purpose, r.description);
+      const zweckCell = r.meeting_purpose
+        ? (inconsistency ? `⚠ ${r.meeting_purpose}` : r.meeting_purpose)
+        : "–";
       return [
+        belegNr,
         new Date(r.date).toLocaleDateString(locale),
+        konto,
         amountStr,
         r.vat_amount != null ? `${r.vat_amount.toFixed(2)}\u00A0€` : "–",
-        r.vat_rate != null ? `${r.vat_rate}%` : "–",
+        formatVatRate(r),
         r.description || "–", getCompanyName(r.company_id),
-        r.person_met || "–", r.meeting_purpose || "–",
+        r.person_met || "–", zweckCell,
         sLabel,
       ];
     });
@@ -255,7 +281,7 @@ const ExpenseReport = () => {
       ...metaLines,
       headers.join(";"),
       ...rows.map((row) => row.map((cell) => `"${cell}"`).join(";")),
-      [totalLabel, `${totalAmount.toFixed(2)}\u00A0€`, `${totalVat.toFixed(2)}\u00A0€`, "", "", "", "", "", ""].map((c) => `"${c}"`).join(";"),
+      ["", "", totalLabel, `${totalAmount.toFixed(2)}\u00A0€`, `${totalVat.toFixed(2)}\u00A0€`, "", "", "", "", "", ""].map((c) => `"${c}"`).join(";"),
     ].join("\n");
 
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
@@ -459,20 +485,52 @@ const ExpenseReport = () => {
       yPos += 10;
 
       const rows = getTableRows();
-      rows.push([totalLabel, `${totalAmount.toFixed(2)}\u00A0€`, `${totalVat.toFixed(2)}\u00A0€`, "", "", "", "", ""]);
+      // 11 Spalten: BelegNr, Datum, Konto, Betrag, MwSt, MwSt-%, Beschr, Org, Person, Zweck, Status
+      rows.push(["", "", totalLabel, `${totalAmount.toFixed(2)}\u00A0€`, `${totalVat.toFixed(2)}\u00A0€`, "", "", "", "", "", ""]);
 
       autoTable(doc, {
         startY: yPos, head: [getTableHeaders()], body: rows,
-        styles: { fontSize: 8, cellPadding: 3 },
-        headStyles: { fillColor: [41, 74, 112] },
+        styles: { fontSize: 7, cellPadding: 2 },
+        headStyles: { fillColor: [41, 74, 112], fontSize: 7 },
         columnStyles: {
-          0: { cellWidth: 22 },  // Datum
-          1: { cellWidth: 24, halign: 'right' },  // Betrag
-          2: { cellWidth: 20, halign: 'right' },  // MwSt.
-          3: { cellWidth: 16, halign: 'right' },  // MwSt.-%
+          0: { cellWidth: 13, halign: 'center' },  // Beleg-Nr
+          1: { cellWidth: 17 },                    // Datum
+          2: { cellWidth: 12, halign: 'center' },  // Konto
+          3: { cellWidth: 22, halign: 'right' },   // Betrag
+          4: { cellWidth: 16, halign: 'right' },   // MwSt
+          5: { cellWidth: 14, halign: 'right' },   // MwSt-%
         },
         footStyles: { fontStyle: "bold" }, theme: "grid",
       });
+
+      // Konsistenz-Warnungen sammeln und auflisten (passive Hinweise — Buchhalter entscheidet)
+      const inconsistencies = filteredReceipts
+        .map((r, idx) => ({ idx, r, issue: detectTaxCategoryInconsistency(r.tax_category, r.meeting_purpose, r.description) }))
+        .filter((x) => x.issue);
+      if (inconsistencies.length > 0) {
+        // Position direkt nach der Tabelle (autoTable schreibt finalY in doc.lastAutoTable)
+        const tableEnd = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? yPos;
+        let warnY = tableEnd + 6;
+        doc.setFontSize(8);
+        doc.setTextColor(200, 80, 0); // gedämpftes Orange für Warnungen
+        doc.text(`⚠ Konsistenz-Hinweise (${inconsistencies.length}) — bitte vor Festschreibung prüfen:`, margin, warnY);
+        warnY += 4;
+        doc.setTextColor(60, 60, 60);
+        for (const { idx, r, issue } of inconsistencies) {
+          if (warnY > pageHeight - 15) { doc.addPage(); warnY = margin; }
+          const belegNr = String(idx + 1).padStart(4, "0");
+          const lines = doc.splitTextToSize(
+            `Beleg ${belegNr} (${r.description?.slice(0, 30) ?? "–"}): ${issue!.reason}`,
+            pageWidth - margin * 2,
+          );
+          for (const ln of lines) {
+            doc.text(ln, margin, warnY);
+            warnY += 3.5;
+          }
+          warnY += 1;
+        }
+        doc.setTextColor(0, 0, 0);
+      }
 
       const receiptFiles = filteredReceipts.filter((r) => r.file_path && !r.file_path.toLowerCase().endsWith(".pdf"));
 
