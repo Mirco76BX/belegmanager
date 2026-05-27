@@ -20,6 +20,9 @@ const config: CapacitorConfig = {
   // --- iOS ---
   ios: {
     contentInset: "always",
+    // Verhindert Browser-Bounce/Overscroll am Seitenende. Vertikales Scrollen
+    // innerhalb der App bleibt davon unberührt.
+    scrollEnabled: true,
     // For custom URL scheme (OAuth redirect), set in Info.plist:
     //   CFBundleURLSchemes = ["belegmanager"]
     scheme: "belegmanager",
