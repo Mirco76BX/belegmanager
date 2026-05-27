@@ -79,6 +79,60 @@ export const TAX_CATEGORIES: TaxCategory[] = [
     defaultVatRate: 19,
   },
   {
+    value: "software_saas",
+    label: { de: "Software / SaaS-Abos", en: "Software / SaaS Subscriptions" },
+    icon: "💻",
+    defaultVatRate: 19,
+  },
+  {
+    value: "miete_raum",
+    label: { de: "Miete / Raumkosten", en: "Rent / Office Space" },
+    icon: "🏢",
+    defaultVatRate: 19,
+  },
+  {
+    value: "werbung_marketing",
+    label: { de: "Werbung / Marketing", en: "Advertising / Marketing" },
+    icon: "📢",
+    defaultVatRate: 19,
+  },
+  {
+    value: "beratung_recht",
+    label: { de: "Rechts- und Beratungskosten", en: "Legal / Consulting Fees" },
+    icon: "⚖️",
+    defaultVatRate: 19,
+  },
+  {
+    value: "porto_versand",
+    label: { de: "Porto / Versand", en: "Postage / Shipping" },
+    icon: "📮",
+    defaultVatRate: 19,
+  },
+  {
+    value: "bankgebuehren",
+    label: { de: "Bank- / Geldverkehrskosten", en: "Bank Fees" },
+    icon: "🏦",
+    defaultVatRate: 0,
+  },
+  {
+    value: "reparatur_wartung",
+    label: { de: "Reparatur / Wartung", en: "Repair / Maintenance" },
+    icon: "🔧",
+    defaultVatRate: 19,
+  },
+  {
+    value: "gwg",
+    label: { de: "GwG (geringwertige Wirtschaftsgüter ≤ 800 €)", en: "Low-value Assets (≤ €800)" },
+    icon: "🛠️",
+    defaultVatRate: 19,
+  },
+  {
+    value: "energie",
+    label: { de: "Strom / Wasser / Heizung", en: "Utilities (Power / Water / Heating)" },
+    icon: "💡",
+    defaultVatRate: 19,
+  },
+  {
     value: "sonstiges",
     label: { de: "Sonstige betriebliche Aufwendungen", en: "Other Business Expenses" },
     icon: "📦",
@@ -127,12 +181,38 @@ export function guessTaxCategoryFromPurpose(purpose: string | null): string | nu
 export function guessTaxCategoryFromScan(vendor: string | null, description: string | null, isFuel: boolean): string | null {
   if (isFuel) return "tankkosten";
   const text = [vendor, description].filter(Boolean).join(" ").toLowerCase();
-  if (text.match(/hotel|hostel|airbnb|übernachtung|booking/)) return "reisekosten_uebernachtung";
-  if (text.match(/taxi|uber|bahn|flug|flight|zug|train|bus/)) return "reisekosten_fahrt";
-  if (text.match(/restaurant|gaststätte|bistro|café|cafe|essen|pizza|burger|bäckerei|bakery|backstuben/)) return "bewirtung";
-  if (text.match(/tankstelle|shell|aral|total|esso|jet|agip|benzin|diesel/)) return "tankkosten";
-  if (text.match(/büro|office|staples|papier|drucker/)) return "bueromaterial";
-  if (text.match(/telekom|vodafone|o2|telefon|internet|1&1/)) return "telekommunikation";
+  // Reisekosten
+  if (text.match(/hotel|hostel|airbnb|übernachtung|booking|motel|pension/)) return "reisekosten_uebernachtung";
+  if (text.match(/taxi|uber|bolt|bahn|db\b|flug|flight|zug|train|bus|sixt|hertz|mietwagen|rental car/)) return "reisekosten_fahrt";
+  if (text.match(/maut|parkplatz|parking|garage|toll/)) return "reisekosten_nebenkosten";
+  // Bewirtung
+  if (text.match(/restaurant|gaststätte|bistro|café|cafe|essen|pizza|burger|bäckerei|bakery|backstuben|brauerei/)) return "bewirtung";
+  // Tankkosten
+  if (text.match(/tankstelle|shell|aral|total|esso|jet|agip|benzin|diesel|hem\b|sb-tanken/)) return "tankkosten";
+  // Software & SaaS — VOR Telekommunikation prüfen
+  if (text.match(/adobe|microsoft|office 365|m365|github|gitlab|slack|notion|figma|jetbrains|zoom|aws|azure|google cloud|gcp|supabase|vercel|netlify|cloudflare|lovable|openai|anthropic|claude|chatgpt|abo|subscription|saas|cursor|linear app|asana|monday\.com|hubspot|salesforce/)) return "software_saas";
+  // Telekommunikation
+  if (text.match(/telekom|vodafone|o2|telefon|internet|1&1|congstar|provider|dsl|glasfaser/)) return "telekommunikation";
+  // Büromaterial
+  if (text.match(/büro|office|staples|papier|drucker|tinte|toner|kugelschreiber|ordner/)) return "bueromaterial";
+  // Miete / Raum
+  if (text.match(/miete\b|coworking|wework|mindspace|büromiete|raumkosten/)) return "miete_raum";
+  // Marketing / Werbung
+  if (text.match(/google ads|facebook ads|meta ads|linkedin ads|werbung|marketing|seo|sea|werbeagentur|werbeanzeige/)) return "werbung_marketing";
+  // Beratung
+  if (text.match(/steuerberater|rechtsanwalt|notar|beratung|consulting|wirtschaftsprüfer|tax advisor|lawyer|kanzlei/)) return "beratung_recht";
+  // Porto / Versand
+  if (text.match(/deutsche post|dhl|ups|fedex|hermes|gls|dpd|versand|porto|paket|frachtbrief/)) return "porto_versand";
+  // Bank-Gebühren
+  if (text.match(/kontogebühr|kontoführung|bank-?gebühr|sparkasse.*gebühr|geldverkehr|kreditkartengebühr/)) return "bankgebuehren";
+  // Reparatur / Wartung
+  if (text.match(/reparatur|werkstatt|kfz-?werkstatt|wartung|service|inspektion|tüv|hu\b/)) return "reparatur_wartung";
+  // Energie
+  if (text.match(/stadtwerke|energie|strom\b|gas\b|heizung|fernwärme|wasserwerke|eon\b|rwe|envia/)) return "energie";
+  // Versicherung
+  if (text.match(/versicherung|allianz|axa|signal iduna|ergo|huk|generali|gothaer|haftpflicht/)) return "versicherung";
+  // Fortbildung
+  if (text.match(/seminar|workshop|fortbildung|weiterbildung|training|kurs|coaching|udemy|coursera|conference|konferenz/)) return "fortbildung";
   // Geschenke: Blumen, Wein, Pralinen, Schokolade als Geschäftsgeschenk (i. d. R. bis 35 € abziehbar)
   if (text.match(/blumen|florist|geschenk|gift|wein\b|sekt|champagne|praline|schokolade|bonbonniere/)) return "geschenke";
   // Tabak: nicht abziehbar nach EStG, daher 'sonstiges'

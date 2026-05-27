@@ -94,17 +94,37 @@ export interface DatevExportResult {
 // ───────────────────────────────────────────────────────────────────────────
 
 const KONTEN_MAPPING: Record<string, { skr03: string; skr04: string }> = {
-  reisekosten_uebernachtung:  { skr03: "4660", skr04: "6660" }, // Übernachtungskosten AN
-  reisekosten_fahrt:          { skr03: "4670", skr04: "6670" }, // Fahrtkosten AN
-  reisekosten_nebenkosten:    { skr03: "4674", skr04: "6674" }, // Reisenebenkosten AN
-  verpflegungsmehraufwand:    { skr03: "4664", skr04: "6664" }, // VMA Inland
-  bewirtung:                  { skr03: "4650", skr04: "6640" }, // Bewirtungskosten
+  // — Reisekosten —
+  reisekosten_uebernachtung:  { skr03: "4660", skr04: "6660" }, // Reisekosten AN — Übernachtung
+  reisekosten_fahrt:          { skr03: "4670", skr04: "6670" }, // Reisekosten AN — Fahrtkosten
+  reisekosten_nebenkosten:    { skr03: "4674", skr04: "6674" }, // Reisenebenkosten (Maut, Parkplatz)
+  verpflegungsmehraufwand:    { skr03: "4664", skr04: "6664" }, // VMA Inland (Pauschalen)
+  // — Bewirtung & Geschenke —
+  bewirtung:                  { skr03: "4650", skr04: "6640" }, // Bewirtungskosten § 4 Abs. 5 Nr. 2 EStG
+  geschenke:                  { skr03: "4630", skr04: "6610" }, // Werbegeschenke ≤ 35 €/Empfänger/Jahr
+  // — KFZ —
   tankkosten:                 { skr03: "4530", skr04: "6530" }, // Laufende Kfz-Betriebskosten
+  // — Büro & Kommunikation —
   bueromaterial:              { skr03: "4930", skr04: "6815" }, // Bürobedarf
-  telekommunikation:          { skr03: "4920", skr04: "6805" }, // Telefon
-  fortbildung:                { skr03: "4946", skr04: "6840" }, // Fortbildung
-  versicherung:               { skr03: "4360", skr04: "6420" }, // Versicherungen
-  geschenke:                  { skr03: "4630", skr04: "6610" }, // Geschenke an Geschäftspartner (bis 35 € abziehbar)
+  telekommunikation:          { skr03: "4920", skr04: "6805" }, // Telefon / Internet
+  porto_versand:              { skr03: "4910", skr04: "6800" }, // Porto / Postversand
+  software_saas:              { skr03: "4806", skr04: "6817" }, // EDV-Software-/SaaS-Aufwand
+  // — Personal-/Weiterbildung —
+  fortbildung:                { skr03: "4946", skr04: "6840" }, // Fortbildungskosten
+  // — Beratung & Recht —
+  beratung_recht:             { skr03: "4955", skr04: "6825" }, // Rechts- und Beratungskosten
+  // — Werbung & Marketing —
+  werbung_marketing:          { skr03: "4600", skr04: "6300" }, // Werbekosten (Ads, SEO, Agenturen)
+  // — Raum & Energie —
+  miete_raum:                 { skr03: "4210", skr04: "6310" }, // Miete für Geschäftsräume
+  energie:                    { skr03: "4240", skr04: "6325" }, // Gas, Strom, Wasser
+  // — Reparatur & GwG —
+  reparatur_wartung:          { skr03: "4805", skr04: "6470" }, // Reparaturen & Instandhaltung
+  gwg:                        { skr03: "4855", skr04: "6260" }, // Sofortabschreibung GwG ≤ 800 €
+  // — Versicherung & Finanzen —
+  versicherung:               { skr03: "4360", skr04: "6420" }, // Betriebliche Versicherungen
+  bankgebuehren:              { skr03: "4970", skr04: "6857" }, // Nebenkosten des Geldverkehrs
+  // — Fallback —
   sonstiges:                  { skr03: "4900", skr04: "6855" }, // Sonstige betriebliche Aufwendungen (übrige)
 };
 
