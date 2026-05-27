@@ -52,6 +52,37 @@ const ScrollToTop = () => {
 };
 
 /**
+ * SAFETY NET für den bekannten Radix-Bug:
+ * Radix UI Dialog setzt `document.body.style.pointerEvents = "none"` während
+ * ein Modal offen ist und macht das beim Close eigentlich wieder rückgängig.
+ *
+ * In Capacitor WebViews (insb. nach mehreren verschachtelten Dialogs / Selects /
+ * Lightboxen) bleibt das gelegentlich stuck → die ganze App ist nicht mehr
+ * klickbar. User muss die App killen.
+ *
+ * Dieser Watcher prüft alle 750 ms: Wenn body.pointer-events = "none" gesetzt
+ * ist, OBWOHL kein offener Dialog im DOM hängt → resetten wir.
+ */
+const PointerEventsSafetyNet = () => {
+  useEffect(() => {
+    const check = () => {
+      if (document.body.style.pointerEvents !== "none") return;
+      // Gibt es noch ein offenes Radix-Modal?
+      const openDialog = document.querySelector(
+        '[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]'
+      );
+      if (openDialog) return;
+      // Stuck → fix it.
+      document.body.style.pointerEvents = "";
+      console.warn("[App] PointerEventsSafetyNet: released stuck body pointer-events");
+    };
+    const interval = setInterval(check, 750);
+    return () => clearInterval(interval);
+  }, []);
+  return null;
+};
+
+/**
  * Native deep-link listener: handles the `belegmanager://auth/callback` URL
  * that the system browser triggers after the OAuth bridge page redirects.
  * No-op on web.
@@ -108,6 +139,7 @@ const App = () => (
           <BrowserRouter>
             <ScrollToTop />
             <NativeDeepLinkHandler />
+            <PointerEventsSafetyNet />
             <Routes>
               <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
               <Route path="/auth/native-callback" element={<NativeAuthCallback />} />
