@@ -105,10 +105,10 @@ const KONTEN_MAPPING: Record<string, { skr03: string; skr04: string }> = {
   fortbildung:                { skr03: "4946", skr04: "6840" }, // Fortbildung
   versicherung:               { skr03: "4360", skr04: "6420" }, // Versicherungen
   geschenke:                  { skr03: "4630", skr04: "6610" }, // Geschenke an Geschäftspartner (bis 35 € abziehbar)
-  sonstiges:                  { skr03: "4900", skr04: "6300" }, // Sonstige betriebliche Aufwendungen
+  sonstiges:                  { skr03: "4900", skr04: "6855" }, // Sonstige betriebliche Aufwendungen (übrige)
 };
 
-const DEFAULT_KONTO = { skr03: "4900", skr04: "6300" }; // Fallback
+const DEFAULT_KONTO = { skr03: "4900", skr04: "6855" }; // Fallback (SKR04: 6300 wäre Werbekosten — falsch)
 
 /** Default-Gegenkonto je Kontenrahmen (Bank) */
 export const DEFAULT_GEGENKONTO: Record<Kontenrahmen, string> = {
