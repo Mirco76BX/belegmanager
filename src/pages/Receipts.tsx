@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Camera, Receipt as ReceiptIcon, Trash2, Pencil, ScanLine, Search } from "lucide-react";
 import ScanWizard from "@/components/ScanWizard";
+import ImageLightbox from "@/components/ImageLightbox";
+import VatItemsEditor from "@/components/VatItemsEditor";
 import ReceiptsInlineTable from "@/components/ReceiptsInlineTable";
 import { TAX_CATEGORIES } from "@/lib/taxCategories";
 
@@ -68,6 +70,7 @@ const Receipts = () => {
   const [filterMonth, setFilterMonth] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [imageLightboxOpen, setImageLightboxOpen] = useState(false);
+  const [vatEditorOpen, setVatEditorOpen] = useState(false);
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailReceipt, setDetailReceipt] = useState<Receipt | null>(null);
@@ -536,34 +539,16 @@ const Receipts = () => {
         onCompaniesChanged={fetchData}
       />
 
-      {/* Vollbild-Lightbox für Beleg-Foto */}
+      {/* Vollbild-Lightbox für Beleg-Foto — mit Zoom-Buttons (Capacitor WebView pinch-zoom ist unreliable) */}
       {imageLightboxOpen && detailImageUrl && (
-        <div
-          className="fixed inset-0 z-[100] bg-black/90 flex flex-col"
-          onClick={() => setImageLightboxOpen(false)}
-        >
-          <div className="flex justify-end p-4 safe-area-top" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              onClick={() => setImageLightboxOpen(false)}
-              className="rounded-full bg-white/15 text-white px-3 py-1.5 text-sm backdrop-blur-sm hover:bg-white/25"
-            >
-              {tt({ de: "Schließen", en: "Close" })} ×
-            </button>
-          </div>
-          <div className="flex-1 overflow-auto flex items-center justify-center p-4 safe-area-bottom">
-            <img
-              src={detailImageUrl}
-              alt="Receipt full"
-              className="max-w-full max-h-full object-contain select-none"
-              style={{ touchAction: "pinch-zoom" }}
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        </div>
+        <ImageLightbox
+          src={detailImageUrl}
+          onClose={() => setImageLightboxOpen(false)}
+          closeLabel={tt({ de: "Schließen", en: "Close" })}
+        />
       )}
 
-      <Dialog open={detailOpen} onOpenChange={(o) => { if (!o) { setDetailOpen(false); setIsEditing(false); } }}>
+      <Dialog open={detailOpen} onOpenChange={(o) => { if (!o) { setDetailOpen(false); setIsEditing(false); setVatEditorOpen(false); } }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -598,63 +583,103 @@ const Receipts = () => {
                    <span className="text-muted-foreground">{t("receipts.amount")}</span>
                    <span className="font-mono font-semibold">{formatAmountFull(detailReceipt)}</span>
                  </div>
-                 {detailVatItems.length > 1 ? (
-                   <div className="space-y-1.5 pt-1">
-                     <span className="text-sm text-muted-foreground">{tt({de:"MwSt.-Positionen", en:"VAT Items"})}</span>
-                     {detailVatItems.map((vi) => (
-                       <div key={vi.id} className="flex justify-between text-sm pl-2 border-l-2 border-muted">
-                         <span className="text-muted-foreground">{vi.label || "–"} ({vi.vat_rate}%)</span>
-                         <span className="font-mono">{vi.vat_amount.toFixed(2)} €{vi.net_amount != null ? ` (netto: ${vi.net_amount.toFixed(2)} €)` : ""}</span>
-                       </div>
-                     ))}
-                     <div className="flex justify-between text-sm font-medium pt-0.5">
-                       <span className="text-muted-foreground">{tt({de:"MwSt. gesamt", en:"Total VAT"})}</span>
-                       <span className="font-mono">{detailVatItems.reduce((s, i) => s + i.vat_amount, 0).toFixed(2)} €</span>
-                     </div>
-                     {(() => {
-                       // GoBD-Schicht A: Diskrepanz-Check zwischen vat_items-Brutto und Beleg-Brutto
-                       const itemsBrutto = detailVatItems.reduce((s, vi) => s + (vi.net_amount != null ? vi.net_amount + vi.vat_amount : vi.vat_amount * (1 + 100/(vi.vat_rate || 19))), 0);
-                       const receiptBrutto = detailReceipt.amount_eur ?? detailReceipt.amount ?? 0;
-                       const diff = itemsBrutto - receiptBrutto;
-                       const isMismatch = Math.abs(diff) > 0.02;
-                       const isLocked = detailReceipt.accounting_status === "exported" || detailReceipt.accounting_status === "verbucht";
-                       return (
+                 {(() => {
+                   const receiptBrutto = detailReceipt.amount_eur ?? detailReceipt.amount ?? 0;
+                   const itemsBrutto = detailVatItems.reduce((s, vi) => s + (vi.net_amount != null ? vi.net_amount + vi.vat_amount : vi.vat_amount * (1 + 100/(vi.vat_rate || 19))), 0);
+                   const diff = itemsBrutto - receiptBrutto;
+                   const isMismatch = detailVatItems.length > 0 && Math.abs(diff) > 0.02;
+                   const isLocked = detailReceipt.accounting_status === "exported" || detailReceipt.accounting_status === "verbucht";
+                   const defaultRate = TAX_CATEGORIES.find(c => c.id === detailReceipt.tax_category)?.defaultVatRate ?? 19;
+
+                   // Editor-Modus: vollwertiger MwSt-Positionen-Editor
+                   if (vatEditorOpen && user) {
+                     return (
+                       <VatItemsEditor
+                         receiptId={detailReceipt.id}
+                         userId={user.id}
+                         initialItems={detailVatItems}
+                         receiptBrutto={receiptBrutto}
+                         defaultVatRate={defaultRate}
+                         onClose={() => setVatEditorOpen(false)}
+                         onSaved={async () => {
+                           const { data } = await supabase
+                             .from("receipt_vat_items")
+                             .select("*")
+                             .eq("receipt_id", detailReceipt.id)
+                             .order("vat_rate");
+                           setDetailVatItems(data || []);
+                           fetchData();
+                         }}
+                       />
+                     );
+                   }
+
+                   // Read-Only-Modus
+                   return (
+                     <div className="space-y-1.5 pt-1">
+                       {detailVatItems.length > 0 ? (
                          <>
-                           {isMismatch && (
-                             <div className="rounded-md border border-destructive bg-destructive/10 px-2 py-1.5 text-xs text-destructive mt-2">
-                               {tt({
-                                 de: `⚠ Summe der MwSt-Positionen (${itemsBrutto.toFixed(2)} €) weicht vom Brutto (${receiptBrutto.toFixed(2)} €) ab. Differenz ${diff.toFixed(2)} €. DATEV-Export ist blockiert. Setze die Positionen unten zurück oder korrigiere den Beleg-Brutto.`,
-                                 en: `⚠ Sum of VAT items (${itemsBrutto.toFixed(2)} €) differs from gross (${receiptBrutto.toFixed(2)} €). Diff ${diff.toFixed(2)} €. DATEV export blocked. Reset the items below or fix the gross amount.`,
-                               })}
+                           <span className="text-sm text-muted-foreground">{tt({de:"MwSt.-Positionen", en:"VAT Items"})}</span>
+                           {detailVatItems.map((vi) => (
+                             <div key={vi.id} className="flex justify-between text-sm pl-2 border-l-2 border-muted">
+                               <span className="text-muted-foreground">{vi.label || "–"} ({vi.vat_rate}%)</span>
+                               <span className="font-mono">{vi.vat_amount.toFixed(2)} €{vi.net_amount != null ? ` (netto: ${vi.net_amount.toFixed(2)} €)` : ""}</span>
                              </div>
-                           )}
-                           {!isLocked && (
+                           ))}
+                           <div className="flex justify-between text-sm font-medium pt-0.5">
+                             <span className="text-muted-foreground">{tt({de:"MwSt. gesamt", en:"Total VAT"})}</span>
+                             <span className="font-mono">{detailVatItems.reduce((s, i) => s + i.vat_amount, 0).toFixed(2)} €</span>
+                           </div>
+                         </>
+                       ) : (detailReceipt.vat_amount != null || detailReceipt.vat_rate != null) ? (
+                         <div className="flex justify-between text-sm">
+                           <span className="text-muted-foreground">MwSt.</span>
+                           <span className="font-mono">
+                             {detailReceipt.vat_amount != null ? `${detailReceipt.vat_amount.toFixed(2)} ${detailReceipt.currency && detailReceipt.currency !== "EUR" ? detailReceipt.currency : "€"}` : "–"}
+                             {detailReceipt.vat_rate != null ? ` (${detailReceipt.vat_rate}%)` : ""}
+                           </span>
+                         </div>
+                       ) : null}
+
+                       {isMismatch && (
+                         <div className="rounded-md border border-destructive bg-destructive/10 px-2 py-1.5 text-xs text-destructive mt-2">
+                           {tt({
+                             de: `⚠ Summe der MwSt-Positionen (${itemsBrutto.toFixed(2)} €) weicht vom Brutto (${receiptBrutto.toFixed(2)} €) ab. Differenz ${diff.toFixed(2)} €. DATEV-Export ist blockiert.`,
+                             en: `⚠ Sum of VAT items (${itemsBrutto.toFixed(2)} €) differs from gross (${receiptBrutto.toFixed(2)} €). Diff ${diff.toFixed(2)} €. DATEV export blocked.`,
+                           })}
+                         </div>
+                       )}
+
+                       {!isLocked && (
+                         <div className="flex gap-2 mt-2">
+                           <Button
+                             type="button"
+                             variant={isMismatch ? "default" : "outline"}
+                             size="sm"
+                             className="flex-1 text-xs"
+                             onClick={() => setVatEditorOpen(true)}
+                           >
+                             <Pencil className="h-3 w-3 mr-1" />
+                             {detailVatItems.length === 0
+                               ? tt({ de: "MwSt-Positionen anlegen", en: "Add VAT items" })
+                               : tt({ de: "Bearbeiten", en: "Edit" })}
+                           </Button>
+                           {detailVatItems.length > 0 && (
                              <Button
                                type="button"
                                variant="outline"
                                size="sm"
-                               className="w-full mt-2 text-xs"
+                               className="text-xs"
                                onClick={handleResetVatItems}
                              >
-                               {tt({
-                                 de: "MwSt-Positionen zurücksetzen (Default-Satz verwenden)",
-                                 en: "Reset VAT items (use default rate)",
-                               })}
+                               {tt({ de: "Zurücksetzen", en: "Reset" })}
                              </Button>
                            )}
-                         </>
-                       );
-                     })()}
-                   </div>
-                 ) : (detailReceipt.vat_amount != null || detailReceipt.vat_rate != null) && (
-                   <div className="flex justify-between text-sm">
-                     <span className="text-muted-foreground">MwSt.</span>
-                     <span className="font-mono">
-                       {detailReceipt.vat_amount != null ? `${detailReceipt.vat_amount.toFixed(2)} ${detailReceipt.currency && detailReceipt.currency !== "EUR" ? detailReceipt.currency : "€"}` : "–"}
-                       {detailReceipt.vat_rate != null ? ` (${detailReceipt.vat_rate}%)` : ""}
-                     </span>
-                   </div>
-                 )}
+                         </div>
+                       )}
+                     </div>
+                   );
+                 })()}
                 {detailReceipt.description && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{t("receipts.description")}</span>
