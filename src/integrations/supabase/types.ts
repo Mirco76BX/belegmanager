@@ -596,6 +596,14 @@ export type Database = {
         Args: { _receipt_id: string; _status: string }
         Returns: undefined
       }
+      validate_coupon: {
+        Args: { _code: string }
+        Returns: {
+          duration_days: number
+          tier: string
+          valid: boolean
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"
