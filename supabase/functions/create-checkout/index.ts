@@ -46,7 +46,17 @@ serve(async (req) => {
       discounts.push({ coupon: match.id });
     }
 
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    // Whitelist origin to prevent phishing via attacker-controlled Origin header
+    const ALLOWED_ORIGINS = [
+      "https://belegmanager.online",
+      "https://www.belegmanager.online",
+      "https://belegmanager.lovable.app",
+      "https://id-preview--5196d375-f0b6-42d1-b73c-097cbd42414c.lovable.app",
+      "http://localhost:8080",
+      "http://localhost:3000",
+    ];
+    const requestOrigin = req.headers.get("origin") || "";
+    const origin = ALLOWED_ORIGINS.includes(requestOrigin) ? requestOrigin : "https://belegmanager.online";
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
