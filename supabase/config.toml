@@ -2,3 +2,6 @@ project_id = "ftlvrsgothqshpnbkcyb"
 
 [functions.scan-receipt]
 verify_jwt = true
+
+[functions.convert-currency]
+verify_jwt = true
