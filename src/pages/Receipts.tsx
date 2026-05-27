@@ -567,7 +567,11 @@ const Receipts = () => {
                   className="block w-full group relative"
                   aria-label={tt({ de: "Beleg vergrößern", en: "View receipt full size" })}
                 >
-                  <img src={detailImageUrl} alt="Receipt" className="w-full max-h-48 object-contain rounded-lg border bg-muted transition group-hover:opacity-90 group-active:opacity-80" />
+                  <img
+                    src={detailImageUrl}
+                    alt="Receipt"
+                    className="w-full h-64 object-contain object-center rounded-lg border bg-muted transition group-hover:opacity-90 group-active:opacity-80"
+                  />
                   <div className="absolute bottom-1 right-1 rounded-md bg-black/60 text-white text-[10px] px-1.5 py-0.5">
                     {tt({ de: "Tippen zum Vergrößern", en: "Tap to zoom" })}
                   </div>

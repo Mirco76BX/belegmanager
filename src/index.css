@@ -102,6 +102,11 @@
     width: 100%;
     max-width: 100vw;
   }
+  /* iOS/Capacitor WebView ignoriert EXIF-Orientation manchmal —
+     Fotos werden dann hochkant statt im Original-Aufnahme-Winkel angezeigt. */
+  img {
+    image-orientation: from-image;
+  }
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;
   }
