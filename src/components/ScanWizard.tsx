@@ -282,7 +282,51 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const { data, error } = await supabase.functions.invoke("scan-receipt", {
         body: pages.length > 1 ? { images: imageArray } : { imageBase64: imageArray[0] },
       });
-      if (error) throw error;
+      if (error) {
+        // Try to extract structured body from FunctionsHttpError for limit/rate responses
+        let parsed: any = null;
+        const ctx: any = (error as any)?.context;
+        try {
+          if (ctx && typeof ctx.json === "function") parsed = await ctx.json();
+          else if (ctx && typeof ctx.text === "function") parsed = JSON.parse(await ctx.text());
+        } catch { /* ignore */ }
+        const status = ctx?.status ?? (error as any)?.status;
+        const code = parsed?.error;
+        const msg = parsed?.message;
+
+        if (status === 402 || code === "limit_reached") {
+          toast({
+            title: tt({ de: "Monatslimit erreicht", en: "Monthly limit reached" }),
+            description: msg || tt({ de: "Bitte upgrade dein Paket.", en: "Please upgrade your plan." }),
+            variant: "destructive",
+            action: (
+              <ToastAction altText="Upgrade" onClick={() => navigate("/pricing")}>
+                {tt({ de: "Jetzt upgraden", en: "Upgrade now" })}
+              </ToastAction>
+            ),
+          });
+          setStep("upload"); setPages([]); setFile(null); setPreview(null);
+          return;
+        }
+        if (status === 429 || code === "rate_limit" || code === "ai_rate_limit") {
+          toast({
+            title: tt({ de: "Kurze Pause", en: "Short pause" }),
+            description: msg || tt({ de: "Bitte einen Moment warten — kurze Pause vor dem nächsten Scan.", en: "Please wait a moment before the next scan." }),
+          });
+          setStep("upload"); setFile(null); setPreview(null);
+          return;
+        }
+        if (status === 401) {
+          toast({
+            title: tt({ de: "Sitzung abgelaufen", en: "Session expired" }),
+            description: tt({ de: "Bitte erneut einloggen.", en: "Please sign in again." }),
+            variant: "destructive",
+          });
+          setStep("upload");
+          return;
+        }
+        throw error;
+      }
 
       setScanResult(data);
       const detectedDate = data.date || "";
