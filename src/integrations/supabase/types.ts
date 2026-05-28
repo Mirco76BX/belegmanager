@@ -69,6 +69,14 @@ export type Database = {
         Row: {
           address: string | null
           created_at: string
+          datev_berater_nr: string | null
+          datev_bezeichnung: string | null
+          datev_diktatkuerzel: string | null
+          datev_kontenrahmen: string | null
+          datev_konto_gegenkonto: string | null
+          datev_mandanten_nr: string | null
+          datev_sachkontenlaenge: number | null
+          datev_wj_beginn: string | null
           id: string
           name: string
           org_type: string
@@ -78,6 +86,14 @@ export type Database = {
         Insert: {
           address?: string | null
           created_at?: string
+          datev_berater_nr?: string | null
+          datev_bezeichnung?: string | null
+          datev_diktatkuerzel?: string | null
+          datev_kontenrahmen?: string | null
+          datev_konto_gegenkonto?: string | null
+          datev_mandanten_nr?: string | null
+          datev_sachkontenlaenge?: number | null
+          datev_wj_beginn?: string | null
           id?: string
           name: string
           org_type?: string
@@ -87,6 +103,14 @@ export type Database = {
         Update: {
           address?: string | null
           created_at?: string
+          datev_berater_nr?: string | null
+          datev_bezeichnung?: string | null
+          datev_diktatkuerzel?: string | null
+          datev_kontenrahmen?: string | null
+          datev_konto_gegenkonto?: string | null
+          datev_mandanten_nr?: string | null
+          datev_sachkontenlaenge?: number | null
+          datev_wj_beginn?: string | null
           id?: string
           name?: string
           org_type?: string
@@ -287,6 +311,8 @@ export type Database = {
           kanzlei: string | null
           last_name: string | null
           onboarding_seen: boolean
+          tax_advisor_email: string | null
+          tax_advisor_name: string | null
         }
         Insert: {
           created_at?: string
@@ -300,6 +326,8 @@ export type Database = {
           kanzlei?: string | null
           last_name?: string | null
           onboarding_seen?: boolean
+          tax_advisor_email?: string | null
+          tax_advisor_name?: string | null
         }
         Update: {
           created_at?: string
@@ -313,6 +341,8 @@ export type Database = {
           kanzlei?: string | null
           last_name?: string | null
           onboarding_seen?: boolean
+          tax_advisor_email?: string | null
+          tax_advisor_name?: string | null
         }
         Relationships: [
           {
