@@ -74,6 +74,14 @@ export type Database = {
           org_type: string
           tax_id: string | null
           user_id: string
+          datev_berater_nr: string | null
+          datev_mandanten_nr: string | null
+          datev_kontenrahmen: string | null
+          datev_konto_gegenkonto: string | null
+          datev_wj_beginn: string | null
+          datev_sachkontenlaenge: number | null
+          datev_bezeichnung: string | null
+          datev_diktatkuerzel: string | null
         }
         Insert: {
           address?: string | null
@@ -83,6 +91,14 @@ export type Database = {
           org_type?: string
           tax_id?: string | null
           user_id: string
+          datev_berater_nr?: string | null
+          datev_mandanten_nr?: string | null
+          datev_kontenrahmen?: string | null
+          datev_konto_gegenkonto?: string | null
+          datev_wj_beginn?: string | null
+          datev_sachkontenlaenge?: number | null
+          datev_bezeichnung?: string | null
+          datev_diktatkuerzel?: string | null
         }
         Update: {
           address?: string | null
@@ -92,6 +108,14 @@ export type Database = {
           org_type?: string
           tax_id?: string | null
           user_id?: string
+          datev_berater_nr?: string | null
+          datev_mandanten_nr?: string | null
+          datev_kontenrahmen?: string | null
+          datev_konto_gegenkonto?: string | null
+          datev_wj_beginn?: string | null
+          datev_sachkontenlaenge?: number | null
+          datev_bezeichnung?: string | null
+          datev_diktatkuerzel?: string | null
         }
         Relationships: []
       }
@@ -251,6 +275,8 @@ export type Database = {
           kanzlei: string | null
           last_name: string | null
           onboarding_seen: boolean
+          tax_advisor_email: string | null
+          tax_advisor_name: string | null
         }
         Insert: {
           created_at?: string
@@ -264,6 +290,8 @@ export type Database = {
           kanzlei?: string | null
           last_name?: string | null
           onboarding_seen?: boolean
+          tax_advisor_email?: string | null
+          tax_advisor_name?: string | null
         }
         Update: {
           created_at?: string
@@ -277,6 +305,8 @@ export type Database = {
           kanzlei?: string | null
           last_name?: string | null
           onboarding_seen?: boolean
+          tax_advisor_email?: string | null
+          tax_advisor_name?: string | null
         }
         Relationships: [
           {

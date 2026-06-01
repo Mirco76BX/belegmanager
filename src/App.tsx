@@ -27,6 +27,7 @@ import Datenschutz from "@/pages/Datenschutz";
 import Demo from "@/pages/Demo";
 import ResetPassword from "@/pages/ResetPassword";
 import NativeAuthCallback from "@/pages/NativeAuthCallback";
+import StyleGuide from "@/pages/StyleGuide";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -157,6 +158,7 @@ const App = () => (
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/clients" element={<Clients />} />
                 <Route path="/account" element={<Account />} />
+                <Route path="/styleguide" element={<StyleGuide />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -8,6 +8,7 @@ import InviteDialog from "@/components/InviteDialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useState } from "react";
+import { VERSION_LABEL } from "@/lib/version";
 
 const AppSidebar = () => {
   const { signOut, subscription } = useAuth();
@@ -20,6 +21,7 @@ const AppSidebar = () => {
 
   const isTaxAdvisor = subscription.tier === "tax_advisor";
 
+  // Desktop-Sidebar: alle Items vertikal (kein Platzproblem)
   const navItems = [
     { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/" },
     { key: "nav.receipts" as const, icon: Receipt, path: "/receipts" },
@@ -28,6 +30,35 @@ const AppSidebar = () => {
     { key: "nav.fahrtkosten" as const, icon: Car, path: "/fahrtkosten" },
     ...(isTaxAdvisor ? [{ key: "nav.clients" as const, icon: Users, path: "/clients" }] : []),
   ];
+
+  // Mobile-Bottom-Nav: EXAKT 4 Items + Scan-Button in der Mitte = 5 Spalten.
+  // Fahrtkosten landet immer im Hamburger-Menü (weniger frequent als die anderen).
+  // Bei Steuerberatern: Mandanten ersetzt Orga im Bottom-Nav (Mandanten = Daily-Driver).
+  const bottomNavItems = isTaxAdvisor
+    ? [
+        { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/" },
+        { key: "nav.receipts" as const, icon: Receipt, path: "/receipts" },
+        // [Scan-Button hier]
+        { key: "nav.clients" as const, icon: Users, path: "/clients" },
+        { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report" },
+      ]
+    : [
+        { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/" },
+        { key: "nav.receipts" as const, icon: Receipt, path: "/receipts" },
+        // [Scan-Button hier]
+        { key: "nav.companies" as const, icon: Building2, path: "/companies" },
+        { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report" },
+      ];
+
+  // Items, die NICHT im Bottom-Nav sind, müssen im Hamburger erreichbar sein
+  const hiddenNavItems = isTaxAdvisor
+    ? [
+        { key: "nav.companies" as const, icon: Building2, path: "/companies" },
+        { key: "nav.fahrtkosten" as const, icon: Car, path: "/fahrtkosten" },
+      ]
+    : [
+        { key: "nav.fahrtkosten" as const, icon: Car, path: "/fahrtkosten" },
+      ];
 
   return (
     <>
@@ -138,7 +169,28 @@ const AppSidebar = () => {
 
       {/* Mobile Dropdown Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed left-0 right-0 z-40 bg-sidebar border-b border-sidebar-border px-4 py-3 space-y-1 animate-fade-in" style={{ top: 'calc(env(safe-area-inset-top) + 52px)' }}>
+        <div className="md:hidden fixed left-0 right-0 z-40 bg-sidebar border-b border-sidebar-border px-4 py-3 space-y-1 animate-fade-in max-h-[calc(100vh-7rem)] overflow-y-auto" style={{ top: 'calc(env(safe-area-inset-top) + 52px)' }}>
+          {/* Navigation-Items, die nicht in der Bottom-Nav sind */}
+          {hiddenNavItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <button
+                key={item.path}
+                onClick={() => { navigate(item.path); setMobileMenuOpen(false); }}
+                className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm ${
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50"
+                }`}
+              >
+                <item.icon className="h-4 w-4" />
+                {t(item.key)}
+              </button>
+            );
+          })}
+          {hiddenNavItems.length > 0 && (
+            <div className="border-t border-sidebar-border my-1" />
+          )}
           {isAdmin && (
             <button
               onClick={() => { navigate("/admin/users"); setMobileMenuOpen(false); }}
@@ -175,14 +227,18 @@ const AppSidebar = () => {
           >
             Impressum
           </Link>
+          {/* Version-Anzeige am Ende */}
+          <div className="border-t border-sidebar-border mt-1 pt-2 px-3">
+            <p className="text-[10px] text-sidebar-foreground/40 font-mono">{VERSION_LABEL}</p>
+          </div>
         </div>
       )}
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation — exakt 4 Items + Scan-Button in der Mitte = 5 Spalten */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border safe-area-bottom">
         <div className="grid grid-cols-5 items-end py-2">
-          {/* First two nav items */}
-          {navItems.slice(0, 2).map((item) => {
+          {/* Erste zwei Items links */}
+          {bottomNavItems.slice(0, 2).map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <button
@@ -198,7 +254,7 @@ const AppSidebar = () => {
             );
           })}
 
-          {/* Central Scan Button — exact center column */}
+          {/* Scan-Button mittig */}
           <div className="flex justify-center">
             <button
               onClick={() => {
@@ -211,8 +267,8 @@ const AppSidebar = () => {
             </button>
           </div>
 
-          {/* Last two nav items */}
-          {navItems.slice(2).map((item) => {
+          {/* Letzte zwei Items rechts */}
+          {bottomNavItems.slice(2).map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <button

@@ -342,7 +342,7 @@ export default function VatItemsEditor({
 
               <div>
                 <Label htmlFor={`brutto-${idx}`} className="text-[11px]">
-                  {tt({ de: "Brutto €", en: "Gross €" })}
+                  {tt({ de: "Brutto €", en: "Gross €" })}
                 </Label>
                 <Input
                   id={`brutto-${idx}`}
@@ -357,8 +357,8 @@ export default function VatItemsEditor({
             </div>
 
             <div className="text-[11px] text-muted-foreground flex justify-between pt-0.5">
-              <span>Netto: <span className="font-mono">{d.net_amount.toFixed(2)} €</span></span>
-              <span>MwSt: <span className="font-mono">{d.vat_amount.toFixed(2)} €</span></span>
+              <span>Netto: <span className="font-mono">{d.net_amount.toFixed(2)} €</span></span>
+              <span>MwSt: <span className="font-mono">{d.vat_amount.toFixed(2)} €</span></span>
             </div>
           </div>
         ))}
@@ -379,27 +379,27 @@ export default function VatItemsEditor({
       <div className="rounded-md bg-background p-2.5 space-y-1 text-xs">
         <div className="flex justify-between">
           <span className="text-muted-foreground">{tt({ de: "Summe Brutto Positionen", en: "Sum gross items" })}</span>
-          <span className="font-mono font-semibold">{sumBrutto.toFixed(2)} €</span>
+          <span className="font-mono font-semibold">{sumBrutto.toFixed(2)} €</span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">{tt({ de: "Summe MwSt", en: "Sum VAT" })}</span>
-          <span className="font-mono">{sumVat.toFixed(2)} €</span>
+          <span className="font-mono">{sumVat.toFixed(2)} €</span>
         </div>
         <div className="flex justify-between border-t pt-1">
           <span className="text-muted-foreground">{tt({ de: "Beleg-Brutto", en: "Receipt gross" })}</span>
-          <span className="font-mono">{receiptBrutto.toFixed(2)} €</span>
+          <span className="font-mono">{receiptBrutto.toFixed(2)} €</span>
         </div>
         <div className={`flex justify-between font-semibold ${isMismatch ? "text-destructive" : "text-green-700 dark:text-green-400"}`}>
           <span>{tt({ de: "Differenz", en: "Difference" })}</span>
-          <span className="font-mono">{diff >= 0 ? "+" : ""}{diff.toFixed(2)} €</span>
+          <span className="font-mono">{diff >= 0 ? "+" : ""}{diff.toFixed(2)} €</span>
         </div>
         {isMismatch && (
           <div className="flex items-start gap-1.5 pt-1 text-destructive text-[11px]">
             <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
             <span>
               {tt({
-                de: "Solange Differenz > 0,02 € besteht, blockt der DATEV-Export. Korrigiere Positionen oder Beleg-Brutto.",
-                en: "While diff > 0.02 €, DATEV export is blocked. Fix items or receipt gross.",
+                de: "Solange Differenz > 0,02 € besteht, blockt der DATEV-Export. Korrigiere Positionen oder Beleg-Brutto.",
+                en: "While diff > 0.02 €, DATEV export is blocked. Fix items or receipt gross.",
               })}
             </span>
           </div>

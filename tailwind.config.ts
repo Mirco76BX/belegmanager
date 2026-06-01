@@ -11,6 +11,38 @@ export default {
       screens: { "2xl": "1400px" },
     },
     extend: {
+      // ─── DESIGN TOKENS — Revolut-Business / Apple HIG-orientiert ───
+      fontSize: {
+        // iOS Dynamic-Type-Skala (in px / lineHeight)
+        "caption-2": ["11px", { lineHeight: "13px", letterSpacing: "0.07px" }],
+        "caption-1": ["12px", { lineHeight: "16px", letterSpacing: "0px" }],
+        footnote:    ["13px", { lineHeight: "18px", letterSpacing: "-0.08px" }],
+        subhead:     ["15px", { lineHeight: "20px", letterSpacing: "-0.24px" }],
+        body:        ["17px", { lineHeight: "22px", letterSpacing: "-0.41px" }], // ← Standard-Body
+        callout:     ["17px", { lineHeight: "22px", letterSpacing: "-0.32px" }],
+        headline:    ["17px", { lineHeight: "22px", letterSpacing: "-0.41px", fontWeight: "600" }],
+        "title-3":   ["20px", { lineHeight: "25px", letterSpacing: "-0.45px" }],
+        "title-2":   ["22px", { lineHeight: "28px", letterSpacing: "-0.5px" }],
+        "title-1":   ["28px", { lineHeight: "34px", letterSpacing: "-0.5px" }],
+        "large-title": ["34px", { lineHeight: "41px", letterSpacing: "-0.5px" }], // Hero-Numbers
+      },
+      spacing: {
+        // Ergänzung zur Standard-Skala — die wichtigen für Touch-Targets
+        "4.5": "18px",
+        "11.5": "46px",
+        "13": "52px",   // Primary-Button-Höhe
+        "15": "60px",   // Hero-Button
+        "18": "72px",   // List-Item XL
+      },
+      minHeight: {
+        // Touch-Target-Garantien (Apple HIG: min. 44pt)
+        touch: "44px",
+        "touch-lg": "52px",
+      },
+      minWidth: {
+        touch: "44px",
+        "touch-lg": "52px",
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

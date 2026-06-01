@@ -99,9 +99,16 @@ const KONTEN_MAPPING: Record<string, { skr03: string; skr04: string }> = {
   reisekosten_fahrt:          { skr03: "4670", skr04: "6670" }, // Reisekosten AN — Fahrtkosten
   reisekosten_nebenkosten:    { skr03: "4674", skr04: "6674" }, // Reisenebenkosten (Maut, Parkplatz)
   verpflegungsmehraufwand:    { skr03: "4664", skr04: "6664" }, // VMA Inland (Pauschalen)
-  // — Bewirtung & Geschenke —
+  // — Bewirtung —
   bewirtung:                  { skr03: "4650", skr04: "6640" }, // Bewirtungskosten § 4 Abs. 5 Nr. 2 EStG
-  geschenke:                  { skr03: "4630", skr04: "6610" }, // Werbegeschenke ≤ 35 €/Empfänger/Jahr
+  // — Geschenke an Geschäftspartner § 4 Abs. 5 Nr. 1 EStG —
+  // Freigrenze 50 € netto/Empfänger/Jahr seit 01.01.2024 (Wachstumschancengesetz)
+  streuwerbeartikel:          { skr03: "4633", skr04: "6613" }, // ≤ 10 €, immer abziehbar (kein 50€-Limit)
+  geschenke_abziehbar:        { skr03: "4630", skr04: "6610" }, // > 10 € und ≤ 50 €, abziehbar
+  geschenke_pauschal:         { skr03: "4636", skr04: "6616" }, // mit § 37b Pauschalsteuer 30%
+  geschenke_nicht_abziehbar:  { skr03: "4635", skr04: "6611" }, // > 50 €, nicht abziehbar (kein VSt-Abzug!)
+  // — Legacy —
+  geschenke:                  { skr03: "4630", skr04: "6610" }, // Fallback alte Belege
   // — KFZ —
   tankkosten:                 { skr03: "4530", skr04: "6530" }, // Laufende Kfz-Betriebskosten
   // — Büro & Kommunikation —
@@ -123,17 +130,32 @@ const KONTEN_MAPPING: Record<string, { skr03: string; skr04: string }> = {
   gwg:                        { skr03: "4855", skr04: "6260" }, // Sofortabschreibung GwG ≤ 800 €
   // — Versicherung & Finanzen —
   versicherung:               { skr03: "4360", skr04: "6420" }, // Betriebliche Versicherungen
-  bankgebuehren:              { skr03: "4970", skr04: "6857" }, // Nebenkosten des Geldverkehrs
+  bankgebuehren:              { skr03: "4970", skr04: "6855" }, // Nebenkosten des Geldverkehrs (SKR04: 6855!)
   // — Fallback —
-  sonstiges:                  { skr03: "4900", skr04: "6855" }, // Sonstige betriebliche Aufwendungen (übrige)
+  sonstiges:                  { skr03: "4900", skr04: "6850" }, // Übrige betriebliche Aufwendungen
 };
 
-const DEFAULT_KONTO = { skr03: "4900", skr04: "6855" }; // Fallback (SKR04: 6300 wäre Werbekosten — falsch)
+const DEFAULT_KONTO = { skr03: "4900", skr04: "6850" }; // Fallback: Übrige betriebliche Aufwendungen
 
-/** Default-Gegenkonto je Kontenrahmen (Bank) */
+/**
+ * Default-Gegenkonto je Kontenrahmen.
+ *
+ * WICHTIG: Verbindlichkeits-/Verrechnungskonto, NICHT Bank!
+ *   Bank als Gegenkonto würde beim Steuerberater eine doppelte Bank-Buchung
+ *   erzeugen, weil er den Kontoauszug separat importiert.
+ *   Standard-Workflow in DATEV:
+ *     1) Beleg-Aufwand SOLL  gegen  Verbindlichkeit aus L+L HABEN
+ *     2) Verbindlichkeit aus L+L SOLL  gegen  Bank HABEN  (kommt aus Kontoauszug)
+ *   Damit gleicht sich die Verbindlichkeit zu null aus, die Bank wird nicht doppelt gebucht.
+ *
+ *   SKR 03: 1600 = Verbindlichkeiten aus L+L
+ *   SKR 04: 3300 = Verbindlichkeiten aus L+L
+ *
+ *   Der User kann das pro Company in den Stammdaten überschreiben.
+ */
 export const DEFAULT_GEGENKONTO: Record<Kontenrahmen, string> = {
-  SKR03: "1200", // Bank
-  SKR04: "1800", // Bank
+  SKR03: "1600", // Verbindlichkeiten aus L+L
+  SKR04: "3300", // Verbindlichkeiten aus L+L
 };
 
 /**
@@ -372,7 +394,30 @@ function buildBuchungen(receipt: DatevReceipt, mandant: DatevMandantSettings, lf
   if (!receipt.tax_category) warnings.push(`Beleg ${receipt.id.slice(0, 8)}: keine Kategorie → Fallback-Konto ${konto}`);
 
   const belegnummer = (receipt.belegnummer || String(lfdNr).padStart(4, "0")).slice(0, 12);
-  const bText = sanitizeForDatev((receipt.description || "").slice(0, 60));
+
+  // Bewirtung-Buchungstext-Hinweis (§ 4 Abs. 5 Nr. 2 EStG):
+  // 70% abziehbar / 100% Vorsteuer. App bucht voll auf 6640/4650; der
+  // Steuerberater nimmt den 70/30-Split in DATEV bei der Bilanzierung vor.
+  // Wir notieren das im Buchungstext, damit Michael es sofort sieht.
+  const isBewirtung = receipt.tax_category === "bewirtung";
+  const bewirtungSuffix = isBewirtung ? " [70% abz., § 4 Abs. 5 Nr. 2 EStG]" : "";
+  // Buchungstext insgesamt 60 Zeichen — wir reservieren Platz für das Suffix.
+  const maxDescLen = Math.max(0, 60 - bewirtungSuffix.length);
+  const rawDesc = (receipt.description || "").slice(0, maxDescLen);
+  const bText = sanitizeForDatev(rawDesc + bewirtungSuffix);
+
+  // Pflichtfeld-Check Bewirtung > 250 € — § 14 UStG verlangt bei Restaurants
+  // > 250 € EXPLIZITE Nennung des Bewirtenden (Name + Anschrift).
+  // Wir prüfen das hier nicht hart (die Daten haben wir gar nicht alle), aber
+  // werfen eine Warnung, damit der User weiß, was Michael verlangt.
+  const totalForCheck = receipt.amount_eur ?? receipt.amount ?? 0;
+  if (isBewirtung && totalForCheck > 250) {
+    warnings.push(
+      `Beleg ${receipt.id.slice(0, 8)} (Bewirtung ${totalForCheck.toFixed(2)} €): ` +
+      `Über 250 € — Rechnung muss vollständige § 14 UStG-Angaben enthalten ` +
+      `(Name + Anschrift des Bewirtenden auf dem Beleg). Bitte vor Festschreibung prüfen.`,
+    );
+  }
 
   // Fremdwährung: Kurs ausrechnen wenn möglich
   const isForex = !!receipt.currency && receipt.currency !== "EUR";

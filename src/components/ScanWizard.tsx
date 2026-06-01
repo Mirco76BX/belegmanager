@@ -731,13 +731,13 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                     <span className="font-semibold text-foreground">💰 {scanResult.amount.toFixed(2)} {scanResult.currency || "EUR"} inkl. MwSt.</span>
                     {confidenceBadge(conf?.amount, lang)}
                     {scanResult.currency && scanResult.currency !== "EUR" && amount && (
-                      <span>≈ {Number(amount).toFixed(2)} €</span>
+                      <span>≈ {Number(amount).toFixed(2)} €</span>
                     )}
                     {vatItems.length > 1 ? (
                       <div className="flex flex-col gap-0.5 mt-0.5">
                         {vatItems.map((item, idx) => (
                           <span key={idx} className="text-xs text-muted-foreground">
-                            📊 {item.label}: {item.vat_amount.toFixed(2)} € ({item.vat_rate}%)
+                            📊 {item.label}: {item.vat_amount.toFixed(2)} € ({item.vat_rate}%)
                           </span>
                         ))}
                       </div>
@@ -750,7 +750,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                           </span>
                         )}
                         {scanResult.tax_amount != null && scanResult.currency && scanResult.currency !== "EUR" && vatAmount && (
-                          <span>≈ {Number(vatAmount).toFixed(2)} €</span>
+                          <span>≈ {Number(vatAmount).toFixed(2)} €</span>
                         )}
                         {scanResult.tax_rate != null && (
                           <span className="flex items-center gap-1">
@@ -894,7 +894,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                   ))}
                   <div className="flex justify-between text-xs text-muted-foreground px-1">
                     <span>{tt({de:"Gesamt MwSt.", en:"Total VAT"})}</span>
-                    <span className="font-mono font-medium">{vatItems.reduce((s, i) => s + (i.vat_amount || 0), 0).toFixed(2)} €</span>
+                    <span className="font-mono font-medium">{vatItems.reduce((s, i) => s + (i.vat_amount || 0), 0).toFixed(2)} €</span>
                   </div>
                 </div>
               ) : (

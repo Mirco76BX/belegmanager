@@ -72,9 +72,37 @@ export const TAX_CATEGORIES: TaxCategory[] = [
     icon: "🛡️",
     defaultVatRate: 19,
   },
+  // ───── Geschenke an Geschäftspartner — § 4 Abs. 5 Nr. 1 EStG ─────
+  // Freigrenze 50 € netto pro Empfänger/Jahr (seit 01.01.2024, Wachstumschancengesetz).
+  // Bei Überschreitung: Geschenk komplett nicht abziehbar. Pauschalsteuer § 37b EStG optional.
+  {
+    value: "streuwerbeartikel",
+    label: { de: "Streuwerbeartikel (≤ 10 €, keine Aufzeichnung)", en: "Promo Items (≤ €10, no tracking)" },
+    icon: "🖊️",
+    defaultVatRate: 19,
+  },
+  {
+    value: "geschenke_abziehbar",
+    label: { de: "Geschenke ≤ 50 € (abziehbar, ohne Pauschalsteuer)", en: "Gifts ≤ €50 (deductible, no flat tax)" },
+    icon: "🎁",
+    defaultVatRate: 19,
+  },
+  {
+    value: "geschenke_pauschal",
+    label: { de: "Geschenke ≤ 50 € (mit § 37b Pauschalsteuer 30 %)", en: "Gifts ≤ €50 (with §37b flat tax 30%)" },
+    icon: "🎁",
+    defaultVatRate: 19,
+  },
+  {
+    value: "geschenke_nicht_abziehbar",
+    label: { de: "Geschenke > 50 € (nicht abziehbar)", en: "Gifts > €50 (not deductible)" },
+    icon: "🚫",
+    defaultVatRate: 19,
+  },
+  // — Legacy-Wert für Rückwärtskompatibilität bestehender Belege, in UI bevorzugt die 4 neuen Werte. —
   {
     value: "geschenke",
-    label: { de: "Geschenke (Geschäftspartner)", en: "Gifts (Business Partners)" },
+    label: { de: "Geschenk (alt — bitte differenzieren)", en: "Gift (legacy — please re-classify)" },
     icon: "🎁",
     defaultVatRate: 19,
   },
@@ -254,8 +282,12 @@ export function guessTaxCategoryFromScan(vendor: string | null, description: str
   if (text.match(/versicherung|allianz|axa|signal iduna|ergo|huk|generali|gothaer|haftpflicht/)) return "versicherung";
   // Fortbildung
   if (text.match(/seminar|workshop|fortbildung|weiterbildung|training|kurs|coaching|udemy|coursera|conference|konferenz/)) return "fortbildung";
-  // Geschenke: Blumen, Wein, Pralinen, Schokolade als Geschäftsgeschenk (i. d. R. bis 35 € abziehbar)
-  if (text.match(/blumen|florist|geschenk|gift|wein\b|sekt|champagne|praline|schokolade|bonbonniere/)) return "geschenke";
+  // Geschenke: Blumen, Wein, Pralinen, Schokolade als Geschäftsgeschenk.
+  // Smart-Default: "geschenke_abziehbar" (≤ 50 € netto/Empfänger/Jahr seit 01.01.2024).
+  // User muss bei Bedarf in die 4 Sub-Kategorien (streuwerbeartikel / abziehbar /
+  // pauschal / nicht_abziehbar) wechseln — die App stupst nicht mehr in den
+  // veralteten Sammel-Wert.
+  if (text.match(/blumen|florist|geschenk|gift|wein\b|sekt|champagne|praline|schokolade|bonbonniere/)) return "geschenke_abziehbar";
   // Tabak: nicht abziehbar nach EStG, daher 'sonstiges'
   if (text.match(/tabak|zigarre|zigarette|tobacco|cigar/)) return "sonstiges";
   return null;

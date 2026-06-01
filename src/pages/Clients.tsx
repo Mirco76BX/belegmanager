@@ -2,15 +2,12 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage, getLocale } from "@/i18n/LanguageContext";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Plus, Trash2, Eye, ArrowLeft, Clock, CheckCircle2, XCircle, Download, FileText, Filter } from "lucide-react";
+import { Users, Plus, Trash2, Eye, ArrowLeft, Clock, XCircle, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
 
@@ -44,10 +41,26 @@ interface Invitation {
 
 type AccountingStatus = "neu" | "geprüft" | "verbucht";
 
-const STATUS_OPTIONS: { value: AccountingStatus; labelKey: { de: string; en: string; tr: string; ar: string; ru: string }; color: string }[] = [
-  { value: "neu", labelKey: { de: "Neu", en: "New", tr: "Yeni", ar: "جديد", ru: "Новый" }, color: "border-warning/50 text-warning" },
-  { value: "geprüft", labelKey: { de: "Geprüft", en: "Checked", tr: "Kontrol Edildi", ar: "تم الفحص", ru: "Проверено" }, color: "border-primary/50 text-primary" },
-  { value: "verbucht", labelKey: { de: "Verbucht", en: "Booked", tr: "Kaydedildi", ar: "تم الحجز", ru: "Проведено" }, color: "border-success/50 text-success" },
+const STATUS_OPTIONS: {
+  value: AccountingStatus;
+  labelKey: { de: string; en: string };
+  pill: string;
+}[] = [
+  {
+    value: "neu",
+    labelKey: { de: "Neu", en: "New" },
+    pill: "bg-amber-50 text-amber-800 border-amber-200",
+  },
+  {
+    value: "geprüft",
+    labelKey: { de: "Geprüft", en: "Checked" },
+    pill: "bg-blue-50 text-blue-800 border-blue-200",
+  },
+  {
+    value: "verbucht",
+    labelKey: { de: "Verbucht", en: "Booked" },
+    pill: "bg-emerald-50 text-emerald-800 border-emerald-200",
+  },
 ];
 
 const Clients = () => {
@@ -74,7 +87,11 @@ const Clients = () => {
     if (!user) return;
     const [linksRes, invRes] = await Promise.all([
       supabase.from("advisor_clients").select("id, client_id").eq("advisor_id", user.id),
-      supabase.from("advisor_invitations").select("id, client_email, status, created_at").eq("advisor_id", user.id).order("created_at", { ascending: false }),
+      supabase
+        .from("advisor_invitations")
+        .select("id, client_email, status, created_at")
+        .eq("advisor_id", user.id)
+        .order("created_at", { ascending: false }),
     ]);
 
     setInvitations((invRes.data || []) as Invitation[]);
@@ -103,7 +120,9 @@ const Clients = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchClients(); }, [user]);
+  useEffect(() => {
+    fetchClients();
+  }, [user]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,18 +133,18 @@ const Clients = () => {
 
     if (trimmedEmail === user.email) {
       toast({
-        title: tt({ de: "Nicht möglich", en: "Not allowed", tr: "İzin verilmiyor", ar: "غير مسموح", ru: "Не допускается" }),
-        description: tt({ de: "Sie können sich nicht selbst einladen.", en: "You cannot invite yourself.", tr: "Kendinizi davet edemezsiniz.", ar: "لا يمكنك دعوة نفسك.", ru: "Вы не можете пригласить себя." }),
+        title: tt({ de: "Nicht möglich", en: "Not allowed" }),
+        description: tt({ de: "Du kannst dich nicht selbst einladen.", en: "You cannot invite yourself." }),
         variant: "destructive",
       });
       setAdding(false);
       return;
     }
 
-    const existing = invitations.find(i => i.client_email === trimmedEmail && i.status === "pending");
+    const existing = invitations.find((i) => i.client_email === trimmedEmail && i.status === "pending");
     if (existing) {
       toast({
-        title: tt({ de: "Bereits eingeladen", en: "Already invited", tr: "Zaten davet edildi", ar: "تمت الدعوة بالفعل", ru: "Уже приглашён" }),
+        title: tt({ de: "Bereits eingeladen", en: "Already invited" }),
         variant: "destructive",
       });
       setAdding(false);
@@ -138,20 +157,21 @@ const Clients = () => {
       .eq("email", trimmedEmail)
       .maybeSingle();
 
-    const { error } = await supabase
-      .from("advisor_invitations")
-      .insert({
-        advisor_id: user.id,
-        client_email: trimmedEmail,
-        client_id: profile?.id || null,
-      } as any);
+    const { error } = await supabase.from("advisor_invitations").insert({
+      advisor_id: user.id,
+      client_email: trimmedEmail,
+      client_id: profile?.id || null,
+    } as any);
 
     if (error) {
       toast({ title: error.message, variant: "destructive" });
     } else {
       toast({
-        title: tt({ de: "Einladung gesendet!", en: "Invitation sent!", tr: "Davet gönderildi!", ar: "تم إرسال الدعوة!", ru: "Приглашение отправлено!" }),
-        description: tt({ de: "Der Mandant muss die Einladung in seinem Konto annehmen.", en: "The client must accept the invitation in their account.", tr: "Müşteri, davetiyeyi hesabında kabul etmelidir.", ar: "يجب على العميل قبول الدعوة في حسابه.", ru: "Клиент должен принять приглашение в своём аккаунте." }),
+        title: tt({ de: "Einladung gesendet", en: "Invitation sent" }),
+        description: tt({
+          de: "Der Mandant muss die Einladung in seinem Konto annehmen.",
+          en: "The client must accept the invitation in their account.",
+        }),
       });
       setEmail("");
       setAddOpen(false);
@@ -198,9 +218,11 @@ const Clients = () => {
     }
   };
 
-  const filteredReceipts = statusFilter === "all"
-    ? clientReceipts
-    : clientReceipts.filter((r) => r.accounting_status === statusFilter);
+  const filteredReceipts =
+    statusFilter === "all" ? clientReceipts : clientReceipts.filter((r) => r.accounting_status === statusFilter);
+
+  const clientName = (c: ClientProfile) =>
+    [c.first_name, c.last_name].filter(Boolean).join(" ") || c.display_name || c.email;
 
   const handleExportCSV = () => {
     if (filteredReceipts.length === 0) return;
@@ -217,235 +239,353 @@ const Clients = () => {
       r.accounting_status,
     ]);
     const csv = [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = `belege_${clientName(viewingClient!)}_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    sonnerToast.success(tt({ de: "Export erstellt", en: "Export created", tr: "Dışa aktarma oluşturuldu", ar: "تم إنشاء التصدير", ru: "Экспорт создан" }));
+    sonnerToast.success(tt({ de: "Export erstellt", en: "Export created" }));
   };
 
+  /* ---------- Gating: nur für Steuerberater ---------- */
   if (!isTaxAdvisor) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-        <Users className="h-12 w-12 text-muted-foreground" />
-        <h2 className="text-xl font-semibold">{tt({ de: "Mandanten", en: "Clients", tr: "Müşteriler", ar: "العملاء", ru: "Клиенты" })}</h2>
-        <p className="text-muted-foreground max-w-sm">
-          {tt({ de: "Diese Funktion ist nur für Steuerberater verfügbar.", en: "This feature is only available for tax advisors.", tr: "Bu özellik yalnızca vergi danışmanları için kullanılabilir.", ar: "هذه الميزة متاحة فقط للمستشارين الضريبيين.", ru: "Эта функция доступна только для налоговых консультантов." })}
-        </p>
+      <div className="animate-fade-in max-w-2xl">
+        <div className="rounded-2xl border bg-card p-8 text-center space-y-3">
+          <div className="mx-auto h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+            <Users className="h-7 w-7 text-primary" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-title-3 font-semibold">{tt({ de: "Mandanten", en: "Clients" })}</p>
+            <p className="text-subhead text-muted-foreground">
+              {tt({
+                de: "Diese Funktion ist nur für Steuerberater verfügbar.",
+                en: "This feature is only available for tax advisors.",
+              })}
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
 
-  const clientName = (c: ClientProfile) =>
-    [c.first_name, c.last_name].filter(Boolean).join(" ") || c.display_name || c.email;
-
-  // Client receipt detail view
+  /* ---------- Detail-View: Belege eines Mandanten ---------- */
   if (viewingClient) {
-    const statusLabel = (s: string) => {
-      const opt = STATUS_OPTIONS.find((o) => o.value === s);
-      return opt ? tt(opt.labelKey as any) : s;
-    };
+    const initial = (clientName(viewingClient)[0] || "?").toUpperCase();
 
     return (
-      <div className="animate-fade-in space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="gap-2" onClick={() => setViewingClient(null)}>
-              <ArrowLeft className="h-4 w-4" />
-              {tt({ de: "Zurück", en: "Back", tr: "Geri", ar: "رجوع", ru: "Назад" })}
-            </Button>
-            <h1 className="text-xl md:text-2xl font-bold">
+      <div className="animate-fade-in space-y-5 pb-12">
+        {/* Back + Header */}
+        <button
+          onClick={() => setViewingClient(null)}
+          className="inline-flex items-center gap-1.5 text-footnote text-primary font-medium hover:underline"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {tt({ de: "Zurück zu Mandanten", en: "Back to clients" })}
+        </button>
+
+        <div className="flex items-center gap-3">
+          <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+            <span className="text-title-2 text-primary font-bold">{initial}</span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-caption-2 uppercase tracking-wider text-muted-foreground">
+              {tt({ de: "Mandant", en: "Client" })}
+            </p>
+            <h1 className="text-title-1 md:text-title-1 font-bold tracking-tight truncate">
               {clientName(viewingClient)}
             </h1>
+            <p className="text-footnote text-muted-foreground truncate">{viewingClient.email}</p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Status filter */}
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px] h-9">
-                <Filter className="h-3.5 w-3.5 mr-1.5" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{tt({ de: "Alle", en: "All", tr: "Tümü", ar: "الكل", ru: "Все" })}</SelectItem>
-                {STATUS_OPTIONS.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>{tt(s.labelKey as any)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="sm" className="gap-2" onClick={handleExportCSV} disabled={filteredReceipts.length === 0}>
+        </div>
+
+        {/* Status-Filter-Chips */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <button
+            onClick={() => setStatusFilter("all")}
+            className={`shrink-0 rounded-full border px-4 py-2 text-footnote font-medium transition-colors ${
+              statusFilter === "all"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-card text-foreground border-border hover:bg-muted/30"
+            }`}
+          >
+            {tt({ de: "Alle", en: "All" })}{" "}
+            <span className="text-caption-1 opacity-70 ml-1">{clientReceipts.length}</span>
+          </button>
+          {STATUS_OPTIONS.map((s) => {
+            const count = clientReceipts.filter((r) => r.accounting_status === s.value).length;
+            const active = statusFilter === s.value;
+            return (
+              <button
+                key={s.value}
+                onClick={() => setStatusFilter(active ? "all" : s.value)}
+                className={`shrink-0 rounded-full border px-4 py-2 text-footnote font-medium transition-colors ${
+                  active ? "bg-primary text-primary-foreground border-primary" : `${s.pill} hover:opacity-80`
+                }`}
+              >
+                {tt(s.labelKey as any)} <span className="text-caption-1 opacity-70 ml-1">{count}</span>
+              </button>
+            );
+          })}
+          <div className="ml-auto shrink-0">
+            <Button
+              variant="outline"
+              className="h-11 px-4 text-footnote gap-1.5"
+              onClick={handleExportCSV}
+              disabled={filteredReceipts.length === 0}
+            >
               <Download className="h-4 w-4" />
               CSV
             </Button>
           </div>
         </div>
 
-        {/* Status summary */}
-        <div className="flex gap-2 flex-wrap">
-          {STATUS_OPTIONS.map((s) => {
-            const count = clientReceipts.filter((r) => r.accounting_status === s.value).length;
-            return (
-              <button
-                key={s.value}
-                onClick={() => setStatusFilter(statusFilter === s.value ? "all" : s.value)}
-                className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${statusFilter === s.value ? s.color + " bg-muted font-medium" : "border-border text-muted-foreground hover:bg-muted/50"}`}
-              >
-                {tt(s.labelKey as any)}: {count}
-              </button>
-            );
-          })}
-        </div>
-
+        {/* Belege-Liste — Revolut-Pattern */}
         {receiptsLoading ? (
-          <p className="text-muted-foreground">{tt({ de: "Laden...", en: "Loading...", tr: "Yükleniyor...", ar: "جارٍ التحميل...", ru: "Загрузка..." })}</p>
+          <div className="rounded-2xl border bg-card p-8 text-center text-muted-foreground text-body">
+            {tt({ de: "Laden...", en: "Loading..." })}
+          </div>
         ) : filteredReceipts.length === 0 ? (
-          <Card><CardContent className="py-12 text-center text-muted-foreground">{tt({ de: "Keine Belege vorhanden", en: "No receipts found", tr: "Fiş bulunamadı", ar: "لم يتم العثور على إيصالات", ru: "Чеков не найдено" })}</CardContent></Card>
+          <div className="rounded-2xl border bg-card p-8 text-center space-y-2">
+            <p className="text-body text-muted-foreground">
+              {tt({ de: "Keine Belege vorhanden", en: "No receipts found" })}
+            </p>
+          </div>
         ) : (
-          <Card>
-            <CardContent className="p-0 overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{tt({ de: "Datum", en: "Date", tr: "Tarih", ar: "التاريخ", ru: "Дата" })}</TableHead>
-                    <TableHead>{tt({ de: "Beschreibung", en: "Description", tr: "Açıklama", ar: "الوصف", ru: "Описание" })}</TableHead>
-                    <TableHead>{tt({ de: "Organisation", en: "Organization", tr: "Kuruluş", ar: "المنظمة", ru: "Организация" })}</TableHead>
-                    <TableHead className="text-right">{tt({ de: "Betrag", en: "Amount", tr: "Tutar", ar: "المبلغ", ru: "Сумма" })}</TableHead>
-                    <TableHead>{tt({ de: "Status", en: "Status", tr: "Durum", ar: "الحالة", ru: "Статус" })}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredReceipts.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="whitespace-nowrap">{new Date(r.date).toLocaleDateString(locale)}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{r.description || "–"}</TableCell>
-                      <TableCell>{r.organization || "–"}</TableCell>
-                      <TableCell className="text-right font-mono whitespace-nowrap">
-                        {r.amount != null ? `${Number(r.amount_eur ?? r.amount).toLocaleString(locale, { minimumFractionDigits: 2 })} €` : "–"}
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={r.accounting_status}
-                          onValueChange={(v) => handleStatusChange(r.id, v as AccountingStatus)}
-                        >
-                          <SelectTrigger className="h-7 w-[110px] text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {STATUS_OPTIONS.map((s) => (
-                              <SelectItem key={s.value} value={s.value}>
-                                {tt(s.labelKey as any)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <div className="rounded-2xl border bg-card overflow-hidden divide-y">
+            {filteredReceipts.map((r) => {
+              const eur =
+                r.amount_eur != null
+                  ? Number(r.amount_eur)
+                  : r.currency === "EUR" || r.currency == null
+                    ? Number(r.amount ?? 0)
+                    : null;
+              const eurStr =
+                eur != null ? `${eur.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €` : "–";
+              return (
+                <div key={r.id} className="px-4 py-3.5 space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-body font-medium truncate">
+                        {r.description || tt({ de: "Ohne Beschreibung", en: "No description" })}
+                      </p>
+                      <p className="text-footnote text-muted-foreground truncate">
+                        {new Date(r.date).toLocaleDateString(locale)}
+                        {r.organization ? ` · ${r.organization}` : ""}
+                      </p>
+                    </div>
+                    <span className="text-body font-mono font-semibold tabular-nums whitespace-nowrap shrink-0">
+                      {eurStr}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-end">
+                    <Select
+                      value={r.accounting_status}
+                      onValueChange={(v) => handleStatusChange(r.id, v as AccountingStatus)}
+                    >
+                      <SelectTrigger className="h-9 w-[150px] text-footnote">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map((s) => (
+                          <SelectItem key={s.value} value={s.value}>
+                            {tt(s.labelKey as any)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     );
   }
 
-  const pendingInvitations = invitations.filter(i => i.status === "pending");
+  /* ---------- Main-View: Mandanten-Liste ---------- */
+  const pendingInvitations = invitations.filter((i) => i.status === "pending");
 
   return (
-    <div className="animate-fade-in space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl md:text-2xl font-bold">{tt({ de: "Mandanten", en: "Clients", tr: "Müşteriler", ar: "العملاء", ru: "Клиенты" })}</h1>
-        <Button className="gap-2 w-full sm:w-auto" onClick={() => setAddOpen(true)}>
-          <Plus className="h-4 w-4" />
-          {tt({ de: "Mandant einladen", en: "Invite Client", tr: "Müşteri Davet Et", ar: "دعوة عميل", ru: "Пригласить клиента" })}
+    <div className="animate-fade-in space-y-6 pb-12 max-w-3xl">
+      {/* Header */}
+      <div className="flex items-end justify-between gap-3">
+        <div className="space-y-1">
+          <p className="text-caption-2 uppercase tracking-wider text-muted-foreground">
+            {tt({ de: "Steuerberater", en: "Tax Advisor" })}
+          </p>
+          <h1 className="text-title-1 md:text-large-title font-bold tracking-tight">
+            {tt({ de: "Mandanten", en: "Clients" })}
+          </h1>
+        </div>
+        <Button
+          className="h-13 px-5 text-body font-semibold text-primary-foreground gap-2 shrink-0"
+          onClick={() => setAddOpen(true)}
+        >
+          <Plus className="h-5 w-5" />
+          <span className="hidden sm:inline">{tt({ de: "Mandant einladen", en: "Invite Client" })}</span>
         </Button>
       </div>
 
+      {/* Sektion: Offene Einladungen */}
       {pendingInvitations.length > 0 && (
         <div className="space-y-2">
-          <h2 className="text-sm font-medium text-muted-foreground">
-            {tt({ de: "Offene Einladungen", en: "Pending Invitations", tr: "Bekleyen Davetler", ar: "الدعوات المعلقة", ru: "Ожидающие приглашения" })}
-          </h2>
-          {pendingInvitations.map((inv) => (
-            <Card key={inv.id} className="border-warning/30 bg-warning/5">
-              <CardContent className="flex items-center justify-between gap-2 py-3">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Clock className="h-4 w-4 text-warning shrink-0" />
-                  <span className="text-sm truncate">{inv.client_email}</span>
-                  <Badge variant="outline" className="text-[10px] border-warning/50 text-warning">
-                    {tt({ de: "Ausstehend", en: "Pending", tr: "Beklemede", ar: "معلق", ru: "Ожидает" })}
-                  </Badge>
-                </div>
-                <Button variant="ghost" size="sm" className="text-destructive shrink-0" onClick={() => handleCancelInvitation(inv.id)}>
-                  <XCircle className="h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {loading ? (
-        <p className="text-muted-foreground">{tt({ de: "Laden...", en: "Loading...", tr: "Yükleniyor...", ar: "جارٍ التحميل...", ru: "Загрузка..." })}</p>
-      ) : clients.length === 0 && pendingInvitations.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <Users className="mb-4 h-12 w-12 text-muted-foreground/40" />
-            <p className="text-muted-foreground">
-              {tt({ de: "Noch keine Mandanten hinzugefügt", en: "No clients added yet", tr: "Henüz müşteri eklenmedi", ar: "لم تتم إضافة عملاء بعد", ru: "Клиенты ещё не добавлены" })}
+          <div className="px-1">
+            <p className="text-caption-2 uppercase tracking-wider text-muted-foreground font-semibold">
+              {tt({ de: "Offene Einladungen", en: "Pending Invitations" })}
             </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-3">
-          {clients.map((c) => (
-            <Card key={c.id}>
-              <CardContent className="flex items-center justify-between gap-2 py-4">
+          </div>
+          <div className="rounded-2xl border bg-card overflow-hidden divide-y">
+            {pendingInvitations.map((inv) => (
+              <div key={inv.id} className="flex items-center gap-3 px-4 py-3.5">
+                <div className="h-12 w-12 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0">
+                  <Clock className="h-5 w-5 text-amber-700" />
+                </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium truncate">{clientName(c)}</p>
-                    <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
-                  </div>
-                  <p className="text-xs text-muted-foreground">{c.email}</p>
+                  <p className="text-body font-medium truncate">{inv.client_email}</p>
+                  <p className="text-footnote text-muted-foreground">
+                    {tt({ de: "Wartet auf Annahme", en: "Awaiting acceptance" })} ·{" "}
+                    {new Date(inv.created_at).toLocaleDateString(locale)}
+                  </p>
                 </div>
-                <div className="flex gap-1 shrink-0">
-                  <Button variant="ghost" size="sm" onClick={() => viewReceipts(c)}>
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleRemove(c.advisor_client_id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                <Button
+                  variant="ghost"
+                  className="h-11 w-11 p-0 text-destructive hover:text-destructive hover:bg-destructive/5 shrink-0"
+                  onClick={() => handleCancelInvitation(inv.id)}
+                  aria-label={tt({ de: "Einladung zurückziehen", en: "Cancel invitation" })}
+                >
+                  <XCircle className="h-5 w-5" />
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
+      {/* Sektion: Aktive Mandanten */}
+      {loading ? (
+        <div className="rounded-2xl border bg-card p-8 text-center text-muted-foreground text-body">
+          {tt({ de: "Laden...", en: "Loading..." })}
+        </div>
+      ) : clients.length === 0 && pendingInvitations.length === 0 ? (
+        <div className="rounded-2xl border bg-card p-8 text-center space-y-4">
+          <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <Users className="h-8 w-8 text-primary" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-title-3 font-semibold">
+              {tt({ de: "Noch keine Mandanten", en: "No clients yet" })}
+            </p>
+            <p className="text-subhead text-muted-foreground">
+              {tt({
+                de: "Lade deinen ersten Mandanten ein, um auf seine Belege zugreifen zu können.",
+                en: "Invite your first client to access their receipts.",
+              })}
+            </p>
+          </div>
+          <Button
+            className="h-13 px-6 text-body font-semibold text-primary-foreground gap-2"
+            onClick={() => setAddOpen(true)}
+          >
+            <Plus className="h-5 w-5" />
+            {tt({ de: "Mandant einladen", en: "Invite Client" })}
+          </Button>
+        </div>
+      ) : clients.length > 0 ? (
+        <div className="space-y-2">
+          <div className="px-1">
+            <p className="text-caption-2 uppercase tracking-wider text-muted-foreground font-semibold">
+              {tt({ de: "Aktive Mandanten", en: "Active Clients" })}
+            </p>
+          </div>
+          <div className="rounded-2xl border bg-card overflow-hidden divide-y">
+            {clients.map((c) => {
+              const initial = (clientName(c)[0] || "?").toUpperCase();
+              return (
+                <div key={c.id} className="flex items-center gap-3 px-4 py-3.5">
+                  <button
+                    onClick={() => viewReceipts(c)}
+                    className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 hover:bg-primary/15"
+                    aria-label={tt({ de: "Belege ansehen", en: "View receipts" })}
+                  >
+                    <span className="text-headline text-primary font-bold">{initial}</span>
+                  </button>
+                  <button
+                    onClick={() => viewReceipts(c)}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-body font-medium truncate">{clientName(c)}</p>
+                      <span className="px-2 py-0.5 rounded-full text-caption-2 font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                        {tt({ de: "Aktiv", en: "Active" })}
+                      </span>
+                    </div>
+                    <p className="text-footnote text-muted-foreground truncate">{c.email}</p>
+                  </button>
+                  <div className="flex gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      className="h-11 w-11 p-0"
+                      onClick={() => viewReceipts(c)}
+                      aria-label={tt({ de: "Belege ansehen", en: "View receipts" })}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="h-11 w-11 p-0 text-destructive hover:text-destructive hover:bg-destructive/5"
+                      onClick={() => handleRemove(c.advisor_client_id)}
+                      aria-label={tt({ de: "Zugriff entfernen", en: "Remove access" })}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Add-Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle>{tt({ de: "Mandant einladen", en: "Invite Client", tr: "Müşteri Davet Et", ar: "دعوة عميل", ru: "Пригласить клиента" })}</DialogTitle>
+            <DialogTitle className="text-title-2 font-bold">
+              {tt({ de: "Mandant einladen", en: "Invite Client" })}
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleInvite} className="space-y-4">
             <div className="space-y-2">
-              <Label>{tt({ de: "E-Mail des Mandanten", en: "Client's Email", tr: "Müşteri E-postası", ar: "بريد العميل", ru: "Email клиента" })}</Label>
+              <Label className="text-footnote font-medium">
+                {tt({ de: "E-Mail des Mandanten", en: "Client's Email" })}
+              </Label>
               <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="mandant@beispiel.de"
                 required
+                className="h-12 text-body"
               />
-              <p className="text-xs text-muted-foreground">
-                {tt({ de: "Der Mandant erhält eine Einladung in seinem Konto und muss diese annehmen, um Ihnen Zugriff zu gewähren.", en: "The client will receive an invitation in their account and must accept it to grant you access.", tr: "Müşteri hesabında bir davet alacak ve size erişim vermek için kabul etmelidir.", ar: "سيتلقى العميل دعوة في حسابه ويجب عليه قبولها لمنحك حق الوصول.", ru: "Клиент получит приглашение в своём аккаунте и должен принять его, чтобы предоставить вам доступ." })}
+              <p className="text-caption-1 text-muted-foreground leading-relaxed">
+                {tt({
+                  de: "Der Mandant erhält die Einladung in seinem BelegManager-Konto und muss sie annehmen, um dir Lesezugriff auf seine Belege zu geben.",
+                  en: "The client will receive the invitation in their BelegManager account and must accept it to grant you read access to their receipts.",
+                })}
               </p>
             </div>
-            <Button type="submit" className="w-full" disabled={adding}>
-              {adding ? tt({ de: "Wird gesendet...", en: "Sending...", tr: "Gönderiliyor...", ar: "جارٍ الإرسال...", ru: "Отправка..." }) : tt({ de: "Einladung senden", en: "Send Invitation", tr: "Davet Gönder", ar: "إرسال الدعوة", ru: "Отправить приглашение" })}
+            <Button
+              type="submit"
+              className="w-full h-13 text-body font-semibold text-primary-foreground"
+              disabled={adding}
+            >
+              {adding
+                ? tt({ de: "Wird gesendet...", en: "Sending..." })
+                : tt({ de: "Einladung senden", en: "Send Invitation" })}
             </Button>
           </form>
         </DialogContent>

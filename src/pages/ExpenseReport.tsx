@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileSpreadsheet, Download } from "lucide-react";
+import { FileSpreadsheet, Download, Send } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Capacitor } from "@capacitor/core";
@@ -78,6 +78,13 @@ interface Receipt {
 interface Company {
   id: string;
   name: string;
+  // DATEV-Stammdaten (Multi-Mandant)
+  datev_berater_nr?: string | null;
+  datev_mandanten_nr?: string | null;
+  datev_kontenrahmen?: string | null;
+  datev_konto_gegenkonto?: string | null;
+  datev_wj_beginn?: string | null;
+  datev_sachkontenlaenge?: number | null;
 }
 
 function formatLocalDate(d: Date): string {
@@ -101,7 +108,7 @@ const ExpenseReport = () => {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [filterCompanyId, setFilterCompanyId] = useState<string>("all");
-  const [profile, setProfile] = useState<{ first_name: string | null; last_name: string | null; display_name: string | null; email: string } | null>(null);
+  const [profile, setProfile] = useState<{ first_name: string | null; last_name: string | null; display_name: string | null; email: string; tax_advisor_email?: string | null; tax_advisor_name?: string | null } | null>(null);
 
   // DATEV-Export Dialog State
   const [datevDialogOpen, setDatevDialogOpen] = useState(false);
@@ -128,8 +135,8 @@ const ExpenseReport = () => {
     setLoading(true);
     const [receiptsRes, companiesRes, profileRes] = await Promise.all([
       supabase.from("receipts").select("*").gte("date", fromDate).lte("date", toDate).order("date", { ascending: true }),
-      supabase.from("companies").select("id, name"),
-      supabase.from("profiles").select("first_name, last_name, display_name, email").eq("id", user.id).single(),
+      supabase.from("companies").select("id, name, datev_berater_nr, datev_mandanten_nr, datev_kontenrahmen, datev_konto_gegenkonto, datev_wj_beginn, datev_sachkontenlaenge"),
+      supabase.from("profiles").select("first_name, last_name, display_name, email, tax_advisor_email, tax_advisor_name").eq("id", user.id).single(),
     ]);
 
     let receiptsWithVat: Receipt[] = [];
@@ -161,6 +168,28 @@ const ExpenseReport = () => {
   };
 
   useEffect(() => { fetchData(); }, [user, fromDate, toDate, subscription.tier]);
+
+  /**
+   * Multi-Mandant: Sobald eine konkrete Company ausgewählt ist, befüllen wir
+   * datevForm mit deren DATEV-Stammdaten. So sind Berater-Nr, Mandanten-Nr,
+   * Kontenrahmen, Gegenkonto etc. pro Mandant getrennt.
+   * Bei "Alle Organisationen" / "Ohne Organisation" werden die alten
+   * localStorage-Werte beibehalten (Rückwärtskompatibilität).
+   */
+  useEffect(() => {
+    if (filterCompanyId === "all" || filterCompanyId === "none") return;
+    const c = companies.find((x) => x.id === filterCompanyId);
+    if (!c) return;
+    setDatevForm((prev) => ({
+      ...prev,
+      berater_nr: c.datev_berater_nr ?? prev.berater_nr,
+      mandanten_nr: c.datev_mandanten_nr ?? prev.mandanten_nr,
+      kontenrahmen: (c.datev_kontenrahmen as Kontenrahmen) ?? prev.kontenrahmen,
+      konto_gegenkonto: c.datev_konto_gegenkonto ?? prev.konto_gegenkonto,
+      wj_beginn: c.datev_wj_beginn ?? prev.wj_beginn,
+      sachkontenlaenge: (c.datev_sachkontenlaenge as 4 | 5 | 6 | 7 | 8 | undefined) ?? prev.sachkontenlaenge,
+    }));
+  }, [filterCompanyId, companies]);
 
   if (subscription.tier === "free") {
     return (
@@ -246,7 +275,7 @@ const ExpenseReport = () => {
       // Konsistenz-Check: passt der Zweck zur Tax-Category?
       const inconsistency = detectTaxCategoryInconsistency(r.tax_category, r.meeting_purpose, r.description);
       const zweckCell = r.meeting_purpose
-        ? (inconsistency ? `⚠ ${r.meeting_purpose}` : r.meeting_purpose)
+        ? (inconsistency ? `[!] ${r.meeting_purpose}` : r.meeting_purpose)
         : "–";
       return [
         belegNr,
@@ -293,9 +322,118 @@ const ExpenseReport = () => {
     URL.revokeObjectURL(url);
   };
 
+  /**
+   * Mail an Steuerberater: öffnet die native Mail-App (iOS / macOS Mail / Outlook etc.)
+   * via mailto:-Link mit vorausgefüllten Feldern.
+   *
+   * Anhänge können über mailto: leider nicht direkt eingehängt werden — der User
+   * muss CSV + PDF separat (über die Export-Buttons + Share-Sheet → „An Mail anhängen")
+   * an die geöffnete Mail anhängen. iOS macht das beim Tippen auf "An Steuerberater
+   * senden" im DATEV-/PDF-Share-Sheet aber komfortabel: dort einfach im Empfänger
+   * den Berater wählen.
+   */
+  const openMailToAdvisor = () => {
+    if (!profile?.tax_advisor_email) {
+      toast({
+        title: tt({ de: "Steuerberater-E-Mail fehlt", en: "Tax advisor email missing" }),
+        description: tt({
+          de: "Bitte zuerst unter „Mein Konto“ → „Mein Steuerberater“ die E-Mail-Adresse hinterlegen.",
+          en: "Please set the tax advisor email under My Account → My Tax Advisor first.",
+        }),
+        variant: "destructive",
+      });
+      return;
+    }
+    const company = filterCompanyId !== "all" && filterCompanyId !== "none"
+      ? companies.find((c) => c.id === filterCompanyId) : null;
+    const myFullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ") || profile.email;
+    const advisorGreeting = profile.tax_advisor_name
+      ? `Hallo ${profile.tax_advisor_name.split(" ")[0]},`
+      : "Hallo,";
+
+    const subject = company
+      ? `Buchungsstapel ${company.name} ${fromDate} bis ${toDate}`
+      : `Buchungsstapel ${fromDate} bis ${toDate}`;
+
+    const lines: string[] = [
+      advisorGreeting,
+      "",
+      `anbei der Buchungsstapel im DATEV-Format 7 für den Zeitraum ${fromDate} bis ${toDate}.`,
+      "",
+      `Mandant: ${company?.name ?? "—"}`,
+    ];
+    if (company?.datev_berater_nr && company?.datev_mandanten_nr) {
+      lines.push(`Berater-Nr: ${company.datev_berater_nr} · Mandanten-Nr: ${company.datev_mandanten_nr}`);
+    }
+    if (company?.datev_kontenrahmen) {
+      lines.push(`Kontenrahmen: ${company.datev_kontenrahmen}`);
+    }
+    lines.push("");
+    lines.push(`Anzahl Belege: ${filteredReceipts.length}`);
+    lines.push(`Gesamt brutto: ${totalAmount.toFixed(2)} €`);
+    lines.push(`Gesamt MwSt: ${totalVat.toFixed(2)} €`);
+    lines.push("");
+    lines.push("Die Belege sind im Test-Modus exportiert — Festschreibung erfolgt nach deinem OK.");
+    lines.push("Beleg-Fotos hänge ich als PDF mit an (separat über die App-Buttons CSV + PDF).");
+    lines.push("");
+    lines.push("Beste Grüße");
+    lines.push(myFullName);
+
+    const body = lines.join("\n");
+    const mailto = `mailto:${encodeURIComponent(profile.tax_advisor_email)}` +
+      `?subject=${encodeURIComponent(subject)}` +
+      `&body=${encodeURIComponent(body)}`;
+
+    // Mailto öffnen — iOS leitet auf Mail.app weiter
+    window.location.href = mailto;
+
+    // Userhinweis, dass er CSV + PDF noch anhängen muss
+    setTimeout(() => {
+      toast({
+        title: tt({ de: "Mail vorbereitet", en: "Mail prepared" }),
+        description: tt({
+          de: "Hänge jetzt CSV + PDF an deine geöffnete Mail an: erst „CSV“/„DATEV“ und „PDF“ tippen, im Share-Sheet „An aktuelle Mail anhängen“ wählen.",
+          en: "Now attach CSV + PDF to the opened mail: tap CSV/DATEV/PDF, in share-sheet choose 'Attach to current Mail'.",
+        }),
+      });
+    }, 600);
+  };
+
   // DATEV-Export: öffnet erst den Stammdaten-Dialog, dann generiert die Lib den Stapel.
+  // Multi-Mandant: Nur erlaubt wenn eine konkrete Organisation ausgewählt ist —
+  // sonst würden Belege verschiedener Mandanten im gleichen Stapel landen (verboten!).
   const exportDATEV = () => {
     if (filteredReceipts.length === 0) return;
+    if (filterCompanyId === "all" || filterCompanyId === "none") {
+      toast({
+        title: tt({
+          de: "Bitte eine Organisation auswählen",
+          en: "Please select an organization",
+        }),
+        description: tt({
+          de: "DATEV-Buchungsstapel sind pro Mandant zu führen. Wähle oben eine konkrete Organisation aus, dann erneut auf DATEV klicken.",
+          en: "DATEV booking stapels must be per mandant. Select a specific organization above and try again.",
+        }),
+        variant: "destructive",
+      });
+      return;
+    }
+    // Optional: Prüfen ob Company tatsächlich DATEV-Stammdaten gepflegt hat
+    const c = companies.find((x) => x.id === filterCompanyId);
+    if (c && !c.datev_berater_nr) {
+      toast({
+        title: tt({
+          de: "DATEV-Stammdaten fehlen",
+          en: "DATEV master data missing",
+        }),
+        description: tt({
+          de: `Bei „${c.name}" sind noch keine Berater-/Mandanten-Nr hinterlegt. Bitte zuerst unter Organisationen → Bearbeiten → DATEV-Stammdaten pflegen.`,
+          en: `"${c.name}" has no consultant/client number yet. Please configure under Organizations → Edit → DATEV.`,
+        }),
+        variant: "destructive",
+      });
+      return;
+    }
     setDatevDialogOpen(true);
   };
 
@@ -513,7 +651,9 @@ const ExpenseReport = () => {
         let warnY = tableEnd + 6;
         doc.setFontSize(8);
         doc.setTextColor(200, 80, 0); // gedämpftes Orange für Warnungen
-        doc.text(`⚠ Konsistenz-Hinweise (${inconsistencies.length}) — bitte vor Festschreibung prüfen:`, margin, warnY);
+        doc.setFont("helvetica", "bold");
+        doc.text(`[!]  Konsistenz-Hinweise (${inconsistencies.length}) – bitte vor Festschreibung prüfen:`, margin, warnY);
+        doc.setFont("helvetica", "normal");
         warnY += 4;
         doc.setTextColor(60, 60, 60);
         for (const { idx, r, issue } of inconsistencies) {
@@ -609,113 +749,145 @@ const ExpenseReport = () => {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <h1 className="text-xl md:text-2xl font-bold">{t("expense.title")}</h1>
+      {/* Header */}
+      <div className="space-y-1">
+        <p className="text-caption-2 uppercase tracking-wider text-muted-foreground">
+          {tt({ de: "Belegabrechnung", en: "Expense Report" })}
+        </p>
+        <h1 className="text-title-1 md:text-large-title font-bold tracking-tight">{t("expense.title")}</h1>
+        {profile && (
+          <p className="text-subhead text-muted-foreground">
+            {(profile.first_name || profile.last_name) && [profile.first_name, profile.last_name].filter(Boolean).join(" ") + " · "}
+            {profile.email}
+            {filterCompanyId !== "all" && filterCompanyId !== "none" && companies.find(c => c.id === filterCompanyId) && (
+              <> · <span className="text-foreground font-medium">{companies.find(c => c.id === filterCompanyId)?.name}</span></>
+            )}
+          </p>
+        )}
+      </div>
 
-      {profile && (
-        <div className="text-sm text-muted-foreground">
-          {(profile.first_name || profile.last_name) && (
-            <p className="font-medium text-foreground">{[profile.first_name, profile.last_name].filter(Boolean).join(" ")}</p>
-          )}
-          <p>{profile.email}</p>
-          {filterCompanyId !== "all" && filterCompanyId !== "none" && (
-            <p className="font-medium text-foreground">
-              {tt({de:"Organisation", en:"Organization", tr:"Kuruluş", ar:"المنظمة", ru:"Организация"})}: {companies.find(c => c.id === filterCompanyId)?.name}
-            </p>
-          )}
+      {/* Zeitraum-Card im Revolut-Stil */}
+      <div className="rounded-2xl border bg-card p-5 space-y-5">
+        <h2 className="text-headline">{t("expense.period")}</h2>
+
+        {/* Schnellauswahl als Chips */}
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => {
+              const now = new Date();
+              const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+              const end = new Date(now.getFullYear(), now.getMonth(), 0);
+              setFromDate(formatLocalDate(start));
+              setToDate(formatLocalDate(end));
+            }}
+            className="h-11 px-4 rounded-full text-callout font-medium border border-border bg-card hover:bg-muted active:bg-muted"
+          >
+            {tt({ de: "Letzter Monat", en: "Last month" })}
+          </button>
+          <button
+            onClick={() => {
+              const now = new Date();
+              const start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+              const end = new Date(now.getFullYear(), now.getMonth() - 1, 0);
+              setFromDate(formatLocalDate(start));
+              setToDate(formatLocalDate(end));
+            }}
+            className="h-11 px-4 rounded-full text-callout font-medium border border-border bg-card hover:bg-muted active:bg-muted"
+          >
+            {tt({ de: "Vorletzter Monat", en: "Month before last" })}
+          </button>
+          <button
+            onClick={() => {
+              const now = new Date();
+              setFromDate(formatLocalDate(new Date(now.getFullYear(), 0, 1)));
+              setToDate(formatLocalDate(now));
+            }}
+            className="h-11 px-4 rounded-full text-callout font-medium border border-border bg-card hover:bg-muted active:bg-muted"
+          >
+            {tt({ de: "Year-to-date", en: "Year-to-date" })}
+          </button>
         </div>
-      )}
-      <Card>
-        <CardHeader><CardTitle className="text-lg">{t("expense.period")}</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-subhead">{t("expense.from")}</Label>
+            <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="h-12 text-body" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-subhead">{t("expense.to")}</Label>
+            <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="h-12 text-body" />
+          </div>
+        </div>
+
+        {/* Status-Summary als Chip-Reihe */}
+        {filteredReceipts.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs"
-              onClick={() => {
-                const now = new Date();
-                const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                const end = new Date(now.getFullYear(), now.getMonth(), 0);
-                setFromDate(formatLocalDate(start));
-                setToDate(formatLocalDate(end));
-              }}
-            >
-              {tt({ de: "Letzter Monat", en: "Last month", tr: "Geçen ay", ar: "الشهر الماضي", ru: "Прошлый месяц" })}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs"
-              onClick={() => {
-                const now = new Date();
-                const start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-                const end = new Date(now.getFullYear(), now.getMonth() - 1, 0);
-                setFromDate(formatLocalDate(start));
-                setToDate(formatLocalDate(end));
-              }}
-            >
-              {tt({ de: "Vorletzter Monat", en: "Month before last", tr: "Önceki ay", ar: "الشهر قبل الماضي", ru: "Позапрошлый месяц" })}
-            </Button>
+            <span className="px-3 py-1 rounded-full text-footnote font-medium bg-amber-50 text-amber-800 border border-amber-200">
+              {statusCounts.incomplete} {tt({ de: "Unvollständig", en: "Incomplete" })}
+            </span>
+            <span className="px-3 py-1 rounded-full text-footnote font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+              {statusCounts.ready} {tt({ de: "Bereit", en: "Ready" })}
+            </span>
+            <span className="px-3 py-1 rounded-full text-footnote font-medium bg-slate-100 text-slate-700 border border-slate-200">
+              {statusCounts.exported} {tt({ de: "Festgeschrieben", en: "Locked" })}
+            </span>
           </div>
-          <div className="grid grid-cols-2 gap-3 overflow-hidden">
-            <div className="space-y-2 min-w-0">
-              <Label>{t("expense.from")}</Label>
-              <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full max-w-full text-sm" />
-            </div>
-            <div className="space-y-2 min-w-0">
-              <Label>{t("expense.to")}</Label>
-              <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-full max-w-full text-sm" />
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <Button className="gap-2" onClick={generatePDF} disabled={generating || filteredReceipts.length === 0}>
+        )}
+
+        {/* Action-Bar: Primary "An StB" + Secondary Trio (PDF/CSV/DATEV) */}
+        <div className="flex flex-col gap-2">
+          <Button
+            onClick={openMailToAdvisor}
+            disabled={filteredReceipts.length === 0 || !profile?.tax_advisor_email}
+            className="h-13 w-full text-body font-semibold text-primary-foreground gap-2"
+            title={!profile?.tax_advisor_email ? tt({ de: "Bitte erst E-Mail des Steuerberaters in „Mein Konto“ speichern", en: "Please set tax advisor email in My Account first" }) : ""}
+          >
+            <Send className="h-5 w-5" />
+            {tt({ de: "An Steuerberater senden", en: "Send to Tax Advisor" })}
+          </Button>
+          <div className="grid grid-cols-3 gap-2">
+            <Button variant="outline" className="h-11 text-body gap-2" onClick={generatePDF} disabled={generating || filteredReceipts.length === 0}>
               <Download className="h-4 w-4" />
-              {generating ? t("general.loading") : "PDF"}
+              PDF
             </Button>
-            <Button variant="outline" className="gap-2" onClick={exportCSV} disabled={filteredReceipts.length === 0}>
+            <Button variant="outline" className="h-11 text-body gap-2" onClick={exportCSV} disabled={filteredReceipts.length === 0}>
               <FileSpreadsheet className="h-4 w-4" />
               CSV
             </Button>
-            <Button variant="outline" className="gap-2" onClick={exportDATEV} disabled={filteredReceipts.length === 0}>
+            <Button variant="outline" className="h-11 text-body gap-2" onClick={exportDATEV} disabled={filteredReceipts.length === 0}>
               <FileSpreadsheet className="h-4 w-4" />
               DATEV
             </Button>
           </div>
+        </div>
+      </div>
 
-          {/* Status summary */}
-          {filteredReceipts.length > 0 && (
-            <div className="flex flex-wrap gap-3 text-sm">
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-destructive" />
-                <span className="text-muted-foreground">{statusCounts.incomplete} {tt({de:"Unvollständig", en:"Incomplete"})}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-green-500" />
-                <span className="text-muted-foreground">{statusCounts.ready} {tt({de:"Bereit", en:"Ready"})}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-muted-foreground" />
-                <span className="text-muted-foreground">{statusCounts.exported} {tt({de:"Exportiert", en:"Exported"})}</span>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {receipts.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={filterCompanyId} onValueChange={setFilterCompanyId}>
-            <SelectTrigger className="h-9 w-[200px] text-sm">
-              <SelectValue placeholder={tt({de:"Alle Organisationen", en:"All organizations", tr:"Tüm kuruluşlar", ar:"جميع المنظمات", ru:"Все организации"})} />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4} className="max-h-56">
-              <SelectItem value="all">{tt({de:"Alle Organisationen", en:"All organizations", tr:"Tüm kuruluşlar", ar:"جميع المنظمات", ru:"Все организации"})}</SelectItem>
-              <SelectItem value="none">{tt({de:"Ohne Organisation", en:"No organization", tr:"Kuruluşsuz", ar:"بدون منظمة", ru:"Без организации"})}</SelectItem>
-              {companies.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* Mandanten-Filter als Chips — Revolut-Pattern, explizit weil ein Stapel pro Mandant gemacht werden muss */}
+      {receipts.length > 0 && companies.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1">
+          {[
+            { id: "all", name: tt({ de: "Alle", en: "All" }), count: receipts.length },
+            ...companies.map(c => ({ id: c.id, name: c.name, count: receipts.filter(r => r.company_id === c.id).length })),
+            { id: "none", name: tt({ de: "Ohne", en: "None" }), count: receipts.filter(r => !r.company_id).length },
+          ].map((m) => {
+            const active = filterCompanyId === m.id;
+            return (
+              <button
+                key={m.id}
+                onClick={() => setFilterCompanyId(m.id)}
+                className={`h-11 px-4 rounded-full text-callout font-medium flex items-center gap-2 border transition-colors whitespace-nowrap shrink-0 ${
+                  active
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card text-foreground border-border hover:bg-muted"
+                }`}
+              >
+                <span>{m.name}</span>
+                <span className={`text-caption-1 ${active ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                  {m.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -747,18 +919,18 @@ const ExpenseReport = () => {
                            if (isForex && r.amount != null && r.amount_eur != null) {
                              return (
                                <>
-                                 <span>{r.amount_eur.toFixed(2)} €</span>
+                                 <span>{r.amount_eur.toFixed(2)} €</span>
                                  <span className="block text-[10px] text-muted-foreground font-normal">
                                    {r.amount.toFixed(2)}&nbsp;{r.currency}
                                  </span>
                                </>
                              );
                            }
-                           return `${eur.toFixed(2)} €`;
+                           return `${eur.toFixed(2)} €`;
                          })()}
                        </TableCell>
                        <TableCell className="font-mono text-right whitespace-nowrap text-muted-foreground">
-                         {r.vat_amount != null ? `${r.vat_amount.toFixed(2)} €` : "–"}
+                         {r.vat_amount != null ? `${r.vat_amount.toFixed(2)} €` : "–"}
                          {r.vat_rate != null ? ` (${r.vat_rate}%)` : ""}
                        </TableCell>
                        <TableCell>{r.description || "–"}</TableCell>
@@ -769,8 +941,8 @@ const ExpenseReport = () => {
                    ))}
                    <TableRow className="font-bold border-t-2">
                      <TableCell>{totalLabel}</TableCell>
-                     <TableCell className="font-mono text-right whitespace-nowrap">{totalAmount.toFixed(2)} €</TableCell>
-                     <TableCell className="font-mono text-right whitespace-nowrap">{totalVat.toFixed(2)} €</TableCell>
+                     <TableCell className="font-mono text-right whitespace-nowrap">{totalAmount.toFixed(2)} €</TableCell>
+                     <TableCell className="font-mono text-right whitespace-nowrap">{totalVat.toFixed(2)} €</TableCell>
                      <TableCell colSpan={4} />
                    </TableRow>
                  </TableBody>
@@ -788,16 +960,16 @@ const ExpenseReport = () => {
                          const eur = r.amount_eur ?? r.amount;
                          if (eur == null) return "–";
                          if (isForex && r.amount != null && r.amount_eur != null) {
-                           return `${r.amount_eur.toFixed(2)} € (${r.amount.toFixed(2)} ${r.currency})`;
+                           return `${r.amount_eur.toFixed(2)} € (${r.amount.toFixed(2)} ${r.currency})`;
                          }
-                         return `${eur.toFixed(2)} €`;
+                         return `${eur.toFixed(2)} €`;
                        })()}
                      </span>
                    </div>
                    {r.vat_amount != null && (
                      <div className="flex items-center justify-between text-xs text-muted-foreground">
                        <span>MwSt.</span>
-                       <span className="font-mono">{r.vat_amount.toFixed(2)} € {r.vat_rate != null ? `(${r.vat_rate}%)` : ""}</span>
+                       <span className="font-mono">{r.vat_amount.toFixed(2)} € {r.vat_rate != null ? `(${r.vat_rate}%)` : ""}</span>
                      </div>
                    )}
                   {r.description && <p className="text-sm truncate">{r.description}</p>}
@@ -812,7 +984,7 @@ const ExpenseReport = () => {
               ))}
               <div className="px-4 py-3 flex items-center justify-between font-bold">
                 <span>{totalLabel}</span>
-                <span className="font-mono whitespace-nowrap">{totalAmount.toFixed(2)} €</span>
+                <span className="font-mono whitespace-nowrap">{totalAmount.toFixed(2)} €</span>
               </div>
             </div>
           </CardContent>

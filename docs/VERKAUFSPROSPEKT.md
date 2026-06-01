@@ -114,7 +114,12 @@ Nein. Wenn du eine Email schreiben kannst, kannst du auch BelegManager bedienen.
 Er kennt **DATEV**. Wir liefern ihm einen DATEV-Buchungsstapel — fertig. Er muss nichts Neues lernen.
 
 **„Bleiben meine Belege rechtssicher gespeichert?"**
-Ja. Wir speichern alles **10 Jahre** gemäß § 147 AO. Beleg-Fotos bleiben unverändert. Audit-Log dokumentiert jede Änderung.
+Ja, mit den aktuellen gesetzlichen Aufbewahrungsfristen:
+- **Buchungsbelege (Rechnungen, Quittungen): 8 Jahre** gemäß § 147 Abs. 3 AO (seit 01.01.2025, Bürokratieentlastungsgesetz IV)
+- **Bücher, Bilanzen, Jahresabschlüsse, Inventare: 10 Jahre**
+- **Sonstige Geschäftsunterlagen (Briefe, E-Mails): 6 Jahre**
+
+Beleg-Fotos bleiben unverändert. Audit-Log dokumentiert jede Änderung.
 
 **„Kann ich BelegManager kündigen?"**
 Jederzeit. Du behältst Zugriff bis zum Ende des bezahlten Zeitraums. Datenexport ist immer möglich.
