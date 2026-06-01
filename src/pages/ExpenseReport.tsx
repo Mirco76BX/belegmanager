@@ -36,6 +36,14 @@ interface Receipt {
 interface Company {
   id: string;
   name: string;
+  datev_berater_nr?: string | null;
+  datev_mandanten_nr?: string | null;
+  datev_wj_beginn?: string | null;
+  datev_sachkontenlaenge?: number | null;
+  datev_bezeichnung?: string | null;
+  datev_diktatkuerzel?: string | null;
+  datev_konto_gegenkonto?: string | null;
+  festschreibung_default?: number | null;
 }
 
 function formatLocalDate(d: Date): string {
@@ -67,7 +75,7 @@ const ExpenseReport = () => {
     setLoading(true);
     const [receiptsRes, companiesRes, profileRes] = await Promise.all([
       supabase.from("receipts").select("*").gte("date", fromDate).lte("date", toDate).order("date", { ascending: true }),
-      supabase.from("companies").select("id, name"),
+      supabase.from("companies").select("*"),
       supabase.from("profiles").select("first_name, last_name, display_name, email").eq("id", user.id).single(),
     ]);
     if (receiptsRes.data) setReceipts(receiptsRes.data);
