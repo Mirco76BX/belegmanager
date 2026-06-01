@@ -103,14 +103,14 @@ serve(async (req) => {
     // Fallback: open.er-api.com (supports 150+ currencies including IDR, THB, VND, etc.)
     if (amountEur === null) {
       try {
-        const erUrl = `https://open.er-api.com/v6/latest/${currency}`;
+        const erUrl = `https://open.er-api.com/v6/latest/${encodeURIComponent(currency)}`;
         console.log("Trying ExchangeRate fallback:", erUrl);
         const erRes = await fetch(erUrl);
         if (erRes.ok) {
           const erData = await erRes.json();
           if (erData.rates?.EUR) {
             const eurRate = erData.rates.EUR;
-            amountEur = roundEurAmount(amount * eurRate);
+            amountEur = roundEurAmount(amountNum * eurRate);
             rate = eurRate;
             source = "exchangerate_api_fallback";
           }
