@@ -31,6 +31,7 @@ interface Receipt {
   status?: string;
   tax_category?: string | null;
   accounting_status?: string;
+  receipt_type?: string | null;
 }
 
 interface Company {
