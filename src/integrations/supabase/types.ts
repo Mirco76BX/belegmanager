@@ -633,6 +633,14 @@ export type Database = {
         Returns: boolean
       }
       is_tax_advisor: { Args: { _user_id: string }; Returns: boolean }
+      redeem_coupon_atomic: {
+        Args: { _code: string; _user_id: string }
+        Returns: {
+          error: string
+          expires_at: string
+          tier: string
+        }[]
+      }
       register_as_tax_advisor: { Args: { _kanzlei: string }; Returns: string }
       update_receipt_accounting_status: {
         Args: { _receipt_id: string; _status: string }
