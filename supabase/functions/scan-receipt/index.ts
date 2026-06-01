@@ -178,11 +178,41 @@ serve(async (req) => {
       return jsonResponse({ ok: true, warm: true, ts: new Date().toISOString() });
     }
 
+    const MAX_PAGES = 10;
+    const MAX_IMAGE_BYTES = 5_000_000; // ~5MB per image (base64 string length)
+    const MAX_TOTAL_BYTES = 25_000_000; // ~25MB total payload
+
     let images: string[] = [];
     if (Array.isArray(body.images) && body.images.length > 0) images = body.images;
     else if (body.imageBase64) images = [body.imageBase64];
     if (images.length === 0) {
       return jsonResponse({ error: "no_image", message: "Kein Bild übermittelt." }, 400);
+    }
+    if (images.length > MAX_PAGES) {
+      return jsonResponse({
+        error: "too_many_pages",
+        message: `Zu viele Seiten (${images.length}). Maximal ${MAX_PAGES} Seiten pro Scan.`,
+      }, 400);
+    }
+    let totalBytes = 0;
+    for (let i = 0; i < images.length; i++) {
+      const img = images[i];
+      if (typeof img !== "string" || img.length === 0) {
+        return jsonResponse({ error: "invalid_image", message: `Seite ${i + 1} ist ungültig.` }, 400);
+      }
+      if (img.length > MAX_IMAGE_BYTES) {
+        return jsonResponse({
+          error: "image_too_large",
+          message: `Seite ${i + 1} ist zu groß (max. ${Math.round(MAX_IMAGE_BYTES / 1_000_000)}MB).`,
+        }, 413);
+      }
+      totalBytes += img.length;
+    }
+    if (totalBytes > MAX_TOTAL_BYTES) {
+      return jsonResponse({
+        error: "payload_too_large",
+        message: `Gesamtgröße zu groß (max. ${Math.round(MAX_TOTAL_BYTES / 1_000_000)}MB).`,
+      }, 413);
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
