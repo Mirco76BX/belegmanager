@@ -394,7 +394,7 @@ const ExpenseReport = () => {
     const bytes = encodeWin1252(fileContent);
 
     // DATEV erwartet KEIN BOM (ANSI ist byte-stream)
-    const blob = new Blob([bytes], { type: "text/csv;charset=windows-1252" });
+    const blob = new Blob([bytes.buffer as ArrayBuffer], { type: "text/csv;charset=windows-1252" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
