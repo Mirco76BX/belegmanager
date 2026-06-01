@@ -31,11 +31,20 @@ interface Receipt {
   status?: string;
   tax_category?: string | null;
   accounting_status?: string;
+  receipt_type?: string | null;
 }
 
 interface Company {
   id: string;
   name: string;
+  datev_berater_nr?: string | null;
+  datev_mandanten_nr?: string | null;
+  datev_wj_beginn?: string | null;
+  datev_sachkontenlaenge?: number | null;
+  datev_bezeichnung?: string | null;
+  datev_diktatkuerzel?: string | null;
+  datev_konto_gegenkonto?: string | null;
+  festschreibung_default?: number | null;
 }
 
 function formatLocalDate(d: Date): string {
@@ -67,7 +76,7 @@ const ExpenseReport = () => {
     setLoading(true);
     const [receiptsRes, companiesRes, profileRes] = await Promise.all([
       supabase.from("receipts").select("*").gte("date", fromDate).lte("date", toDate).order("date", { ascending: true }),
-      supabase.from("companies").select("id, name"),
+      supabase.from("companies").select("*"),
       supabase.from("profiles").select("first_name, last_name, display_name, email").eq("id", user.id).single(),
     ]);
     if (receiptsRes.data) setReceipts(receiptsRes.data);
@@ -185,52 +194,215 @@ const ExpenseReport = () => {
     URL.revokeObjectURL(url);
   };
 
-  // DATEV-compatible CSV export
+  // ============================================================
+  // DATEV EXTF Format 7 (Buchungsstapel, Versionssatz 700/Format 21, v13)
+  // Spec: DATEV ASCII-Export "Buchungsstapel"
+  //   - Encoding: Windows-1252 (ANSI), Zeilenende CRLF
+  //   - Dezimaltrenner: Komma, 2 Nachkommastellen
+  //   - Datum Header: YYYYMMDD, Belegdatum: TTMM
+  //   - Vorlaufzeile: 31 Felder; Spaltenzeile + Buchungszeilen: 116 Felder
+  // ============================================================
+  const DATEV_COLUMNS = [
+    "Umsatz (ohne Soll/Haben-Kz)","Soll/Haben-Kennzeichen","WKZ Umsatz","Kurs","Basisumsatz","WKZ Basisumsatz",
+    "Konto","Gegenkonto (ohne BU-Schlüssel)","BU-Schlüssel","Belegdatum","Belegfeld 1","Belegfeld 2","Skonto",
+    "Buchungstext","Postensperre","Diverse Adressnummer","Geschäftspartnerbank","Sachverhalt","Zinssperre","Beleglink",
+    "Beleginfo – Art 1","Beleginfo – Inhalt 1","Beleginfo – Art 2","Beleginfo – Inhalt 2",
+    "Beleginfo – Art 3","Beleginfo – Inhalt 3","Beleginfo – Art 4","Beleginfo – Inhalt 4",
+    "Beleginfo – Art 5","Beleginfo – Inhalt 5","Beleginfo – Art 6","Beleginfo – Inhalt 6",
+    "Beleginfo – Art 7","Beleginfo – Inhalt 7","Beleginfo – Art 8","Beleginfo – Inhalt 8",
+    "KOST1 – Kostenstelle","KOST2 – Kostenstelle","Kost-Menge","EU-Mitgliedstaat u. USt-IdNr. (Bestimmung)",
+    "EU-Steuersatz (Bestimmung)","Abw. Versteuerungsart","Sachverhalt L+L","Funktionsergänzung L+L",
+    "BU 49 Hauptfunktionstyp","BU 49 Hauptfunktionsnummer","BU 49 Funktionsergänzung",
+    "Zusatzinformation – Art 1","Zusatzinformation – Inhalt 1","Zusatzinformation – Art 2","Zusatzinformation – Inhalt 2",
+    "Zusatzinformation – Art 3","Zusatzinformation – Inhalt 3","Zusatzinformation – Art 4","Zusatzinformation – Inhalt 4",
+    "Zusatzinformation – Art 5","Zusatzinformation – Inhalt 5","Zusatzinformation – Art 6","Zusatzinformation – Inhalt 6",
+    "Zusatzinformation – Art 7","Zusatzinformation – Inhalt 7","Zusatzinformation – Art 8","Zusatzinformation – Inhalt 8",
+    "Zusatzinformation – Art 9","Zusatzinformation – Inhalt 9","Zusatzinformation – Art 10","Zusatzinformation – Inhalt 10",
+    "Zusatzinformation – Art 11","Zusatzinformation – Inhalt 11","Zusatzinformation – Art 12","Zusatzinformation – Inhalt 12",
+    "Zusatzinformation – Art 13","Zusatzinformation – Inhalt 13","Zusatzinformation – Art 14","Zusatzinformation – Inhalt 14",
+    "Zusatzinformation – Art 15","Zusatzinformation – Inhalt 15","Zusatzinformation – Art 16","Zusatzinformation – Inhalt 16",
+    "Zusatzinformation – Art 17","Zusatzinformation – Inhalt 17","Zusatzinformation – Art 18","Zusatzinformation – Inhalt 18",
+    "Zusatzinformation – Art 19","Zusatzinformation – Inhalt 19","Zusatzinformation – Art 20","Zusatzinformation – Inhalt 20",
+    "Stück","Gewicht","Zahlweise","Forderungsart","Veranlagungsjahr","Zugeordnete Fälligkeit","Skontotyp",
+    "Auftragsnummer","Buchungstyp","USt-Schlüssel (Anzahlungen)","EU-Mitgliedstaat (Anzahlungen)",
+    "Sachverhalt L+L (Anzahlungen)","EU-Steuersatz (Anzahlungen)","Erlöskonto (Anzahlungen)","Herkunft-Kz",
+    "Leerfeld","KOST-Datum","SEPA-Mandatsreferenz","Skontosperre","Gesellschaftername","Beteiligtennummer",
+    "Identifikationsnummer","Zeichnernummer","Postensperre bis","Bezeichnung SoBil-Sachverhalt","Kennzeichen SoBil-Buchung",
+    "Festschreibung","Leistungsdatum","Datum Zuord. Steuerperiode","Fälligkeit","Generalumkehr (GU)","Steuersatz","Land",
+  ]; // 116 columns
+  const DATEV_COL_COUNT = DATEV_COLUMNS.length;
+
+  // Quote text fields per DATEV spec: double quotes, internal " escaped as ""
+  const q = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+  // Header field: number unquoted, text in quotes, blank as empty
+  const num = (v: number | string) => String(v);
+  // Replace ; and CR/LF inside texts (not allowed)
+  const sanitize = (v: string) => v.replace(/[\r\n;]/g, " ").trim();
+
+  // Windows-1252 encoder (browsers only provide UTF-8 TextEncoder)
+  // Handles ASCII (0x00-0x7F), Latin-1 supplement (0xA0-0xFF), plus the Win-1252
+  // specific 0x80-0x9F range (€, …, ä-mappings already in Latin-1).
+  const WIN1252_EXTRAS: Record<number, number> = {
+    0x20AC: 0x80, 0x201A: 0x82, 0x0192: 0x83, 0x201E: 0x84, 0x2026: 0x85,
+    0x2020: 0x86, 0x2021: 0x87, 0x02C6: 0x88, 0x2030: 0x89, 0x0160: 0x8A,
+    0x2039: 0x8B, 0x0152: 0x8C, 0x017D: 0x8E, 0x2018: 0x91, 0x2019: 0x92,
+    0x201C: 0x93, 0x201D: 0x94, 0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97,
+    0x02DC: 0x98, 0x2122: 0x99, 0x0161: 0x9A, 0x203A: 0x9B, 0x0153: 0x9C,
+    0x017E: 0x9E, 0x0178: 0x9F,
+  };
+  const encodeWin1252 = (s: string): Uint8Array => {
+    const out = new Uint8Array(s.length * 2);
+    let i = 0;
+    for (const ch of s) {
+      const cp = ch.codePointAt(0)!;
+      let byte: number;
+      if (cp <= 0xFF && !(cp >= 0x80 && cp <= 0x9F)) byte = cp;
+      else if (WIN1252_EXTRAS[cp] !== undefined) byte = WIN1252_EXTRAS[cp];
+      else byte = 0x3F; // '?'
+      out[i++] = byte;
+    }
+    return out.slice(0, i);
+  };
+
+  const formatAmount = (n: number): string => Math.abs(n).toFixed(2).replace(".", ",");
+  const toYYYYMMDD = (iso: string): string => iso.replace(/-/g, "");
+  const toTTMM = (iso: string): string => {
+    const [, m, d] = iso.split("-");
+    return `${d}${m}`;
+  };
+
   const exportDATEV = () => {
     if (filteredReceipts.length === 0) return;
-    // DATEV header line
-    const datevHeaders = [
-      "Umsatz (ohne Soll/Haben-Kz)", "Soll/Haben-Kennzeichen", "WKZ Umsatz",
-      "Kurs", "Basis-Umsatz", "WKZ Basis-Umsatz", "Konto", "Gegenkonto (ohne BU-Schlüssel)",
-      "BU-Schlüssel", "Belegdatum", "Belegfeld 1", "Belegfeld 2",
-      "Skonto", "Buchungstext", "Postensperre", "Diverse Adressnummer",
-      "Geschäftspartnerbank", "Sachverhalt", "Zinssperre",
-    ];
 
-    const datevRows = filteredReceipts.map((r) => {
+    // Require a specific organization (Berater/Mandant/WJ are per-Mandant)
+    if (filterCompanyId === "all" || filterCompanyId === "none") {
+      toast({
+        title: tt({ de: "Organisation auswählen", en: "Select organization" }),
+        description: tt({
+          de: "Für den DATEV-Export muss eine konkrete Organisation gewählt sein (Berater-/Mandanten-Nr., WJ-Beginn, Sachkontenlänge).",
+          en: "DATEV export requires a specific organization (advisor/client number, fiscal year start, account length).",
+        }),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const company = companies.find((c) => c.id === filterCompanyId);
+    if (!company) return;
+
+    // Validate required DATEV master data
+    const beraterNr = (company.datev_berater_nr || "").trim();
+    const mandantenNr = (company.datev_mandanten_nr || "").trim();
+    const wjBeginn = company.datev_wj_beginn ? toYYYYMMDD(company.datev_wj_beginn) : "";
+    const skoLen = company.datev_sachkontenlaenge ?? 4;
+    if (!beraterNr || !mandantenNr || !wjBeginn) {
+      toast({
+        title: tt({ de: "DATEV-Stammdaten fehlen", en: "Missing DATEV master data" }),
+        description: tt({
+          de: "Bitte Berater-Nr., Mandanten-Nr. und Wirtschaftsjahr-Beginn in der Organisation hinterlegen.",
+          en: "Please set advisor no., client no. and fiscal year start in the organization settings.",
+        }),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Festschreibung: EXPLICIT 0 (default) so the tax advisor can still edit the
+    // stack in DATEV. Empty value would let DATEV apply its own (locking) default.
+    const festschreibung = company.festschreibung_default ?? 0;
+
+    // Default contra-account (Gegenkonto). Typically 1200 (Bank, SKR03) or 1800
+    // (Bank, SKR04). User-configurable per company.
+    const gegenkonto = (company.datev_konto_gegenkonto || "1200").trim();
+    const bezeichnung = sanitize(company.datev_bezeichnung || `Belege ${fromDate} - ${toDate}`).slice(0, 30);
+    const diktatkuerzel = sanitize((company.datev_diktatkuerzel || "BM")).slice(0, 2);
+
+    // --- 1. Vorlaufzeile (31 Felder) ---
+    const now = new Date();
+    const pad = (n: number, l = 2) => String(n).padStart(l, "0");
+    const erzeugtTs =
+      `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}` +
+      `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}000`;
+    const exporter = sanitize([profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || profile?.email || "Belegmanager").slice(0, 25);
+
+    const header = [
+      q("EXTF"),          // 1  Kennzeichen
+      num(700),           // 2  Versionsnummer
+      num(21),            // 3  Datenkategorie: 21 = Buchungsstapel
+      q("Buchungsstapel"),// 4  Formatname
+      num(13),            // 5  Formatversion (13 = Format 7)
+      num(erzeugtTs),     // 6  Erzeugt am (YYYYMMDDHHMMSSFFF)
+      "",                 // 7  Importiert (leer)
+      q("SV"),            // 8  Herkunft (2 Zeichen)
+      q(exporter),        // 9  Exportiert von
+      "",                 // 10 Importiert von
+      num(beraterNr),     // 11 Berater-Nr
+      num(mandantenNr),   // 12 Mandanten-Nr
+      num(wjBeginn),      // 13 WJ-Beginn YYYYMMDD
+      num(skoLen),        // 14 Sachkontenlänge
+      num(toYYYYMMDD(fromDate)), // 15 Datum-von
+      num(toYYYYMMDD(toDate)),   // 16 Datum-bis
+      q(bezeichnung),     // 17 Bezeichnung
+      q(diktatkuerzel),   // 18 Diktatkürzel
+      num(1),             // 19 Buchungstyp: 1 = Finanzbuchführung
+      "",                 // 20 Rechnungslegungszweck (leer = Standard)
+      num(festschreibung),// 21 Festschreibung (EXPLIZIT 0!)
+      q("EUR"),           // 22 WKZ
+      "", "", "", "", "", "", "", "", "", // 23-31 reserviert
+    ].join(";");
+
+    // --- 2. Spaltenzeile ---
+    const columnHeader = DATEV_COLUMNS.join(";");
+
+    // --- 3. Buchungszeilen ---
+    const dataLines = filteredReceipts.map((r) => {
+      const row: string[] = new Array(DATEV_COL_COUNT).fill("");
       const amt = r.amount_eur ?? r.amount ?? 0;
-      const dateFormatted = r.date ? r.date.replace(/-/g, "").slice(4) : ""; // MMDD
-      const buKey = r.vat_rate === 19 ? "3" : r.vat_rate === 7 ? "2" : "";
-      return [
-        amt.toFixed(2).replace(".", ","),  // German decimal
-        "S",
-        "EUR",
-        "", "", "",
-        "4900",  // Sonstige betriebliche Aufwendungen (default)
-        "1200",  // Bank
-        buKey,
-        dateFormatted,
-        r.id.slice(0, 12),  // Belegfeld 1
-        "",
-        "",
-        (r.description || "").slice(0, 60),
-        "", "", "", "", "",
-      ];
+      // Default account by tax category. Real implementations should map via
+      // a per-company chart of accounts; this is a reasonable SKR03 default.
+      let konto = "4900"; // Sonstige betr. Aufwendungen
+      if (r.tax_category === "bewirtung") konto = "4650";
+      else if (r.tax_category === "fahrtkosten" || r.receipt_type === "fuel") konto = "4530";
+      else if (r.tax_category === "buero") konto = "4980";
+      else if (r.tax_category === "reisekosten") konto = "4670";
+
+      // BU-Schlüssel (Steuerschlüssel) — SKR03 Standard
+      let buKey = "";
+      if (r.vat_rate === 19) buKey = "9";  // VSt 19 %
+      else if (r.vat_rate === 7) buKey = "8"; // VSt 7 %
+
+      const textParts = [r.description, r.organization].filter(Boolean).join(" / ");
+      const buchungstext = sanitize(textParts || "Beleg").slice(0, 60);
+      const belegfeld1 = sanitize(r.id.slice(0, 12)).toUpperCase();
+
+      row[0]  = formatAmount(amt);             // Umsatz
+      row[1]  = q(amt >= 0 ? "S" : "H");       // Soll/Haben
+      row[2]  = q("EUR");                      // WKZ
+      row[6]  = konto;                         // Konto (Aufwand)
+      row[7]  = gegenkonto;                    // Gegenkonto (Bank/Kasse)
+      row[8]  = buKey;                         // BU-Schlüssel
+      row[9]  = toTTMM(r.date);                // Belegdatum TTMM
+      row[10] = q(belegfeld1);                 // Belegfeld 1 (Belegnr.)
+      row[13] = q(buchungstext);               // Buchungstext
+      // 114 Festschreibung pro Zeile bleibt leer – Vorlaufzeile gilt für Stapel
+
+      return row.join(";");
     });
 
-    const csvContent = [
-      datevHeaders.join(";"),
-      ...datevRows.map((row) => row.map((cell) => `"${cell}"`).join(";")),
-    ].join("\n");
+    // CRLF line endings, Windows-1252 encoding
+    const fileContent = [header, columnHeader, ...dataLines].join("\r\n") + "\r\n";
+    const bytes = encodeWin1252(fileContent);
 
-    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    // DATEV erwartet KEIN BOM (ANSI ist byte-stream)
+    const blob = new Blob([bytes.buffer as ArrayBuffer], { type: "text/csv;charset=windows-1252" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `DATEV_Export_${fromDate}_${toDate}.csv`;
+    // Empfohlener DATEV-Dateiname: EXTF_<freier Text>.csv
+    a.download = `EXTF_Buchungsstapel_${toYYYYMMDD(fromDate)}_${toYYYYMMDD(toDate)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast({ title: tt({ de: "DATEV-Export erstellt!", en: "DATEV export generated!" }) });
+    toast({ title: tt({ de: "DATEV EXTF erstellt", en: "DATEV EXTF generated" }) });
   };
 
   const generatePDF = async () => {
