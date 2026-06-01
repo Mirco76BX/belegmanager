@@ -77,6 +77,7 @@ export type Database = {
           datev_mandanten_nr: string | null
           datev_sachkontenlaenge: number | null
           datev_wj_beginn: string | null
+          festschreibung_default: number
           id: string
           name: string
           org_type: string
@@ -94,6 +95,7 @@ export type Database = {
           datev_mandanten_nr?: string | null
           datev_sachkontenlaenge?: number | null
           datev_wj_beginn?: string | null
+          festschreibung_default?: number
           id?: string
           name: string
           org_type?: string
@@ -111,6 +113,7 @@ export type Database = {
           datev_mandanten_nr?: string | null
           datev_sachkontenlaenge?: number | null
           datev_wj_beginn?: string | null
+          festschreibung_default?: number
           id?: string
           name?: string
           org_type?: string
