@@ -60,6 +60,11 @@ const Companies = () => {
   const [address, setAddress] = useState("");
   const [saving, setSaving] = useState(false);
   const [orgType, setOrgType] = useState<OrgType>("company");
+  const [beraterNr, setBeraterNr] = useState("");
+  const [mandantenNr, setMandantenNr] = useState("");
+  const [wjBeginn, setWjBeginn] = useState("");
+  const [sachkontenlaenge, setSachkontenlaenge] = useState<string>("4");
+  const [festschreibung, setFestschreibung] = useState<string>("0");
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
