@@ -295,7 +295,7 @@ const Companies = () => {
 
       {/* Organization Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(o) => { if (!o) resetForm(); setDialogOpen(o); }}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? t("companies.edit") : t("companies.add")}</DialogTitle>
           </DialogHeader>
@@ -321,6 +321,53 @@ const Companies = () => {
               <Label>{t("companies.address")}</Label>
               <Input value={address} onChange={(e) => setAddress(e.target.value)} />
             </div>
+
+            <div className="border-t pt-4 space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold">
+                  {tt({de:"DATEV-Export (optional)", en:"DATEV Export (optional)", tr:"DATEV Dışa Aktarma (opsiyonel)", ar:"تصدير DATEV (اختياري)", ru:"Экспорт DATEV (опционально)"})}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {tt({de:"Erforderlich für den EXTF-Buchungsstapel-Export an den Steuerberater.", en:"Required for the EXTF booking stack export to your tax advisor.", tr:"Vergi danışmanına EXTF aktarımı için gereklidir.", ar:"مطلوب لتصدير حزمة قيود EXTF إلى مستشار الضرائب.", ru:"Требуется для экспорта EXTF в DATEV."})}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>{tt({de:"Berater-Nr.", en:"Advisor No.", tr:"Danışman No.", ar:"رقم المستشار", ru:"№ консультанта"})}</Label>
+                  <Input value={beraterNr} onChange={(e) => setBeraterNr(e.target.value)} placeholder="1234567" inputMode="numeric" />
+                </div>
+                <div className="space-y-2">
+                  <Label>{tt({de:"Mandanten-Nr.", en:"Client No.", tr:"Müvekkil No.", ar:"رقم العميل", ru:"№ клиента"})}</Label>
+                  <Input value={mandantenNr} onChange={(e) => setMandantenNr(e.target.value)} placeholder="12345" inputMode="numeric" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>{tt({de:"WJ-Beginn", en:"Fiscal year start", tr:"Mali yıl başı", ar:"بداية السنة المالية", ru:"Начало финансового года"})}</Label>
+                  <Input type="date" value={wjBeginn} onChange={(e) => setWjBeginn(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>{tt({de:"Sachkontenlänge", en:"Account length", tr:"Hesap uzunluğu", ar:"طول الحساب", ru:"Длина счёта"})}</Label>
+                  <Select value={sachkontenlaenge} onValueChange={setSachkontenlaenge}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[4,5,6,7,8].map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>{tt({de:"Festschreibung", en:"Lock bookings (Festschreibung)", tr:"Kayıt kilitleme", ar:"تثبيت القيود", ru:"Фиксация проводок"})}</Label>
+                <Select value={festschreibung} onValueChange={setFestschreibung}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">{tt({de:"0 – nicht festschreiben (Steuerberater kann korrigieren)", en:"0 – do not lock (advisor can correct)", tr:"0 – kilitleme", ar:"0 – عدم التثبيت", ru:"0 – без фиксации"})}</SelectItem>
+                    <SelectItem value="1">{tt({de:"1 – sofort festschreiben", en:"1 – lock immediately", tr:"1 – hemen kilitle", ar:"1 – تثبيت فوري", ru:"1 – немедленная фиксация"})}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <Button type="submit" className="w-full" disabled={saving}>
               {saving ? t("general.loading") : t("general.save")}
             </Button>
