@@ -31,6 +31,11 @@ interface Company {
   address: string | null;
   org_type: string;
   created_at: string;
+  datev_berater_nr?: string | null;
+  datev_mandanten_nr?: string | null;
+  datev_wj_beginn?: string | null;
+  datev_sachkontenlaenge?: number | null;
+  festschreibung_default?: number | null;
 }
 
 interface Vehicle {
