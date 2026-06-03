@@ -90,11 +90,19 @@ const Companies = () => {
   useEffect(() => { fetchData(); }, [user]);
 
   // Company form
-  const resetForm = () => { setName(""); setTaxId(""); setAddress(""); setOrgType("company"); setEditing(null); };
+  const resetForm = () => {
+    setName(""); setTaxId(""); setAddress(""); setOrgType("company"); setEditing(null);
+    setBeraterNr(""); setMandantenNr(""); setWjBeginn(""); setSachkontenlaenge("4"); setFestschreibung("0");
+  };
 
   const openEdit = (c: Company) => {
     setEditing(c); setName(c.name); setTaxId(c.tax_id || "");
     setAddress(c.address || ""); setOrgType((c.org_type as OrgType) || "company");
+    setBeraterNr(c.datev_berater_nr || "");
+    setMandantenNr(c.datev_mandanten_nr || "");
+    setWjBeginn(c.datev_wj_beginn || "");
+    setSachkontenlaenge(c.datev_sachkontenlaenge ? String(c.datev_sachkontenlaenge) : "4");
+    setFestschreibung(c.festschreibung_default != null ? String(c.festschreibung_default) : "0");
     setDialogOpen(true);
   };
 
@@ -117,7 +125,18 @@ const Companies = () => {
       return;
     }
 
-    const data = { name, tax_id: taxId || null, address: address || null, org_type: orgType };
+    const skLen = parseInt(sachkontenlaenge, 10);
+    const data: any = {
+      name,
+      tax_id: taxId || null,
+      address: address || null,
+      org_type: orgType,
+      datev_berater_nr: beraterNr.trim() || null,
+      datev_mandanten_nr: mandantenNr.trim() || null,
+      datev_wj_beginn: wjBeginn || null,
+      datev_sachkontenlaenge: Number.isFinite(skLen) && skLen >= 4 && skLen <= 8 ? skLen : null,
+      festschreibung_default: festschreibung === "1" ? 1 : 0,
+    };
     let error;
     if (editing) { ({ error } = await supabase.from("companies").update(data).eq("id", editing.id)); }
     else { ({ error } = await supabase.from("companies").insert({ ...data, user_id: user.id })); }
