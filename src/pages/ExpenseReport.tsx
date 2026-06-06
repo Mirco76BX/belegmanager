@@ -197,7 +197,7 @@ const ExpenseReport = () => {
         <FileSpreadsheet className="h-12 w-12 text-muted-foreground" />
         <h2 className="text-xl font-semibold text-foreground">{t("expense.title")}</h2>
         <p className="text-muted-foreground max-w-sm">
-          {tt({de:"Diese Funktion ist ab dem RELAX-Plan verfügbar. Upgrade jetzt, um Reisekostenabrechnungen zu erstellen.", en:"This feature is available from the RELAX plan. Upgrade now to create travel expense reports.", tr:"Bu özellik RELAX planından itibaren kullanılabilir. Seyahat masraf raporları oluşturmak için şimdi yükseltin.", ar:"هذه الميزة متاحة من خطة RELAX. قم بالترقية الآن لإنشاء تقارير مصاريف السفر.", ru:"Эта функция доступна с плана RELAX. Обновите сейчас для создания отчётов о командировочных."})}
+          {tt({de:"Diese Funktion ist ab dem BASIC-Plan verfügbar. Upgrade jetzt, um Reisekostenabrechnungen zu erstellen.", en:"This feature is available from the BASIC plan. Upgrade now to create travel expense reports.", tr:"Bu özellik BASIC planından itibaren kullanılabilir. Seyahat masraf raporları oluşturmak için şimdi yükseltin.", ar:"هذه الميزة متاحة من خطة BASIC. قم بالترقية الآن لإنشاء تقارير مصاريف السفر.", ru:"Эта функция доступна с плана BASIC. Обновите сейчас для создания отчётов о командировочных."})}
         </p>
         <Button onClick={() => navigate("/pricing")} className="gap-2">
           {tt({de:"Jetzt upgraden", en:"Upgrade Now", tr:"Şimdi Yükselt", ar:"ترقية الآن", ru:"Обновить сейчас"})}

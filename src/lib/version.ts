@@ -8,5 +8,5 @@
  * MARKETING_VERSION (User-sichtbare Version) wird nur bei Feature-Releases hochgezählt.
  */
 export const APP_VERSION = "1.0.0";
-export const APP_BUILD = 29;
+export const APP_BUILD = 31;
 export const VERSION_LABEL = `Version ${APP_VERSION} · Build ${APP_BUILD}`;

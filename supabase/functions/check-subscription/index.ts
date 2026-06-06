@@ -50,13 +50,19 @@ serve(async (req) => {
       logStep("Active coupon redemption found", { tier: redemption.tier, expires_at: redemption.expires_at });
 
       const tierProductMap: Record<string, string> = {
-        relax: "coupon_relax",
-        master: "coupon_master",
+        // Aktuelle Tiers
+        basic: "coupon_basic",
+        pro: "coupon_pro",
+        business: "coupon_business",
+        cfo: "coupon_cfo",
+        // Legacy (Bestandsschutz): alte RELAX/MASTER-Coupons werden auf PRO gehoben
+        relax: "coupon_pro",
+        master: "coupon_pro",
       };
 
       return new Response(JSON.stringify({
         subscribed: true,
-        product_id: tierProductMap[redemption.tier] || "coupon_relax",
+        product_id: tierProductMap[redemption.tier] || "coupon_basic",
         subscription_end: redemption.expires_at,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

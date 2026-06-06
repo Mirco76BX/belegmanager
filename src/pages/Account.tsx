@@ -502,7 +502,10 @@ const Account = () => {
           </SettingsRow>
         )}
         <div className="px-4 py-3.5">
-          {(subscription.tier === "relax" || subscription.tier === "master") && (
+          {(subscription.tier === "basic" ||
+            subscription.tier === "pro" ||
+            subscription.tier === "business" ||
+            subscription.tier === "cfo") && (
             <Button
               variant="outline"
               className="w-full h-11 text-body"
