@@ -86,7 +86,10 @@ const Companies = () => {
   const [orgType, setOrgType] = useState<OrgType>("company");
 
   // DATEV-Stammdaten pro Mandant.
-  // Gegenkonto-Default: SKR04 = 3300 (Verb. aus L+L), SKR03 = 1600.
+  // Gegenkonto-Default: SKR04 = 3300, SKR03 = 1600 (Verb. aus L+L) — als
+  // Initial-Vorschlag. Mandantenspezifisch! Bsp Bakerix nutzt 3641
+  // (Gesellschafter-Verrechnung), nicht 3300. Pflicht zur StB-Abstimmung
+  // wird im UI-Warning + ExpenseReport-Hilfetext kommuniziert.
   const [datevBeraterNr, setDatevBeraterNr] = useState("");
   const [datevMandantenNr, setDatevMandantenNr] = useState("");
   const [datevKontenrahmen, setDatevKontenrahmen] = useState<"SKR03" | "SKR04">("SKR04");
@@ -608,10 +611,10 @@ const Companies = () => {
                       </div>
                     </div>
                     <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2 text-caption-1 text-amber-900 dark:text-amber-200 leading-relaxed">
-                      <span className="font-semibold">[!] Wichtig: </span>
+                      <span className="font-semibold">[!] Pflicht zur Abstimmung mit dem Steuerberater: </span>
                       {tt({
-                        de: "Gegenkonto NICHT auf Bank (1800/1200) setzen — sonst doppelt gebucht beim Kontoauszug-Import. Empfohlen: SKR 04 = 3300, SKR 03 = 1600. Final mit Steuerberater abstimmen.",
-                        en: "Do NOT set counter account to Bank (1800/1200) — would cause double booking with bank statement import. Recommended: SKR 04 = 3300, SKR 03 = 1600.",
+                        de: "Das Gegenkonto ist mandantenspezifisch — frag deinen Steuerberater nach dem genauen Konto. Beispielwerte: SKR 04 = 3300 oder 3641 (Gesellschafter-Verrechnung), SKR 03 = 1600. NICHT die Bank (1800/1200) wählen — sonst doppelte Bank-Buchung beim Kontoauszug-Import.",
+                        en: "The counter account is client-specific — ask your tax advisor for the exact account. Sample values: SKR 04 = 3300 or 3641 (shareholder clearing), SKR 03 = 1600. Do NOT pick the bank account (1800/1200) — would cause double booking with bank statement import.",
                       })}
                     </div>
                   </div>

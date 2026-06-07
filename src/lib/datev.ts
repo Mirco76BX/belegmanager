@@ -27,7 +27,7 @@ export interface DatevMandantSettings {
   wj_beginn: string;         // YYYY-MM-DD
   sachkontenlaenge: 4 | 5 | 6 | 7 | 8;
   kontenrahmen: Kontenrahmen;
-  konto_gegenkonto: string;  // Bezahlweg — default Bank (1200 SKR03 / 1800 SKR04)
+  konto_gegenkonto: string;  // Verrechnungs-/Verbindlichkeitskonto — Default 1600 (SKR03) / 3300 (SKR04). NICHT Bank, sonst doppelte Bank-Buchung beim Kontoauszug-Import. Exakt-Konto pro Mandant mit Steuerberater abstimmen.
   bezeichnung?: string;      // freier Stapel-Name
   diktatkuerzel?: string;    // optional, max 2 Zeichen
 }

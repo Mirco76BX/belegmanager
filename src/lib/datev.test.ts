@@ -23,7 +23,7 @@ const MANDANT_OK: DatevMandantSettings = {
   wj_beginn: "2026-01-01",
   sachkontenlaenge: 4,
   kontenrahmen: "SKR03",
-  konto_gegenkonto: "1200",
+  konto_gegenkonto: "1600", // Verbindlichkeiten aus L+L (SKR03) — NICHT Bank
   bezeichnung: "Test-Stapel",
 };
 
@@ -177,8 +177,11 @@ describe("Konten-Mapping", () => {
   });
 
   it("Default-Gegenkonten je Kontenrahmen sind korrekt", () => {
-    expect(DEFAULT_GEGENKONTO.SKR03).toBe("1200"); // Bank SKR03
-    expect(DEFAULT_GEGENKONTO.SKR04).toBe("1800"); // Bank SKR04
+    // WICHTIG: NICHT Bank! Default ist Verrechnungs-/Verbindlichkeitskonto,
+    // weil der Steuerberater die Bank separat aus dem Kontoauszug bucht.
+    // Würde hier Bank stehen, gäbe es eine doppelte Bank-Buchung.
+    expect(DEFAULT_GEGENKONTO.SKR03).toBe("1600"); // Verbindlichkeiten aus L+L (SKR03)
+    expect(DEFAULT_GEGENKONTO.SKR04).toBe("3300"); // Verbindlichkeiten aus L+L (SKR04)
   });
 });
 

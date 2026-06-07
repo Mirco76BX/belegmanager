@@ -1086,15 +1086,21 @@ const ExpenseReport = () => {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="datev_gegenkonto" className="text-xs">
-                {tt({ de: "Gegenkonto (Bezahlweg)", en: "Counter-account (payment)" })}
+                {tt({ de: "Gegenkonto (Verrechnung/Verbindlichkeit)", en: "Counter-account (clearing/payable)" })}
               </Label>
               <Input
                 id="datev_gegenkonto"
                 inputMode="numeric"
-                placeholder={`Default: ${DEFAULT_GEGENKONTO[datevForm.kontenrahmen]} (Bank)`}
+                placeholder={`Default: ${DEFAULT_GEGENKONTO[datevForm.kontenrahmen]} — mit Steuerberater abstimmen`}
                 value={datevForm.konto_gegenkonto}
                 onChange={(e) => setDatevForm({ ...datevForm, konto_gegenkonto: e.target.value.replace(/\D/g, "").slice(0, 8) })}
               />
+              <p className="text-[10px] text-muted-foreground leading-snug">
+                {tt({
+                  de: "Nicht das Bankkonto wählen — der Steuerberater bucht die Bank separat aus dem Kontoauszug. Default ist ein Verrechnungs-/Verbindlichkeitskonto, das genaue Konto bitte mit deinem Steuerberater abstimmen.",
+                  en: "Do not pick the bank account — the bookkeeper posts the bank separately from the statement. Default is a clearing/payable account; confirm the exact account with your tax advisor.",
+                })}
+              </p>
             </div>
 
             <div className="space-y-1.5 col-span-2">
