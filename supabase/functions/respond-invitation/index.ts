@@ -81,9 +81,10 @@ serve(async (req) => {
       });
     }
   } catch (error) {
+    // Security: Generic error code an Client, raw message nur server-seitig loggen
     console.error("respond-invitation error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error_code: "ERR_INTERNAL" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

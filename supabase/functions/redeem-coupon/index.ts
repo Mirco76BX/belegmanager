@@ -98,8 +98,9 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ error: msg }), {
+    // Security: Generic error code an Client, raw message nur server-seitig loggen
+    console.error("redeem-coupon: internal error", error);
+    return new Response(JSON.stringify({ error_code: "ERR_INTERNAL" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

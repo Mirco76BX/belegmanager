@@ -122,9 +122,11 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
+    // Security: Generic error code an Client, raw message nur server-seitig loggen
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    console.error("check-subscription: internal error", error);
+    return new Response(JSON.stringify({ error_code: "ERR_INTERNAL" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

@@ -46,7 +46,9 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
+    // Security: Generic error code an Client, raw message nur server-seitig loggen
+    console.error("customer-portal: internal error", error);
+    return new Response(JSON.stringify({ error_code: "ERR_INTERNAL" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
