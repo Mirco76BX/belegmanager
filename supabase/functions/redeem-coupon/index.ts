@@ -64,7 +64,8 @@ serve(async (req) => {
 
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ error: msg }), {
+    console.error("redeem-coupon error:", msg);
+    return new Response(JSON.stringify({ error: "Gutschein konnte nicht eingelöst werden." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

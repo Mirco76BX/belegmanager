@@ -27,6 +27,19 @@ serve(async (req) => {
     const { priceId, couponCode } = await req.json();
     if (!priceId) throw new Error("priceId is required");
 
+    const ALLOWED_PRICE_IDS = new Set([
+      "price_1T8dZK2OSLlEeYaUvGn20UPk", // relax yearly
+      "price_1T8dd52OSLlEeYaUnkzNTDZd", // relax monthly
+      "price_1T8dgW2OSLlEeYaUifi4Z36n", // master yearly
+      "price_1T8l4i2OSLlEeYaU3OzHyBBP", // master monthly
+    ]);
+    if (!ALLOWED_PRICE_IDS.has(priceId)) {
+      return new Response(JSON.stringify({ error: "Invalid price" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId: string | undefined;
@@ -72,7 +85,8 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: (error as Error).message }), {
+    console.error("create-checkout error:", error);
+    return new Response(JSON.stringify({ error: "internal_error" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

@@ -315,6 +315,6 @@ serve(async (req) => {
     return jsonResponse(extracted);
   } catch (error) {
     console.error("scan-receipt error:", error);
-    return jsonResponse({ error: "internal", message: error instanceof Error ? error.message : "Unknown error" }, 500);
+    return jsonResponse({ error: "internal", message: "Ein interner Fehler ist aufgetreten. Bitte später erneut versuchen." }, 500);
   }
 });
