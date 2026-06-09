@@ -105,8 +105,9 @@ const KONTEN_MAPPING: Record<string, { skr03: string; skr04: string }> = {
   // Freigrenze 50 € netto/Empfänger/Jahr seit 01.01.2024 (Wachstumschancengesetz)
   streuwerbeartikel:          { skr03: "4633", skr04: "6613" }, // ≤ 10 €, immer abziehbar (kein 50€-Limit)
   geschenke_abziehbar:        { skr03: "4630", skr04: "6610" }, // > 10 € und ≤ 50 €, abziehbar
-  geschenke_pauschal:         { skr03: "4636", skr04: "6616" }, // mit § 37b Pauschalsteuer 30%
-  geschenke_nicht_abziehbar:  { skr03: "4635", skr04: "6611" }, // > 50 €, nicht abziehbar (kein VSt-Abzug!)
+  geschenke_pauschal:         { skr03: "4636", skr04: "6616" }, // ≤ 50 €, abziehbar, mit § 37b Pauschalsteuer 30%
+  geschenke_nicht_abziehbar:  { skr03: "4635", skr04: "6611" }, // > 50 €, nicht abziehbar, ohne § 37b (kein VSt-Abzug!)
+  geschenke_nicht_abziehbar_pauschal: { skr03: "4637", skr04: "6612" }, // > 50 €, nicht abziehbar, MIT § 37b Pauschalsteuer 30%. WICHTIG: Pauschalsteuer selbst wird auf separatem Konto gebucht (typisch 7677 SKR04 / 4147 SKR03) — mit Steuerberater abstimmen.
   // — Legacy —
   geschenke:                  { skr03: "4630", skr04: "6610" }, // Fallback alte Belege
   // — KFZ —

@@ -95,7 +95,13 @@ export const TAX_CATEGORIES: TaxCategory[] = [
   },
   {
     value: "geschenke_nicht_abziehbar",
-    label: { de: "Geschenke > 50 € (nicht abziehbar)", en: "Gifts > €50 (not deductible)" },
+    label: { de: "Geschenke > 50 € (nicht abziehbar, ohne § 37b Pauschalsteuer)", en: "Gifts > €50 (not deductible, no §37b flat tax)" },
+    icon: "🚫",
+    defaultVatRate: 19,
+  },
+  {
+    value: "geschenke_nicht_abziehbar_pauschal",
+    label: { de: "Geschenke > 50 € (nicht abziehbar, mit § 37b Pauschalsteuer 30 %)", en: "Gifts > €50 (not deductible, with §37b flat tax 30%)" },
     icon: "🚫",
     defaultVatRate: 19,
   },
