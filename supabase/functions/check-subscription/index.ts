@@ -131,9 +131,10 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    const isAuthError = errorMessage.toLowerCase().includes("auth") || errorMessage.includes("authorization");
+    return new Response(JSON.stringify({ error: isAuthError ? "unauthorized" : "internal_error" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status: isAuthError ? 401 : 500,
     });
   }
 });
