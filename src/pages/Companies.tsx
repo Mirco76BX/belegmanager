@@ -31,7 +31,9 @@ import {
   Car,
   ChevronDown,
   ChevronUp,
+  Mail,
 } from "lucide-react";
+import { AdvisorInviteDialog } from "@/components/AdvisorInviteDialog";
 
 const ORG_TYPES = ["company", "association", "personal", "tax", "health_insurance", "other"] as const;
 type OrgType = typeof ORG_TYPES[number];
@@ -97,6 +99,9 @@ const Companies = () => {
   const [datevWjBeginn, setDatevWjBeginn] = useState<string>(`${new Date().getFullYear()}-01-01`);
   const [datevSachkontenlaenge, setDatevSachkontenlaenge] = useState<number>(4);
   const [datevSectionOpen, setDatevSectionOpen] = useState(false);
+  // AdvisorInviteDialog: Mandant lädt Steuerberater per Magic-Link ein,
+  // die DATEV-Stammdaten dieser Company einzurichten.
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
@@ -514,6 +519,24 @@ const Companies = () => {
                         en: "Values come from your tax advisor. If empty, no DATEV stapel can be exported for this client.",
                       })}
                     </p>
+                    {/* CTA: Steuerberater einladen, das selbst auszufüllen — nur bei
+                        bestehender Company (braucht companyId für den Magic-Link). */}
+                    {editing?.id && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-start gap-2 h-11"
+                        onClick={() => setInviteDialogOpen(true)}
+                      >
+                        <Mail className="h-4 w-4 text-indigo-600" />
+                        <span className="flex-1 text-left">
+                          {tt({
+                            de: "Steuerberater einladen, das einzurichten",
+                            en: "Invite tax advisor to set this up",
+                          })}
+                        </span>
+                      </Button>
+                    )}
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1.5">
                         <Label className="text-caption-1 font-medium">
@@ -634,6 +657,16 @@ const Companies = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Steuerberater-Einladungs-Dialog: nur sichtbar wenn editing.id existiert */}
+      {editing?.id && (
+        <AdvisorInviteDialog
+          companyId={editing.id}
+          companyName={name || editing.name}
+          open={inviteDialogOpen}
+          onOpenChange={setInviteDialogOpen}
+        />
+      )}
 
       {/* Vehicle Dialog */}
       <Dialog

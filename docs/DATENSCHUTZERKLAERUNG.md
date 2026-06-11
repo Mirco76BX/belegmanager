@@ -54,6 +54,13 @@ Vertretungsberechtigter Geschäftsführer: Mirco Michael Grübel
 - **Rechtsgrundlage**: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an IT-Sicherheit)
 - **Speicherdauer**: maximal 30 Tage
 
+### 3.6 Steuerberater-Einrichtungs-Tokens (Magic-Link-Funktion)
+- **Daten**: E-Mail-Adresse des Steuerberaters, optionaler Name, optionale Notiz des Mandanten, kryptografischer Token-Hash (SHA-256; der Klartext-Token existiert nur in der versendeten Einladungs-Mail und wird nie in unserer Datenbank gespeichert), IP-Adresse und User-Agent des Steuerberaters beim Einlösen (Audit)
+- **Zweck**: Mandanten können ihren Steuerberater per Mail einladen, einmalig die DATEV-Stammdaten ihrer Organisation zu konfigurieren — ohne dass der Steuerberater einen Account anlegen oder Belege einsehen muss
+- **Rechtsgrundlage**: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse des Mandanten an effizienter DATEV-Konfiguration durch seinen Steuerberater) und Art. 6 Abs. 1 lit. b DSGVO (Vertragsdurchführung)
+- **Speicherdauer**: Token-Hash 7 Tage ab Erstellung (Token-Gültigkeit), nach Einlösen oder Ablauf weitere 12 Monate als Audit-Spur (Nachweis ordnungsgemäßer Datenverarbeitung gegenüber Aufsichtsbehörden), danach Löschung
+- **Hinweis**: Der Steuerberater hat über die Einladung **ausschließlich Lese-/Schreibzugriff auf die DATEV-Stammdaten der konfigurierten Organisation** — keinerlei Zugriff auf Belege, Buchungen, andere Mandanten oder personenbezogene Daten des Mandanten
+
 ## 4. Empfänger / Auftragsverarbeiter
 
 Wir setzen folgende Auftragsverarbeiter ein (Art. 28 DSGVO):
@@ -65,6 +72,7 @@ Wir setzen folgende Auftragsverarbeiter ein (Art. 28 DSGVO):
 | **Google Ireland Ltd. (Gemini API)** | Irland (Verarbeitung teilweise USA) | KI-gestützte Belegerkennung (Vision-Modell „Gemini 2.5 Pro") | Standardvertragsklauseln |
 | **Stripe Payments Europe Ltd.** | Irland | Zahlungsabwicklung | AVV gemäß Stripe DPA |
 | **Apple Distribution International Ltd.** | Irland | App-Vertrieb über App Store | Apple Developer Program License Agreement |
+| **ActiveCampaign LLC (Postmark)** | USA (Chicago, IL) | Transaktionaler E-Mail-Versand (Magic-Links, Bestätigungs-Mails, Passwort-Reset) | Standardvertragsklauseln (EU-SCC 2021/914), Postmark DPA |
 
 Drittlandstransfers in die USA (Google, Stripe, Supabase US-Komponenten) erfolgen auf Basis der EU-Standardvertragsklauseln (2021/914) und/oder des EU-US Data Privacy Frameworks.
 

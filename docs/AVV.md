@@ -149,6 +149,7 @@ Die Haftung im Verhältnis der Parteien richtet sich nach den Bestimmungen des H
 | Google Ireland Ltd. | Irland (Verarbeitung teils USA) | Vision-AI (Gemini 2.5 Pro) für OCR | Standardvertragsklauseln |
 | Stripe Payments Europe Ltd. | Irland | Zahlungsabwicklung | Stripe DPA |
 | Apple Distribution International Ltd. | Irland | App-Verteilung | Apple Developer Agreement |
+| ActiveCampaign LLC (Postmark) | USA (Chicago, IL) | Transaktionaler E-Mail-Versand (Magic-Links, Bestätigungen) | Postmark DPA + EU-SCC |
 
 ---
 

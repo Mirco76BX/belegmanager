@@ -28,6 +28,7 @@ import Demo from "@/pages/Demo";
 import ResetPassword from "@/pages/ResetPassword";
 import NativeAuthCallback from "@/pages/NativeAuthCallback";
 import StyleGuide from "@/pages/StyleGuide";
+import AdvisorSetup from "@/pages/AdvisorSetup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -148,6 +149,7 @@ const App = () => (
               <Route path="/demo" element={<Demo />} />
               <Route path="/impressum" element={<Impressum />} />
               <Route path="/datenschutz" element={<Datenschutz />} />
+              <Route path="/advisor-setup/:token" element={<AdvisorSetup />} />
               <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/receipts" element={<Receipts />} />
