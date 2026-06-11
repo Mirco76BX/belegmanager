@@ -65,6 +65,56 @@ export type Database = {
         }
         Relationships: []
       }
+      advisor_setup_tokens: {
+        Row: {
+          advisor_email: string
+          company_id: string
+          consumed_at: string | null
+          consumed_ip: string | null
+          consumed_user_agent: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          invitation_note: string | null
+          token_hash: string
+          user_id: string
+        }
+        Insert: {
+          advisor_email: string
+          company_id: string
+          consumed_at?: string | null
+          consumed_ip?: string | null
+          consumed_user_agent?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitation_note?: string | null
+          token_hash: string
+          user_id: string
+        }
+        Update: {
+          advisor_email?: string
+          company_id?: string
+          consumed_at?: string | null
+          consumed_ip?: string | null
+          consumed_user_agent?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitation_note?: string | null
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_setup_tokens_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           address: string | null
