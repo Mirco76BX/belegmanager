@@ -27,6 +27,7 @@ import Datenschutz from "@/pages/Datenschutz";
 import Demo from "@/pages/Demo";
 import ResetPassword from "@/pages/ResetPassword";
 import NativeAuthCallback from "@/pages/NativeAuthCallback";
+import AdvisorSetup from "@/pages/AdvisorSetup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
