@@ -38,6 +38,10 @@ export const TIERS = {
 const RELAX_PRODUCT_IDS = [TIERS.relax.yearly.product_id, TIERS.relax.monthly.product_id, "coupon_relax"];
 const MASTER_PRODUCT_IDS = [TIERS.master.yearly.product_id, TIERS.master.monthly.product_id, "coupon_master"];
 
+const VIEW_MODE_KEY = "belegmanager.viewMode";
+
+export type ViewMode = "personal" | "advisor";
+
 interface SubscriptionState {
   subscribed: boolean;
   productId: string | null;
@@ -51,6 +55,9 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   subscription: SubscriptionState;
+  isAdvisor: boolean;
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
   checkSubscription: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
@@ -63,6 +70,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdvisor, setIsAdvisor] = useState(false);
+  const [viewMode, setViewModeState] = useState<ViewMode>(() => {
+    if (typeof window === "undefined") return "personal";
+    const stored = window.localStorage.getItem(VIEW_MODE_KEY);
+    return stored === "advisor" || stored === "personal" ? stored : "personal";
+  });
   const [subscription, setSubscription] = useState<SubscriptionState>({
     subscribed: false,
     productId: null,
@@ -71,10 +84,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading: true,
   });
 
+  const setViewMode = (mode: ViewMode) => {
+    setViewModeState(mode);
+    try {
+      window.localStorage.setItem(VIEW_MODE_KEY, mode);
+    } catch {}
+  };
+
+  // Force personal mode if user is not an advisor
+  useEffect(() => {
+    if (!isAdvisor && viewMode !== "personal") {
+      setViewMode("personal");
+    }
+  }, [isAdvisor, viewMode]);
+
   const checkSubscription = async (userId?: string) => {
     const uid = userId || user?.id;
     if (!uid) return;
     try {
+      // Always fetch the advisor flag from profile (independent of tier path)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_tax_advisor")
+        .eq("id", uid)
+        .maybeSingle();
+      const advisorFlag = !!profile?.is_tax_advisor;
+      setIsAdvisor(advisorFlag);
+
       // Check subscription/coupon first (may grant higher tier than tax_advisor)
       const { data, error } = await supabase.functions.invoke("check-subscription");
       if (!error && data?.subscribed) {
@@ -91,13 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Fall back to tax_advisor profile check
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_tax_advisor")
-        .eq("id", uid)
-        .maybeSingle();
-
-      if (profile?.is_tax_advisor) {
+      if (advisorFlag) {
         setSubscription({
           subscribed: true,
           productId: null,
@@ -129,10 +159,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         setTimeout(() => checkSubscription(session.user.id), 0);
       } else {
+        setIsAdvisor(false);
         setSubscription({ subscribed: false, productId: null, subscriptionEnd: null, tier: "free", loading: false });
       }
 
-      // If token was refreshed, log it for debugging
       if (event === "TOKEN_REFRESHED") {
         console.log("[Auth] Token refreshed automatically");
       }
@@ -145,7 +175,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) checkSubscription(session.user.id);
     });
 
-    // Proactively refresh the session every 10 minutes to prevent token expiry
     const refreshInterval = setInterval(async () => {
       const { data, error } = await supabase.auth.refreshSession();
       if (error) {
@@ -161,7 +190,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Periodic refresh every 60s
   useEffect(() => {
     if (!user) return;
     const interval = setInterval(checkSubscription, 60_000);
@@ -188,7 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, subscription, checkSubscription, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, subscription, isAdvisor, viewMode, setViewMode, checkSubscription, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
