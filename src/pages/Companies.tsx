@@ -350,6 +350,23 @@ const Companies = () => {
                   {tt({de:"Erforderlich für den EXTF-Buchungsstapel-Export an den Steuerberater.", en:"Required for the EXTF booking stack export to your tax advisor.", tr:"Vergi danışmanına EXTF aktarımı için gereklidir.", ar:"مطلوب لتصدير حزمة قيود EXTF إلى مستشار الضرائب.", ru:"Требуется для экспорта EXTF в DATEV."})}
                 </p>
               </div>
+
+              {editing && (
+                <button
+                  type="button"
+                  onClick={() => setInviteDialogOpen(true)}
+                  className="group w-full flex items-center gap-3 rounded-lg border border-indigo-400/40 bg-gradient-to-r from-indigo-500/15 to-purple-500/10 px-4 py-3 text-left transition-all hover:border-indigo-400/70 hover:shadow-[0_0_24px_-6px_rgba(99,102,241,0.45)]"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-indigo-500/20">
+                    <Mail className="h-4 w-4 text-indigo-300" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[10px] uppercase tracking-wider text-indigo-300/80">Empfohlen</div>
+                    <div className="text-sm font-semibold">Steuerberater einladen, das einzurichten</div>
+                  </div>
+                </button>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>{tt({de:"Berater-Nr.", en:"Advisor No.", tr:"Danışman No.", ar:"رقم المستشار", ru:"№ консультанта"})}</Label>
@@ -360,6 +377,46 @@ const Companies = () => {
                   <Input value={mandantenNr} onChange={(e) => setMandantenNr(e.target.value)} placeholder="12345" inputMode="numeric" />
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Kontenrahmen</Label>
+                  <Select value={kontenrahmen} onValueChange={(v) => {
+                    setKontenrahmen(v);
+                    if (!gegenkonto) setGegenkonto(v === "SKR03" ? "1600" : "3300");
+                  }}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SKR03">SKR03</SelectItem>
+                      <SelectItem value="SKR04">SKR04</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Gegenkonto</Label>
+                  <Input value={gegenkonto} onChange={(e) => setGegenkonto(e.target.value)} placeholder={kontenrahmen === "SKR03" ? "1600" : "3300"} inputMode="numeric" />
+                </div>
+              </div>
+
+              <div className="flex gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs">
+                <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <strong>Mandantenspezifisch</strong> – bitte mit Ihrem Steuerberater abstimmen. Beispiel Bakerix: <em>3641</em> (Gesellschafter-Verrechnung).
+                  <strong> Nicht das Bankkonto wählen</strong> – sonst entstehen beim Kontoauszug-Import doppelte Buchungen.
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Bezeichnung</Label>
+                  <Input value={bezeichnung} onChange={(e) => setBezeichnung(e.target.value)} maxLength={100} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Diktatkürzel</Label>
+                  <Input value={diktatkuerzel} onChange={(e) => setDiktatkuerzel(e.target.value)} maxLength={10} />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>{tt({de:"WJ-Beginn", en:"Fiscal year start", tr:"Mali yıl başı", ar:"بداية السنة المالية", ru:"Начало финансового года"})}</Label>
