@@ -65,7 +65,7 @@ const STATUS_OPTIONS: {
 
 const Clients = () => {
   const { tt, lang } = useLanguage();
-  const { user, subscription } = useAuth();
+  const { user, subscription, viewMode } = useAuth();
   const { toast } = useToast();
   const locale = getLocale(lang);
 
@@ -81,7 +81,10 @@ const Clients = () => {
   const [receiptsLoading, setReceiptsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const isTaxAdvisor = subscription.tier === "tax_advisor";
+  // Gating für die Kanzlei-Übersicht: User muss aktuell im advisor-Modus sein.
+  // (User mit isAdvisor=true können via Sidebar-Switch zwischen den Modi
+  // wechseln; im personal-Modus wird die Mandanten-Seite ausgeblendet.)
+  const isTaxAdvisor = viewMode === "advisor";
 
   const fetchClients = async () => {
     if (!user) return;

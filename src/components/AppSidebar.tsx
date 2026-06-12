@@ -2,7 +2,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard, UserCircle, Users, Car } from "lucide-react";
+import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard, UserCircle, Users, Car, Briefcase, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InviteDialog from "@/components/InviteDialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -11,7 +11,7 @@ import { useState } from "react";
 import { VERSION_LABEL } from "@/lib/version";
 
 const AppSidebar = () => {
-  const { signOut, subscription } = useAuth();
+  const { signOut, subscription, isAdvisor, viewMode, setViewMode } = useAuth();
   const { t, lang, setLang } = useLanguage();
   const { isAdmin } = useUserRole();
   const navigate = useNavigate();
@@ -19,7 +19,18 @@ const AppSidebar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
 
-  const isTaxAdvisor = subscription.tier === "tax_advisor";
+  // View-Mode-aware: Sidebar zeigt entweder Personal- oder Kanzlei-Items,
+  // je nach aktueller viewMode. Der Switch (siehe handleToggleViewMode) ist
+  // nur sichtbar, wenn isAdvisor=true (= User darf umschalten).
+  const isTaxAdvisor = viewMode === "advisor";
+
+  const handleToggleViewMode = () => {
+    setViewMode(viewMode === "advisor" ? "personal" : "advisor");
+    // Bei Wechsel zurück zum Dashboard navigieren — sonst landet der User
+    // auf einer Seite, die im neuen Modus nicht zugänglich ist (z. B.
+    // /clients im personal-Modus).
+    navigate("/");
+  };
 
   // Desktop-Sidebar: alle Items vertikal (kein Platzproblem)
   const navItems = [
@@ -110,6 +121,25 @@ const AppSidebar = () => {
         )}
 
         <div className="border-t border-sidebar-border px-3 py-3 space-y-1">
+          {/* View-Mode-Switch — nur sichtbar wenn User Steuerberater-Status hat */}
+          {isAdvisor && (
+            <button
+              onClick={handleToggleViewMode}
+              className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
+            >
+              {viewMode === "advisor" ? (
+                <UserCircle className="h-4 w-4 text-indigo-400" />
+              ) : (
+                <Briefcase className="h-4 w-4 text-indigo-400" />
+              )}
+              <span className="flex-1 text-left">
+                {viewMode === "advisor"
+                  ? (lang === "de" ? "Persönlicher Modus" : "Personal mode")
+                  : (lang === "de" ? "Kanzlei-Modus" : "Advisor mode")}
+              </span>
+              <ArrowLeftRight className="h-3.5 w-3.5 text-sidebar-foreground/40" />
+            </button>
+          )}
           {isAdmin && (
             <button
               onClick={() => navigate("/admin/users")}
@@ -190,6 +220,25 @@ const AppSidebar = () => {
           })}
           {hiddenNavItems.length > 0 && (
             <div className="border-t border-sidebar-border my-1" />
+          )}
+          {/* View-Mode-Switch — Mobile-Variante, auch Menü schließen */}
+          {isAdvisor && (
+            <button
+              onClick={() => { handleToggleViewMode(); setMobileMenuOpen(false); }}
+              className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors"
+            >
+              {viewMode === "advisor" ? (
+                <UserCircle className="h-4 w-4 text-indigo-400" />
+              ) : (
+                <Briefcase className="h-4 w-4 text-indigo-400" />
+              )}
+              <span className="flex-1 text-left">
+                {viewMode === "advisor"
+                  ? (lang === "de" ? "Persönlicher Modus" : "Personal mode")
+                  : (lang === "de" ? "Kanzlei-Modus" : "Advisor mode")}
+              </span>
+              <ArrowLeftRight className="h-3.5 w-3.5 text-sidebar-foreground/40" />
+            </button>
           )}
           {isAdmin && (
             <button

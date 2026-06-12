@@ -113,11 +113,29 @@ interface SubscriptionState {
   loading: boolean;
 }
 
+/**
+ * Aktive Ansicht für User, die sowohl Mandant als auch Steuerberater sind.
+ *
+ * - "personal": normale Mandant-Sicht (Dashboard, eigene Belege, eigene Companies)
+ * - "advisor":  Kanzlei-Sicht (Mandanten-Übersicht, Steuerberater-Tools)
+ *
+ * Der Switch ist nur sichtbar, wenn isAdvisor=true. Nicht-Steuerberater
+ * sehen den Switch nicht und bleiben automatisch im "personal" Modus.
+ */
+export type ViewMode = "personal" | "advisor";
+
+const VIEW_MODE_STORAGE_KEY = "belegmanager.viewMode";
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   subscription: SubscriptionState;
+  /** True wenn der User profile.is_tax_advisor=true hat (= Switch-Button anzeigen) */
+  isAdvisor: boolean;
+  /** Aktuelle Sicht — auto-Default je nach isAdvisor, manuell überschreibbar */
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
   checkSubscription: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
@@ -137,6 +155,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     tier: "free",
     loading: true,
   });
+  /** Steuerberater-Status des Users (profiles.is_tax_advisor) — bestimmt, ob der Switch-Button sichtbar ist. */
+  const [isAdvisor, setIsAdvisor] = useState(false);
+  /** Aktuelle Ansicht: "personal" oder "advisor". Persistent im LocalStorage. */
+  const [viewMode, setViewModeState] = useState<ViewMode>(() => {
+    if (typeof window === "undefined") return "personal";
+    const stored = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+    return stored === "advisor" ? "advisor" : "personal";
+  });
+
+  const setViewMode = (mode: ViewMode) => {
+    setViewModeState(mode);
+    try {
+      window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, mode);
+    } catch {
+      // LocalStorage kann blockiert sein — kein Hard-Fail
+    }
+  };
 
   /**
    * Founder-Override: bestimmte E-Mails bekommen IMMER unlimited Access (CFO-Tier),
@@ -165,6 +200,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           tier: "cfo",
           loading: false,
         });
+        // Auch für Founder den isAdvisor-Flag aus dem Profil ziehen,
+        // damit der View-Mode-Switch sichtbar ist, falls der Founder
+        // gleichzeitig Steuerberater ist.
+        const { data: founderProfile } = await supabase
+          .from("profiles")
+          .select("is_tax_advisor")
+          .eq("id", uid)
+          .maybeSingle();
+        setIsAdvisor(!!founderProfile?.is_tax_advisor);
         return;
       }
 
@@ -188,6 +232,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           tier,
           loading: false,
         });
+        // Auch bei aktiver Subscription den isAdvisor-Flag aus dem Profil
+        // ziehen — User kann beides sein: zahlender Mandant + Steuerberater.
+        const { data: subProfile } = await supabase
+          .from("profiles")
+          .select("is_tax_advisor")
+          .eq("id", uid)
+          .maybeSingle();
+        setIsAdvisor(!!subProfile?.is_tax_advisor);
         return;
       }
 
@@ -197,6 +249,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .select("is_tax_advisor")
         .eq("id", uid)
         .maybeSingle();
+
+      // isAdvisor wird IMMER aus dem Profile übernommen — unabhängig vom Tier.
+      // (Founder mit tier=cfo aber is_tax_advisor=true können trotzdem den Switch nutzen.)
+      setIsAdvisor(!!profile?.is_tax_advisor);
 
       if (profile?.is_tax_advisor) {
         setSubscription({
@@ -217,6 +273,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         tier: "free",
         loading: false,
       });
+      // isAdvisor wurde bereits oben aus dem Profil gesetzt — hier nichts mehr tun.
     } catch {
       setSubscription(prev => ({ ...prev, loading: false }));
     }
@@ -288,8 +345,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) throw error;
   };
 
+  // Wenn User Steuerberater-Status verliert (Profil-Update), View-Mode auf
+  // "personal" zwingen — sonst sieht der User Kanzlei-Sicht ohne Berechtigung.
+  useEffect(() => {
+    if (!isAdvisor && viewMode === "advisor") {
+      setViewMode("personal");
+    }
+  }, [isAdvisor, viewMode]);
+
+  // Effektive Ansicht: wenn isAdvisor=true und kein expliziter LocalStorage-Wert,
+  // greift der Default aus dem useState-Initializer ("personal"). User kann
+  // jederzeit via setViewMode wechseln.
+  const effectiveViewMode: ViewMode = isAdvisor ? viewMode : "personal";
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, subscription, checkSubscription, signIn, signUp, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        loading,
+        subscription,
+        isAdvisor,
+        viewMode: effectiveViewMode,
+        setViewMode,
+        checkSubscription,
+        signIn,
+        signUp,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
