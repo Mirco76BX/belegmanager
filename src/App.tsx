@@ -114,6 +114,7 @@ const App = () => (
               <Route path="/auth/native-callback" element={<NativeAuthCallback />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/demo" element={<Demo />} />
+              <Route path="/advisor-setup/:token" element={<AdvisorSetup />} />
               <Route path="/impressum" element={<Impressum />} />
               <Route path="/datenschutz" element={<Datenschutz />} />
               <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
