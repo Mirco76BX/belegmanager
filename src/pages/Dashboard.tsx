@@ -14,7 +14,7 @@ interface MonthlyData {
 
 const Dashboard = () => {
   const { t, tt, lang } = useLanguage();
-  const { user, subscription } = useAuth();
+  const { user, viewMode } = useAuth();
   const locale = getLocale(lang);
   const [totalReceipts, setTotalReceipts] = useState(0);
   const [monthReceipts, setMonthReceipts] = useState(0);
@@ -23,7 +23,7 @@ const Dashboard = () => {
   const [recentReceipts, setRecentReceipts] = useState<any[]>([]);
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
 
-  const isTaxAdvisor = subscription.tier === "tax_advisor";
+  const isTaxAdvisor = viewMode === "advisor";
 
   useEffect(() => {
     if (!user || isTaxAdvisor) return;

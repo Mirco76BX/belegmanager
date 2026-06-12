@@ -2,7 +2,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard, UserCircle, Users, Car } from "lucide-react";
+import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard, UserCircle, Users, Car, Briefcase, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InviteDialog from "@/components/InviteDialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -10,7 +10,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { useState } from "react";
 
 const AppSidebar = () => {
-  const { signOut, subscription } = useAuth();
+  const { signOut, isAdvisor, viewMode, setViewMode } = useAuth();
   const { t, lang, setLang } = useLanguage();
   const { isAdmin } = useUserRole();
   const navigate = useNavigate();
@@ -18,7 +18,12 @@ const AppSidebar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
 
-  const isTaxAdvisor = subscription.tier === "tax_advisor";
+  const isTaxAdvisor = viewMode === "advisor";
+
+  const handleToggleViewMode = () => {
+    setViewMode(viewMode === "advisor" ? "personal" : "advisor");
+    navigate("/");
+  };
 
   const navItems = [
     { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/" },

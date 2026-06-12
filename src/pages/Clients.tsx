@@ -52,7 +52,7 @@ const STATUS_OPTIONS: { value: AccountingStatus; labelKey: { de: string; en: str
 
 const Clients = () => {
   const { tt, lang } = useLanguage();
-  const { user, subscription } = useAuth();
+  const { user, viewMode } = useAuth();
   const { toast } = useToast();
   const locale = getLocale(lang);
 
@@ -68,7 +68,7 @@ const Clients = () => {
   const [receiptsLoading, setReceiptsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const isTaxAdvisor = subscription.tier === "tax_advisor";
+  const isTaxAdvisor = viewMode === "advisor";
 
   const fetchClients = async () => {
     if (!user) return;
