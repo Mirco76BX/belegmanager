@@ -512,6 +512,15 @@ const Companies = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {editing && (
+        <AdvisorInviteDialog
+          companyId={editing.id}
+          companyName={editing.name}
+          open={inviteDialogOpen}
+          onOpenChange={setInviteDialogOpen}
+        />
+      )}
     </div>
   );
 };
