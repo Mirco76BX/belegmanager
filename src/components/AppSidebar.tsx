@@ -87,15 +87,26 @@ const AppSidebar = () => {
           {isAdvisor && (
             <button
               onClick={handleToggleViewMode}
-              className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
+              className="group relative flex w-full items-center gap-3 rounded-xl border border-indigo-400/40 bg-gradient-to-r from-indigo-500/15 to-purple-500/10 px-3.5 py-3 text-sm text-sidebar-foreground transition-all hover:border-indigo-400/70 hover:from-indigo-500/25 hover:to-purple-500/20 hover:shadow-lg hover:shadow-indigo-500/10 my-2"
             >
-              {viewMode === "advisor" ? <UserCircle className="h-4 w-4 text-indigo-400" /> : <Briefcase className="h-4 w-4 text-indigo-400" />}
-              <span className="flex-1 text-left">
-                {viewMode === "advisor"
-                  ? (lang === "de" ? "Persönlicher Modus" : "Personal mode")
-                  : (lang === "de" ? "Kanzlei-Modus" : "Advisor mode")}
-              </span>
-              <ArrowLeftRight className="h-3.5 w-3.5 text-sidebar-foreground/40" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors">
+                {viewMode === "advisor" ? (
+                  <UserCircle className="h-[1.125rem] w-[1.125rem] text-indigo-300" />
+                ) : (
+                  <Briefcase className="h-[1.125rem] w-[1.125rem] text-indigo-300" />
+                )}
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-[10px] uppercase tracking-wider text-sidebar-foreground/50 leading-none mb-1">
+                  {lang === "de" ? "Wechseln zu" : "Switch to"}
+                </p>
+                <p className="text-sm font-semibold leading-none">
+                  {viewMode === "advisor"
+                    ? (lang === "de" ? "Persönlicher Modus" : "Personal mode")
+                    : (lang === "de" ? "Kanzlei-Modus" : "Advisor mode")}
+                </p>
+              </div>
+              <ArrowLeftRight className="h-4 w-4 text-indigo-300/70 group-hover:text-indigo-200 transition-colors" />
             </button>
           )}
           {isAdmin && (
@@ -161,15 +172,26 @@ const AppSidebar = () => {
           {isAdvisor && (
             <button
               onClick={() => { handleToggleViewMode(); setMobileMenuOpen(false); }}
-              className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
+              className="group relative flex w-full items-center gap-3 rounded-xl border border-indigo-400/40 bg-gradient-to-r from-indigo-500/15 to-purple-500/10 px-3.5 py-3 text-sm text-sidebar-foreground transition-all hover:border-indigo-400/70 hover:from-indigo-500/25 hover:to-purple-500/20 hover:shadow-lg hover:shadow-indigo-500/10 my-2"
             >
-              {viewMode === "advisor" ? <UserCircle className="h-4 w-4 text-indigo-400" /> : <Briefcase className="h-4 w-4 text-indigo-400" />}
-              <span className="flex-1 text-left">
-                {viewMode === "advisor"
-                  ? (lang === "de" ? "Persönlicher Modus" : "Personal mode")
-                  : (lang === "de" ? "Kanzlei-Modus" : "Advisor mode")}
-              </span>
-              <ArrowLeftRight className="h-3.5 w-3.5 text-sidebar-foreground/40" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors">
+                {viewMode === "advisor" ? (
+                  <UserCircle className="h-[1.125rem] w-[1.125rem] text-indigo-300" />
+                ) : (
+                  <Briefcase className="h-[1.125rem] w-[1.125rem] text-indigo-300" />
+                )}
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-[10px] uppercase tracking-wider text-sidebar-foreground/50 leading-none mb-1">
+                  {lang === "de" ? "Wechseln zu" : "Switch to"}
+                </p>
+                <p className="text-sm font-semibold leading-none">
+                  {viewMode === "advisor"
+                    ? (lang === "de" ? "Persönlicher Modus" : "Personal mode")
+                    : (lang === "de" ? "Kanzlei-Modus" : "Advisor mode")}
+                </p>
+              </div>
+              <ArrowLeftRight className="h-4 w-4 text-indigo-300/70 group-hover:text-indigo-200 transition-colors" />
             </button>
           )}
           {isAdmin && (
