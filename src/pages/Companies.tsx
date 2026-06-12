@@ -34,8 +34,12 @@ interface Company {
   created_at: string;
   datev_berater_nr?: string | null;
   datev_mandanten_nr?: string | null;
+  datev_kontenrahmen?: string | null;
+  datev_konto_gegenkonto?: string | null;
   datev_wj_beginn?: string | null;
   datev_sachkontenlaenge?: number | null;
+  datev_bezeichnung?: string | null;
+  datev_diktatkuerzel?: string | null;
   festschreibung_default?: number | null;
 }
 
