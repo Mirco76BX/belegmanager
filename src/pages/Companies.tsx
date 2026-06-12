@@ -67,9 +67,14 @@ const Companies = () => {
   const [orgType, setOrgType] = useState<OrgType>("company");
   const [beraterNr, setBeraterNr] = useState("");
   const [mandantenNr, setMandantenNr] = useState("");
+  const [kontenrahmen, setKontenrahmen] = useState<string>("SKR04");
+  const [gegenkonto, setGegenkonto] = useState("");
+  const [bezeichnung, setBezeichnung] = useState("");
+  const [diktatkuerzel, setDiktatkuerzel] = useState("");
   const [wjBeginn, setWjBeginn] = useState("");
   const [sachkontenlaenge, setSachkontenlaenge] = useState<string>("4");
   const [festschreibung, setFestschreibung] = useState<string>("0");
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
