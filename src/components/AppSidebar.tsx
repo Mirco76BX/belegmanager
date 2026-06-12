@@ -98,6 +98,7 @@ const AppSidebar = () => {
               <ArrowLeftRight className="h-3.5 w-3.5 text-sidebar-foreground/40" />
             </button>
           )}
+          {isAdmin && (
             <button
               onClick={() => navigate("/admin/users")}
               className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
