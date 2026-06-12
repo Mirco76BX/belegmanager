@@ -28,6 +28,26 @@ function randomTokenHex(bytes = 32) {
   return Array.from(buf).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+const ALLOWED_ORIGINS = [
+  "https://belegmanager.online",
+  "https://www.belegmanager.online",
+  "https://belegmanager.lovable.app",
+  "https://id-preview--5196d375-f0b6-42d1-b73c-097cbd42414c.lovable.app",
+  "http://localhost:8080",
+  "http://localhost:3000",
+  "http://localhost:5173",
+];
+const DEFAULT_ORIGIN = "https://belegmanager.online";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
