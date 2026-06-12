@@ -103,6 +103,7 @@ const Companies = () => {
   const resetForm = () => {
     setName(""); setTaxId(""); setAddress(""); setOrgType("company"); setEditing(null);
     setBeraterNr(""); setMandantenNr(""); setWjBeginn(""); setSachkontenlaenge("4"); setFestschreibung("0");
+    setKontenrahmen("SKR04"); setGegenkonto(""); setBezeichnung(""); setDiktatkuerzel("");
   };
 
   const openEdit = (c: Company) => {
@@ -110,6 +111,10 @@ const Companies = () => {
     setAddress(c.address || ""); setOrgType((c.org_type as OrgType) || "company");
     setBeraterNr(c.datev_berater_nr || "");
     setMandantenNr(c.datev_mandanten_nr || "");
+    setKontenrahmen(c.datev_kontenrahmen || "SKR04");
+    setGegenkonto(c.datev_konto_gegenkonto || "");
+    setBezeichnung(c.datev_bezeichnung || "");
+    setDiktatkuerzel(c.datev_diktatkuerzel || "");
     setWjBeginn(c.datev_wj_beginn || "");
     setSachkontenlaenge(c.datev_sachkontenlaenge ? String(c.datev_sachkontenlaenge) : "4");
     setFestschreibung(c.festschreibung_default != null ? String(c.festschreibung_default) : "0");
@@ -143,6 +148,10 @@ const Companies = () => {
       org_type: orgType,
       datev_berater_nr: beraterNr.trim() || null,
       datev_mandanten_nr: mandantenNr.trim() || null,
+      datev_kontenrahmen: kontenrahmen || null,
+      datev_konto_gegenkonto: gegenkonto.trim() || null,
+      datev_bezeichnung: bezeichnung.trim() || null,
+      datev_diktatkuerzel: diktatkuerzel.trim() || null,
       datev_wj_beginn: wjBeginn || null,
       datev_sachkontenlaenge: Number.isFinite(skLen) && skLen >= 4 && skLen <= 8 ? skLen : null,
       festschreibung_default: festschreibung === "1" ? 1 : 0,
