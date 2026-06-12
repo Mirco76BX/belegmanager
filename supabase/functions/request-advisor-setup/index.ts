@@ -28,6 +28,26 @@ function randomTokenHex(bytes = 32) {
   return Array.from(buf).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+const ALLOWED_ORIGINS = [
+  "https://belegmanager.online",
+  "https://www.belegmanager.online",
+  "https://belegmanager.lovable.app",
+  "https://id-preview--5196d375-f0b6-42d1-b73c-097cbd42414c.lovable.app",
+  "http://localhost:8080",
+  "http://localhost:3000",
+  "http://localhost:5173",
+];
+const DEFAULT_ORIGIN = "https://belegmanager.online";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -127,28 +147,35 @@ Deno.serve(async (req) => {
       return json(500, { error_code: "ERR_INTERNAL", message: "Interner Fehler." });
     }
 
-    const origin = req.headers.get("origin") || "https://belegmanager.online";
+    const reqOrigin = req.headers.get("origin") || "";
+    const origin = ALLOWED_ORIGINS.includes(reqOrigin) ? reqOrigin : DEFAULT_ORIGIN;
     const link = `${origin}/advisor-setup/${token}`;
-    const greeting = advisorName ? `Hallo ${advisorName},` : "Hallo,";
-    const fromName = userEmail || "Ihr Mandant";
-    const noteBlock = invitationNote?.trim()
-      ? `<p style="margin:16px 0;padding:12px;background:#f5f5f5;border-left:3px solid #4f46e5;"><em>${invitationNote.trim()}</em></p>`
+    const safeCompanyName = escapeHtml(company.name);
+    const safeAdvisorName = advisorName ? escapeHtml(advisorName) : "";
+    const safeInviter = escapeHtml(userEmail || "Ihr Mandant");
+    const safeNote = invitationNote?.trim() ? escapeHtml(invitationNote.trim()) : "";
+    const greeting = safeAdvisorName ? `Hallo ${safeAdvisorName},` : "Hallo,";
+    const noteBlock = safeNote
+      ? `<p style="margin:16px 0;padding:12px;background:#f5f5f5;border-left:3px solid #4f46e5;"><em>${safeNote}</em></p>`
       : "";
 
     const html = `<!doctype html><html><body style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111;">
-<h2 style="color:#4f46e5;">DATEV-Einrichtung für ${company.name}</h2>
+<h2 style="color:#4f46e5;">DATEV-Einrichtung für ${safeCompanyName}</h2>
 <p>${greeting}</p>
-<p>${fromName} bittet Sie, die DATEV-Stammdaten für <strong>${company.name}</strong> einmalig einzurichten – kein Account, kein Login nötig.</p>
+<p>${safeInviter} bittet Sie, die DATEV-Stammdaten für <strong>${safeCompanyName}</strong> einmalig einzurichten – kein Account, kein Login nötig.</p>
 ${noteBlock}
 <p style="margin:24px 0;"><a href="${link}" style="background:#4f46e5;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block;">DATEV-Stammdaten einrichten</a></p>
 <p style="font-size:12px;color:#666;">Der Link ist 7 Tage gültig und kann nur einmal verwendet werden. Falls Sie diese E-Mail nicht erwartet haben, ignorieren Sie sie bitte.</p>
 <p style="font-size:11px;color:#999;word-break:break-all;">${link}</p>
 </body></html>`;
 
-    const text = `${greeting}
+    const plainInviter = userEmail || "Ihr Mandant";
+    const plainNote = invitationNote?.trim().replace(/\r\n?/g, "\n") ?? "";
+    const plainGreeting = advisorName ? `Hallo ${advisorName},` : "Hallo,";
+    const text = `${plainGreeting}
 
-${fromName} bittet Sie, die DATEV-Stammdaten für ${company.name} einzurichten.
-${invitationNote?.trim() ? `\nNotiz: ${invitationNote.trim()}\n` : ""}
+${plainInviter} bittet Sie, die DATEV-Stammdaten für ${company.name} einzurichten.
+${plainNote ? `\nNotiz: ${plainNote}\n` : ""}
 Link (7 Tage gültig, einmalig nutzbar):
 ${link}
 `;
