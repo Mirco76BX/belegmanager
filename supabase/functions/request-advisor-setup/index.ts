@@ -32,8 +32,14 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    console.log("[request-advisor-setup] invoked", {
+      hasPostmarkToken: !!Deno.env.get("POSTMARK_SERVER_TOKEN"),
+      hasPostmarkFrom: !!Deno.env.get("POSTMARK_FROM_EMAIL"),
+      postmarkFromPreview: (Deno.env.get("POSTMARK_FROM_EMAIL") || "").slice(0, 4) + "***",
+    });
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!authHeader.startsWith("Bearer ")) {
+      console.error("[request-advisor-setup] no bearer header");
       return json(401, { error_code: "ERR_AUTH", message: "Nicht authentifiziert." });
     }
 
@@ -170,12 +176,14 @@ ${link}
         MessageStream: "outbound",
       }),
     });
+    console.log("[request-advisor-setup] postmark response", { status: pmRes.status, ok: pmRes.ok });
     if (!pmRes.ok) {
       const errText = await pmRes.text();
-      console.error("[request-advisor-setup] postmark", pmRes.status, errText);
-      return json(500, { error_code: "ERR_INTERNAL", message: "E-Mail konnte nicht gesendet werden." });
+      console.error("[request-advisor-setup] postmark failed", pmRes.status, errText);
+      return json(500, { error_code: "ERR_INTERNAL", message: `E-Mail konnte nicht gesendet werden. (Postmark ${pmRes.status})` });
     }
 
+    console.log("[request-advisor-setup] success", { advisorEmail: advisorEmail.toLowerCase() });
     return json(200, { ok: true, expiresAt });
   } catch (e) {
     console.error("[request-advisor-setup] uncaught", e);
