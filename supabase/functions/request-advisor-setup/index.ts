@@ -32,8 +32,14 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    console.log("[request-advisor-setup] invoked", {
+      hasPostmarkToken: !!Deno.env.get("POSTMARK_SERVER_TOKEN"),
+      hasPostmarkFrom: !!Deno.env.get("POSTMARK_FROM_EMAIL"),
+      postmarkFromPreview: (Deno.env.get("POSTMARK_FROM_EMAIL") || "").slice(0, 4) + "***",
+    });
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!authHeader.startsWith("Bearer ")) {
+      console.error("[request-advisor-setup] no bearer header");
       return json(401, { error_code: "ERR_AUTH", message: "Nicht authentifiziert." });
     }
 
