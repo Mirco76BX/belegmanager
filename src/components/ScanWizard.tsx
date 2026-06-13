@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Camera, Upload, Loader2, Check, SkipForward, ArrowRight, Plus, AlertTriangle, Info, X } from "lucide-react";
+import { ToastAction } from "@/components/ui/toast";
 import { TAX_CATEGORIES, getSmartGuessVat, getRequiredFields, guessTaxCategoryFromScan } from "@/lib/taxCategories";
 
 const PURPOSE_PRESETS = [
@@ -92,6 +93,10 @@ const confidenceBadge = (level?: string, lang?: string) => {
     </span>
   );
 };
+
+const RATE_SAMPLE_AMOUNT = 1000000;
+
+const roundCurrencyAmount = (value: number) => Math.round(value * 100) / 100;
 
 const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCompaniesChanged }: ScanWizardProps) => {
   const { user, subscription } = useAuth();
@@ -184,7 +189,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       if (!error && data?.rate != null) {
         const rate = Number(data.rate);
         if (Number.isFinite(rate) && rate > 0) {
-          return Math.round(value * rate * 100) / 100;
+          return roundCurrencyAmount(value * rate);
         }
       }
       if (!error && data?.amount_eur != null) {
@@ -205,10 +210,15 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
     if (!currency || currency === "EUR") return 1;
     try {
       const { data, error } = await supabase.functions.invoke("convert-currency", {
-        body: { amount: 1, currency, date: receiptDate || undefined },
+        body: { amount: RATE_SAMPLE_AMOUNT, currency, date: receiptDate || undefined },
       });
       if (!error && data?.rate != null) {
         const rate = Number(data.rate);
+        return Number.isFinite(rate) && rate > 0 ? rate : null;
+      }
+      if (!error && data?.amount_eur != null) {
+        const amountEur = Number(data.amount_eur);
+        const rate = amountEur / RATE_SAMPLE_AMOUNT;
         return Number.isFinite(rate) && rate > 0 ? rate : null;
       }
     } catch (error) {
@@ -272,7 +282,51 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const { data, error } = await supabase.functions.invoke("scan-receipt", {
         body: pages.length > 1 ? { images: imageArray } : { imageBase64: imageArray[0] },
       });
-      if (error) throw error;
+      if (error) {
+        // Try to extract structured body from FunctionsHttpError for limit/rate responses
+        let parsed: any = null;
+        const ctx: any = (error as any)?.context;
+        try {
+          if (ctx && typeof ctx.json === "function") parsed = await ctx.json();
+          else if (ctx && typeof ctx.text === "function") parsed = JSON.parse(await ctx.text());
+        } catch { /* ignore */ }
+        const status = ctx?.status ?? (error as any)?.status;
+        const code = parsed?.error;
+        const msg = parsed?.message;
+
+        if (status === 402 || code === "limit_reached") {
+          toast({
+            title: tt({ de: "Monatslimit erreicht", en: "Monthly limit reached" }),
+            description: msg || tt({ de: "Bitte upgrade dein Paket.", en: "Please upgrade your plan." }),
+            variant: "destructive",
+            action: (
+              <ToastAction altText="Upgrade" onClick={() => navigate("/pricing")}>
+                {tt({ de: "Jetzt upgraden", en: "Upgrade now" })}
+              </ToastAction>
+            ),
+          });
+          setStep("upload"); setPages([]); setFile(null); setPreview(null);
+          return;
+        }
+        if (status === 429 || code === "rate_limit" || code === "ai_rate_limit") {
+          toast({
+            title: tt({ de: "Kurze Pause", en: "Short pause" }),
+            description: msg || tt({ de: "Bitte einen Moment warten — kurze Pause vor dem nächsten Scan.", en: "Please wait a moment before the next scan." }),
+          });
+          setStep("upload"); setFile(null); setPreview(null);
+          return;
+        }
+        if (status === 401) {
+          toast({
+            title: tt({ de: "Sitzung abgelaufen", en: "Session expired" }),
+            description: tt({ de: "Bitte erneut einloggen.", en: "Please sign in again." }),
+            variant: "destructive",
+          });
+          setStep("upload");
+          return;
+        }
+        throw error;
+      }
 
       setScanResult(data);
       const detectedDate = data.date || "";
@@ -285,7 +339,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const toEur = (v: number | null | undefined): number | null => {
         if (v == null) return null;
         if (!eurRate) return Number(v);
-        return Math.round(Number(v) * eurRate * 100) / 100;
+        return roundCurrencyAmount(Number(v) * eurRate);
       };
 
       const convertedAmount = data.amount != null ? toEur(data.amount) : null;
@@ -337,6 +391,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
           setPendingFilePath(filePath);
 
           const parsedAmount = data.amount != null ? data.amount : null;
+          const pendingVatAmount = detectedCurrency === "EUR" ? data.tax_amount ?? null : convertedVatAmount;
 
           const { data: receiptRow, error: insertErr } = await supabase.from("receipts").insert({
             user_id: user!.id,
@@ -347,7 +402,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
             file_path: filePath,
             receipt_type: detectedIsFuel ? "fuel" : "general",
             status: "pending",
-            vat_amount: data.tax_amount ?? null,
+            vat_amount: pendingVatAmount,
             vat_rate: data.tax_rate ?? null,
             currency: detectedCurrency,
             tax_category: suggestedCat || null,
@@ -731,13 +786,13 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                     <span className="font-semibold text-foreground">💰 {scanResult.amount.toFixed(2)} {scanResult.currency || "EUR"} inkl. MwSt.</span>
                     {confidenceBadge(conf?.amount, lang)}
                     {scanResult.currency && scanResult.currency !== "EUR" && amount && (
-                      <span>≈ {Number(amount).toFixed(2)} €</span>
+                      <span>≈ {Number(amount).toFixed(2)} €</span>
                     )}
                     {vatItems.length > 1 ? (
                       <div className="flex flex-col gap-0.5 mt-0.5">
                         {vatItems.map((item, idx) => (
                           <span key={idx} className="text-xs text-muted-foreground">
-                            📊 {item.label}: {item.vat_amount.toFixed(2)} € ({item.vat_rate}%)
+                            📊 {item.label}: {item.vat_amount.toFixed(2)} € ({item.vat_rate}%)
                           </span>
                         ))}
                       </div>
@@ -750,7 +805,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                           </span>
                         )}
                         {scanResult.tax_amount != null && scanResult.currency && scanResult.currency !== "EUR" && vatAmount && (
-                          <span>≈ {Number(vatAmount).toFixed(2)} €</span>
+                          <span>≈ {Number(vatAmount).toFixed(2)} €</span>
                         )}
                         {scanResult.tax_rate != null && (
                           <span className="flex items-center gap-1">
@@ -894,7 +949,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
                   ))}
                   <div className="flex justify-between text-xs text-muted-foreground px-1">
                     <span>{tt({de:"Gesamt MwSt.", en:"Total VAT"})}</span>
-                    <span className="font-mono font-medium">{vatItems.reduce((s, i) => s + (i.vat_amount || 0), 0).toFixed(2)} €</span>
+                    <span className="font-mono font-medium">{vatItems.reduce((s, i) => s + (i.vat_amount || 0), 0).toFixed(2)} €</span>
                   </div>
                 </div>
               ) : (

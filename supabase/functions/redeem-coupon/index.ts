@@ -30,77 +30,42 @@ serve(async (req) => {
     const { code } = await req.json();
     if (!code || typeof code !== "string") throw new Error("No coupon code provided");
 
-    const normalizedCode = code.trim().toUpperCase();
-
-    // Find coupon
-    const { data: coupon, error: couponErr } = await supabase
-      .from("coupons")
-      .select("*")
-      .ilike("code", normalizedCode)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (couponErr || !coupon) {
+    const normalizedCode = code.trim();
+    if (normalizedCode.length === 0 || normalizedCode.length > 64) {
       return new Response(JSON.stringify({ error: "Ungültiger Gutscheincode" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check max uses
-    if (coupon.max_uses !== null && coupon.used_count >= coupon.max_uses) {
-      return new Response(JSON.stringify({ error: "Gutscheincode bereits ausgeschöpft" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Check if user already redeemed this coupon
-    const { data: existing } = await supabase
-      .from("coupon_redemptions")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("coupon_id", coupon.id)
-      .maybeSingle();
-
-    if (existing) {
-      return new Response(JSON.stringify({ error: "Gutschein bereits eingelöst" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Calculate expiry
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + coupon.duration_days);
-
-    // Create redemption
-    const { error: insertErr } = await supabase.from("coupon_redemptions").insert({
-      user_id: user.id,
-      coupon_id: coupon.id,
-      tier: coupon.tier,
-      expires_at: expiresAt.toISOString(),
+    // Atomic check-and-redeem to prevent race conditions on max_uses
+    const { data, error } = await supabase.rpc("redeem_coupon_atomic", {
+      _user_id: user.id,
+      _code: normalizedCode,
     });
 
-    if (insertErr) throw new Error(insertErr.message);
+    if (error) throw new Error(error.message);
 
-    // Increment used_count
-    await supabase
-      .from("coupons")
-      .update({ used_count: coupon.used_count + 1 })
-      .eq("id", coupon.id);
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row?.error) {
+      return new Response(JSON.stringify({ error: row.error }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(JSON.stringify({
       success: true,
-      tier: coupon.tier,
-      expires_at: expiresAt.toISOString(),
+      tier: row.tier,
+      expires_at: row.expires_at,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (error) {
-    // Security: Generic error code an Client, raw message nur server-seitig loggen
-    console.error("redeem-coupon: internal error", error);
-    return new Response(JSON.stringify({ error_code: "ERR_INTERNAL" }), {
+    const msg = error instanceof Error ? error.message : "Unknown error";
+    console.error("redeem-coupon error:", msg);
+    return new Response(JSON.stringify({ error: "Gutschein konnte nicht eingelöst werden." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -19,72 +19,71 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
+    const jsonResp = (body: unknown, status: number) =>
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header");
+    if (!authHeader) return jsonResp({ error: "unauthorized" }, 401);
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !userData.user) throw new Error("Not authenticated");
+    if (userError || !userData.user) return jsonResp({ error: "unauthorized" }, 401);
 
     const userId = userData.user.id;
     const userEmail = userData.user.email;
     const { invitationId, action } = await req.json();
 
     if (!invitationId || !["accept", "decline"].includes(action)) {
-      throw new Error("invitationId and action (accept/decline) required");
+      return jsonResp({ error: "invalid_request" }, 400);
     }
 
-    // Fetch invitation - check it belongs to this user
     const { data: invitation, error: invErr } = await supabaseClient
       .from("advisor_invitations")
       .select("*")
       .eq("id", invitationId)
       .single();
 
-    if (invErr || !invitation) throw new Error("Invitation not found");
-    if (invitation.status !== "pending") throw new Error("Invitation already responded to");
+    if (invErr || !invitation) return jsonResp({ error: "not_found" }, 404);
+    if (invitation.status !== "pending") return jsonResp({ error: "already_responded" }, 409);
 
-    // Verify this user is the intended client
     if (invitation.client_id && invitation.client_id !== userId) {
-      throw new Error("This invitation is not for you");
+      return jsonResp({ error: "forbidden" }, 403);
     }
     if (!invitation.client_id && invitation.client_email !== userEmail) {
-      throw new Error("This invitation is not for you");
+      return jsonResp({ error: "forbidden" }, 403);
     }
 
     if (action === "accept") {
-      // Create advisor_clients link
       const { error: linkErr } = await supabaseClient
         .from("advisor_clients")
         .insert({ advisor_id: invitation.advisor_id, client_id: userId });
 
-      if (linkErr && linkErr.code !== "23505") throw linkErr; // ignore duplicate
+      if (linkErr && linkErr.code !== "23505") {
+        console.error("respond-invitation link error:", linkErr);
+        return jsonResp({ error: "internal_error" }, 500);
+      }
 
-      // Update invitation status
       await supabaseClient
         .from("advisor_invitations")
         .update({ status: "accepted", client_id: userId, responded_at: new Date().toISOString() })
         .eq("id", invitationId);
 
-      return new Response(JSON.stringify({ success: true, action: "accepted" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResp({ success: true, action: "accepted" }, 200);
     } else {
-      // Decline
       await supabaseClient
         .from("advisor_invitations")
         .update({ status: "declined", client_id: userId, responded_at: new Date().toISOString() })
         .eq("id", invitationId);
 
-      return new Response(JSON.stringify({ success: true, action: "declined" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResp({ success: true, action: "declined" }, 200);
     }
   } catch (error) {
-    // Security: Generic error code an Client, raw message nur server-seitig loggen
     console.error("respond-invitation error:", error);
     return new Response(
-      JSON.stringify({ error_code: "ERR_INTERNAL" }),
+      JSON.stringify({ error: "internal_error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

@@ -101,10 +101,10 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
   const formatAmount = (r: Receipt) => {
     if (r.amount == null) return "–";
     if (r.currency && r.currency !== "EUR") {
-      const eurStr = r.amount_eur != null ? `${r.amount_eur.toFixed(2)} €` : "–";
+      const eurStr = r.amount_eur != null ? `${r.amount_eur.toFixed(2)} €` : "–";
       return eurStr;
     }
-    return `${r.amount.toFixed(2)} €`;
+    return `${r.amount.toFixed(2)} €`;
   };
   const companyName = (id: string | null) => companies.find(c => c.id === id)?.name || "–";
   const isEditing = (id: string) => editingId === id;

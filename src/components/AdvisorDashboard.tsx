@@ -139,133 +139,111 @@ const AdvisorDashboard = () => {
 
   return (
     <div className="animate-fade-in space-y-6">
-      {/* Header */}
-      <div className="flex items-end justify-between gap-3">
-        <div className="space-y-1">
-          <p className="text-caption-2 uppercase tracking-wider text-muted-foreground">
-            {tt({ de: "Steuerberater-Sicht", en: "Tax Advisor View" })}
-          </p>
-          <h1 className="text-title-1 md:text-large-title font-bold tracking-tight">
-            {tt({ de: "Kanzlei-Übersicht", en: "Firm Overview" })}
-          </h1>
-        </div>
-        <Button
-          variant="outline"
-          className="h-11 px-4 text-body gap-2 shrink-0"
-          onClick={() => navigate("/clients")}
-        >
-          <Users className="h-5 w-5" />
-          <span className="hidden sm:inline">{tt({ de: "Mandanten verwalten", en: "Manage Clients" })}</span>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">
+          {tt({ de: "Kanzlei-Übersicht", en: "Firm Overview", tr: "Büro Genel Bakışı", ar: "نظرة عامة على المكتب", ru: "Обзор фирмы" })}
+        </h1>
+        <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate("/clients")}>
+          <Users className="h-4 w-4" />
+          {tt({ de: "Mandanten verwalten", en: "Manage Clients", tr: "Müşterileri Yönet", ar: "إدارة العملاء", ru: "Управление клиентами" })}
         </Button>
       </div>
 
-      {/* Hero-Stat-Cards — Revolut-Pattern */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="rounded-2xl border bg-card p-4"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-footnote text-muted-foreground">{stat.label}</span>
-              <stat.icon className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <p className="text-2xl md:text-title-1 font-bold font-mono tabular-nums whitespace-nowrap overflow-hidden">{stat.value}</p>
-          </div>
+          <Card key={stat.label}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
+              <stat.icon className={`h-5 w-5 ${stat.color}`} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      {/* Belegfluss — Visual Pipeline */}
+      {/* Receipt flow overview */}
       {totalReceipts > 0 && (
-        <div className="rounded-2xl border bg-card p-5 space-y-4">
-          <h2 className="text-headline">
-            {tt({ de: "Belegfluss", en: "Receipt Flow" })}
-          </h2>
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 flex-1 min-w-[140px]">
-              <div className="text-title-2 font-bold text-amber-700 font-mono tabular-nums">{newReceipts}</div>
-              <span className="text-subhead text-amber-800">{tt({ de: "Neu", en: "New" })}</span>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">
+              {tt({ de: "Belegfluss", en: "Receipt Flow", tr: "Belge Akışı", ar: "تدفق المستندات", ru: "Документооборот" })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2 flex-wrap">
+              <div className="flex items-center gap-2 rounded-lg bg-warning/10 border border-warning/20 px-4 py-3 flex-1 min-w-[120px]">
+                <div className="text-2xl font-bold text-warning">{newReceipts}</div>
+                <span className="text-sm text-muted-foreground">{tt({ de: "Neu", en: "New", tr: "Yeni", ar: "جديد", ru: "Новые" })}</span>
+              </div>
+              <div className="flex items-center justify-center text-muted-foreground">
+                <ArrowRight className="h-4 w-4" />
+              </div>
+              <div className="flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/20 px-4 py-3 flex-1 min-w-[120px]">
+                <div className="text-2xl font-bold text-primary">{checkedReceipts}</div>
+                <span className="text-sm text-muted-foreground">{tt({ de: "Geprüft", en: "Checked", tr: "Kontrol Edildi", ar: "تم الفحص", ru: "Проверено" })}</span>
+              </div>
+              <div className="flex items-center justify-center text-muted-foreground">
+                <ArrowRight className="h-4 w-4" />
+              </div>
+              <div className="flex items-center gap-2 rounded-lg bg-success/10 border border-success/20 px-4 py-3 flex-1 min-w-[120px]">
+                <div className="text-2xl font-bold text-success">{bookedReceipts}</div>
+                <span className="text-sm text-muted-foreground">{tt({ de: "Verbucht", en: "Booked", tr: "Kaydedildi", ar: "تم الحجز", ru: "Проведено" })}</span>
+              </div>
             </div>
-            <ArrowRight className="h-5 w-5 text-muted-foreground shrink-0" />
-            <div className="flex items-center gap-3 rounded-xl bg-blue-50 border border-blue-200 px-4 py-3 flex-1 min-w-[140px]">
-              <div className="text-title-2 font-bold text-blue-700 font-mono tabular-nums">{checkedReceipts}</div>
-              <span className="text-subhead text-blue-800">{tt({ de: "Geprüft", en: "Checked" })}</span>
-            </div>
-            <ArrowRight className="h-5 w-5 text-muted-foreground shrink-0" />
-            <div className="flex items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 flex-1 min-w-[140px]">
-              <div className="text-title-2 font-bold text-emerald-700 font-mono tabular-nums">{bookedReceipts}</div>
-              <span className="text-subhead text-emerald-800">{tt({ de: "Verbucht", en: "Booked" })}</span>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Mandanten-Aktivität als Revolut-Listen-Pattern */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-headline">
-            {tt({ de: "Mandanten-Aktivität", en: "Client Activity" })}
-          </h2>
-          {clients.length > 0 && (
-            <button onClick={() => navigate("/clients")} className="text-footnote text-primary font-medium">
-              {tt({ de: "Alle anzeigen", en: "See all" })} →
-            </button>
-          )}
-        </div>
-        {clients.length === 0 ? (
-          <div className="rounded-2xl border bg-card p-8 text-center space-y-4">
-            <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <Users className="h-8 w-8 text-primary" />
+      {/* Client activity list */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">
+            {tt({ de: "Mandanten-Aktivität", en: "Client Activity", tr: "Müşteri Etkinliği", ar: "نشاط العملاء", ru: "Активность клиентов" })}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {clients.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
+              <p>{tt({ de: "Noch keine Mandanten verknüpft", en: "No clients linked yet", tr: "Henüz müşteri bağlanmadı", ar: "لم يتم ربط عملاء بعد", ru: "Клиенты ещё не связаны" })}</p>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate("/clients")}>
+                {tt({ de: "Mandant einladen", en: "Invite Client", tr: "Müşteri Davet Et", ar: "دعوة عميل", ru: "Пригласить клиента" })}
+              </Button>
             </div>
-            <div className="space-y-1">
-              <p className="text-title-3 font-semibold">{tt({ de: "Noch keine Mandanten verknüpft", en: "No clients linked yet" })}</p>
-              <p className="text-subhead text-muted-foreground">
-                {tt({ de: "Lade deine ersten Mandanten ein, um loszulegen.", en: "Invite your first clients to get started." })}
-              </p>
-            </div>
-            <Button
-              className="h-13 px-6 text-body font-semibold text-primary-foreground"
-              onClick={() => navigate("/clients")}
-            >
-              {tt({ de: "Mandant einladen", en: "Invite Client" })}
-            </Button>
-          </div>
-        ) : (
-          <div className="rounded-2xl border bg-card overflow-hidden divide-y">
-            {clients.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => navigate("/clients")}
-                className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 active:bg-muted text-left"
-              >
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-headline text-primary">
-                    {(clientName(c)[0] || "?").toUpperCase()}
-                  </span>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-body font-medium truncate">{clientName(c)}</p>
-                    {c.newCount > 0 && (
-                      <span className="px-2 py-0.5 rounded-full text-caption-2 font-medium bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
-                        {c.newCount} {tt({ de: "neu", en: "new" })}
-                      </span>
-                    )}
+          ) : (
+            <div className="space-y-3">
+              {clients.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => navigate("/clients")}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">{clientName(c)}</p>
+                    <p className="text-xs text-muted-foreground">{c.email}</p>
                   </div>
-                  <p className="text-footnote text-muted-foreground truncate mt-0.5">
-                    {c.receiptCount} {tt({ de: "Belege", en: "receipts" })} · {c.email}
-                  </p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {c.newCount > 0 && (
+                      <Badge variant="outline" className="border-warning/50 text-warning text-xs">
+                        {c.newCount} {tt({ de: "neu", en: "new", tr: "yeni", ar: "جديد", ru: "нов." })}
+                      </Badge>
+                    )}
+                    <span className="text-sm text-muted-foreground">
+                      {c.receiptCount} {tt({ de: "Belege", en: "receipts", tr: "fiş", ar: "إيصال", ru: "чеков" })}
+                    </span>
+                    <span className="text-sm font-mono font-medium">
+                      {c.totalAmount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <span className="text-body font-semibold font-mono tabular-nums whitespace-nowrap">
-                    {c.totalAmount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

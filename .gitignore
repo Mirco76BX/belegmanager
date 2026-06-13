@@ -12,11 +12,6 @@ dist
 dist-ssr
 *.local
 
-# Environment — NEVER commit secrets
-.env
-.env.*
-!.env.example
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -27,32 +22,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# ─── Capacitor / native builds ───
-ios/App/Pods/
-ios/App/Podfile.lock
-ios/DerivedData/
-ios/App/build/
-ios/.xcode.env.local
-*.xcworkspace/xcuserdata/
-*.xcodeproj/xcuserdata/
-
-android/.gradle/
-android/build/
-android/app/build/
-android/app/release/
-android/captures/
-android/local.properties
-android/app/debug.keystore
-android/app/release.keystore
-android/app/*.jks
-android/app/google-services.json
-*.apk
-*.aab
-*.keystore
-
-# Store / signing secrets
-AuthKey_*.p8
-*.mobileprovision
-*.p12
-*.bak
+.env

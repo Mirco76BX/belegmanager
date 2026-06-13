@@ -35,7 +35,17 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     if (customers.data.length === 0) throw new Error("No Stripe customer found for this user");
 
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const ALLOWED_ORIGINS = [
+      "https://belegmanager.online",
+      "https://www.belegmanager.online",
+      "https://belegmanager.lovable.app",
+      "http://localhost:8080",
+      "http://localhost:3000",
+    ];
+    const requestOrigin = req.headers.get("origin") || "";
+    const origin = ALLOWED_ORIGINS.includes(requestOrigin)
+      ? requestOrigin
+      : "https://belegmanager.online";
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customers.data[0].id,
       return_url: `${origin}/pricing`,
@@ -46,9 +56,8 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    // Security: Generic error code an Client, raw message nur server-seitig loggen
-    console.error("customer-portal: internal error", error);
-    return new Response(JSON.stringify({ error_code: "ERR_INTERNAL" }), {
+    console.error("customer-portal error:", error);
+    return new Response(JSON.stringify({ error: "internal_error" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

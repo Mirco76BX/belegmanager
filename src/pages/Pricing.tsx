@@ -72,11 +72,9 @@ const Pricing = () => {
     } catch (e: any) { toast.error(e.message || "Portal failed"); } finally { setPortalLoading(false); }
   };
 
-  const isPaid =
-    subscription.tier === "basic" ||
-    subscription.tier === "pro" ||
-    subscription.tier === "business" ||
-    subscription.tier === "cfo";
+  const isRelax = subscription.tier === "relax";
+  const isMaster = subscription.tier === "master";
+  const isPaid = isRelax || isMaster;
 
   return (
     <div className="space-y-8 pb-24 md:pb-8">
@@ -117,31 +115,25 @@ const Pricing = () => {
         renderAction={(plan) => {
           if (plan.priceId && !isPaid && subscription.tier !== plan.id) {
             return (
-              <Button className="w-full h-11 text-body font-semibold text-primary-foreground" onClick={() => handleCheckout(plan.priceId!)} disabled={loading}>
+              <Button className="w-full" onClick={() => handleCheckout(plan.priceId!)} disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {tt({ de: "Jetzt upgraden", en: "Upgrade Now" })}
+                {tt({de:"Jetzt upgraden", en:"Upgrade Now", tr:"Şimdi Yükselt", ar:"ترقية الآن", ru:"Обновить сейчас"})}
               </Button>
             );
           }
           if (subscription.tier === plan.id && isPaid) {
             return (
-              <Button variant="outline" className="w-full h-11 text-body" onClick={handleManage} disabled={portalLoading}>
+              <Button variant="outline" className="w-full" onClick={handleManage} disabled={portalLoading}>
                 {portalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {tt({ de: "Abo verwalten", en: "Manage Subscription" })}
+                {tt({de:"Abo verwalten", en:"Manage Subscription", tr:"Aboneliği Yönet", ar:"إدارة الاشتراك", ru:"Управление подпиской"})}
               </Button>
             );
           }
           if (plan.id === "free" && subscription.tier === "free") {
-            return <Button variant="outline" className="w-full h-11 text-body" disabled>{tt({ de: "Aktiver Plan", en: "Current Plan" })}</Button>;
+            return <Button variant="outline" className="w-full" disabled>{tt({de:"Aktiver Plan", en:"Current Plan", tr:"Mevcut Plan", ar:"الخطة الحالية", ru:"Текущий план"})}</Button>;
           }
           return null;
         }}
-        renderPackAction={(pack) => (
-          <Button className="h-11 px-5 text-body font-semibold text-primary-foreground" onClick={() => handleCheckout(pack.priceId)} disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {tt({ de: "Pack kaufen", en: "Buy Pack" })}
-          </Button>
-        )}
       />
       {isPaid && subscription.subscriptionEnd && (
         <p className="text-center text-sm text-muted-foreground">

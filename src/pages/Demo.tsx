@@ -179,7 +179,7 @@ const Demo = () => {
           <div className="mx-auto max-w-md space-y-4 text-left">
             {[
               tt({de:"Senden Sie Ihren Mandanten den Link zur Registrierung", en:"Send your clients the registration link", tr:"Müşterilerinize kayıt bağlantısını gönderin", ar:"أرسل لعملائك رابط التسجيل", ru:"Отправьте клиентам ссылку на регистрацию"}),
-              tt({de:"Mandant registriert sich kostenlos (20 Scans inklusive)", en:"Client signs up for free (20 scans included)", tr:"Müşteri ücretsiz kaydolur (20 tarama dahil)", ar:"يسجل العميل مجاناً (20 عمليات مسح مشمولة)", ru:"Клиент регистрируется бесплатно (20 сканирований включено)"}),
+              tt({de:"Mandant registriert sich kostenlos (10 Scans inklusive)", en:"Client signs up for free (10 scans included)", tr:"Müşteri ücretsiz kaydolur (10 tarama dahil)", ar:"يسجل العميل مجاناً (10 عمليات مسح مشمولة)", ru:"Клиент регистрируется бесплатно (10 сканирований включено)"}),
               tt({de:"Belege werden automatisch per KI erfasst", en:"Receipts are automatically captured via AI", tr:"Fişler yapay zeka ile otomatik olarak yakalanır", ar:"يتم التقاط الإيصالات تلقائياً عبر الذكاء الاصطناعي", ru:"Чеки автоматически захватываются ИИ"}),
               tt({de:"Fertige Reisekostenabrechnungen als PDF exportieren", en:"Export ready-made expense reports as PDF", tr:"Hazır masraf raporlarını PDF olarak dışa aktarın", ar:"تصدير تقارير المصاريف الجاهزة كملف PDF", ru:"Экспортируйте готовые отчёты о расходах в PDF"}),
               tt({de:"Sie erhalten strukturierte, digitale Belege", en:"You receive structured, digital receipts", tr:"Yapılandırılmış, dijital fişler alırsınız", ar:"تحصل على إيصالات رقمية منظمة", ru:"Вы получаете структурированные цифровые чеки"}),
@@ -273,13 +273,14 @@ const Demo = () => {
                   });
                   if (error) throw error;
                   if (data.user) {
-                    await supabase.from("profiles").upsert({
-                      id: data.user.id,
-                      email: regForm.email.trim(),
-                      is_tax_advisor: true,
-                      kanzlei: regForm.kanzlei.trim(),
+                    // Display-Name darf der User selbst setzen; is_tax_advisor + kanzlei laufen über die SECURITY DEFINER RPC
+                    await supabase.from("profiles").update({
                       display_name: regForm.name.trim(),
-                    }, { onConflict: "id" });
+                    }).eq("id", data.user.id);
+                    const { error: rpcError } = await supabase.rpc("register_as_tax_advisor", {
+                      _kanzlei: regForm.kanzlei.trim(),
+                    });
+                    if (rpcError) throw rpcError;
                   }
                   setRegDone(true);
                 } catch (err: any) { setRegError(err.message); }

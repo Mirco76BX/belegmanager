@@ -3,48 +3,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Building2,
-  Plus,
-  Pencil,
-  Trash2,
-  Users,
-  User,
-  HelpCircle,
-  FileText,
-  HeartPulse,
-  Car,
-  ChevronDown,
-  ChevronUp,
-  Mail,
-} from "lucide-react";
-import { AdvisorInviteDialog } from "@/components/AdvisorInviteDialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Building2, Plus, Pencil, Trash2, Users, User, HelpCircle, FileText, HeartPulse, Car, Mail, AlertTriangle } from "lucide-react";
+import AdvisorInviteDialog from "@/components/AdvisorInviteDialog";
 
 const ORG_TYPES = ["company", "association", "personal", "tax", "health_insurance", "other"] as const;
 type OrgType = typeof ORG_TYPES[number];
 
 const orgTypeIcons: Record<OrgType, React.ReactNode> = {
-  company: <Building2 className="h-5 w-5" />,
-  association: <Users className="h-5 w-5" />,
-  personal: <User className="h-5 w-5" />,
-  tax: <FileText className="h-5 w-5" />,
-  health_insurance: <HeartPulse className="h-5 w-5" />,
-  other: <HelpCircle className="h-5 w-5" />,
+  company: <Building2 className="h-4 w-4" />,
+  association: <Users className="h-4 w-4" />,
+  personal: <User className="h-4 w-4" />,
+  tax: <FileText className="h-4 w-4" />,
+  health_insurance: <HeartPulse className="h-4 w-4" />,
+  other: <HelpCircle className="h-4 w-4" />,
 };
 
 interface Company {
@@ -62,6 +40,7 @@ interface Company {
   datev_sachkontenlaenge?: number | null;
   datev_bezeichnung?: string | null;
   datev_diktatkuerzel?: string | null;
+  festschreibung_default?: number | null;
 }
 
 interface Vehicle {
@@ -71,7 +50,7 @@ interface Vehicle {
 }
 
 const Companies = () => {
-  const { t, tt } = useLanguage();
+  const { t, lang, tt } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -86,21 +65,15 @@ const Companies = () => {
   const [address, setAddress] = useState("");
   const [saving, setSaving] = useState(false);
   const [orgType, setOrgType] = useState<OrgType>("company");
-
-  // DATEV-Stammdaten pro Mandant.
-  // Gegenkonto-Default: SKR04 = 3300, SKR03 = 1600 (Verb. aus L+L) — als
-  // Initial-Vorschlag. Mandantenspezifisch! Bsp Bakerix nutzt 3641
-  // (Gesellschafter-Verrechnung), nicht 3300. Pflicht zur StB-Abstimmung
-  // wird im UI-Warning + ExpenseReport-Hilfetext kommuniziert.
-  const [datevBeraterNr, setDatevBeraterNr] = useState("");
-  const [datevMandantenNr, setDatevMandantenNr] = useState("");
-  const [datevKontenrahmen, setDatevKontenrahmen] = useState<"SKR03" | "SKR04">("SKR04");
-  const [datevKontoGegenkonto, setDatevKontoGegenkonto] = useState("3300");
-  const [datevWjBeginn, setDatevWjBeginn] = useState<string>(`${new Date().getFullYear()}-01-01`);
-  const [datevSachkontenlaenge, setDatevSachkontenlaenge] = useState<number>(4);
-  const [datevSectionOpen, setDatevSectionOpen] = useState(false);
-  // AdvisorInviteDialog: Mandant lädt Steuerberater per Magic-Link ein,
-  // die DATEV-Stammdaten dieser Company einzurichten.
+  const [beraterNr, setBeraterNr] = useState("");
+  const [mandantenNr, setMandantenNr] = useState("");
+  const [kontenrahmen, setKontenrahmen] = useState<string>("SKR04");
+  const [gegenkonto, setGegenkonto] = useState("");
+  const [bezeichnung, setBezeichnung] = useState("");
+  const [diktatkuerzel, setDiktatkuerzel] = useState("");
+  const [wjBeginn, setWjBeginn] = useState("");
+  const [sachkontenlaenge, setSachkontenlaenge] = useState<string>("4");
+  const [festschreibung, setFestschreibung] = useState<string>("0");
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   // Delete confirmation
@@ -124,38 +97,27 @@ const Companies = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [user]);
+  useEffect(() => { fetchData(); }, [user]);
 
+  // Company form
   const resetForm = () => {
-    setName("");
-    setTaxId("");
-    setAddress("");
-    setOrgType("company");
-    setEditing(null);
-    setDatevBeraterNr("");
-    setDatevMandantenNr("");
-    setDatevKontenrahmen("SKR04");
-    setDatevKontoGegenkonto("3300");
-    setDatevWjBeginn(`${new Date().getFullYear()}-01-01`);
-    setDatevSachkontenlaenge(4);
-    setDatevSectionOpen(false);
+    setName(""); setTaxId(""); setAddress(""); setOrgType("company"); setEditing(null);
+    setBeraterNr(""); setMandantenNr(""); setWjBeginn(""); setSachkontenlaenge("4"); setFestschreibung("0");
+    setKontenrahmen("SKR04"); setGegenkonto(""); setBezeichnung(""); setDiktatkuerzel("");
   };
 
   const openEdit = (c: Company) => {
-    setEditing(c);
-    setName(c.name);
-    setTaxId(c.tax_id || "");
-    setAddress(c.address || "");
-    setOrgType((c.org_type as OrgType) || "company");
-    setDatevBeraterNr(c.datev_berater_nr || "");
-    setDatevMandantenNr(c.datev_mandanten_nr || "");
-    setDatevKontenrahmen((c.datev_kontenrahmen as "SKR03" | "SKR04") || "SKR04");
-    setDatevKontoGegenkonto(c.datev_konto_gegenkonto || "3300");
-    setDatevWjBeginn(c.datev_wj_beginn || `${new Date().getFullYear()}-01-01`);
-    setDatevSachkontenlaenge(c.datev_sachkontenlaenge || 4);
-    setDatevSectionOpen(Boolean(c.datev_berater_nr || c.datev_mandanten_nr));
+    setEditing(c); setName(c.name); setTaxId(c.tax_id || "");
+    setAddress(c.address || ""); setOrgType((c.org_type as OrgType) || "company");
+    setBeraterNr(c.datev_berater_nr || "");
+    setMandantenNr(c.datev_mandanten_nr || "");
+    setKontenrahmen(c.datev_kontenrahmen || "SKR04");
+    setGegenkonto(c.datev_konto_gegenkonto || "");
+    setBezeichnung(c.datev_bezeichnung || "");
+    setDiktatkuerzel(c.datev_diktatkuerzel || "");
+    setWjBeginn(c.datev_wj_beginn || "");
+    setSachkontenlaenge(c.datev_sachkontenlaenge ? String(c.datev_sachkontenlaenge) : "4");
+    setFestschreibung(c.festschreibung_default != null ? String(c.festschreibung_default) : "0");
     setDialogOpen(true);
   };
 
@@ -164,48 +126,44 @@ const Companies = () => {
     if (!user) return;
     setSaving(true);
 
+    // Check for duplicate name
     const duplicate = companies.find(
       (c) => c.name.trim().toLowerCase() === name.trim().toLowerCase() && c.id !== editing?.id
     );
     if (duplicate) {
       toast({
-        title: tt({ de: "Organisation existiert bereits", en: "Organization already exists" }),
-        description: tt({
-          de: `„${duplicate.name}" ist bereits vorhanden.`,
-          en: `"${duplicate.name}" already exists.`,
-        }),
+        title: tt({de:"Organisation existiert bereits", en:"Organization already exists", tr:"Kuruluş zaten mevcut", ar:"المنظمة موجودة بالفعل", ru:"Организация уже существует"}),
+        description: tt({de:`"${duplicate.name}" ist bereits vorhanden.`, en:`"${duplicate.name}" already exists.`, tr:`"${duplicate.name}" zaten mevcut.`, ar:`"${duplicate.name}" موجودة بالفعل.`, ru:`"${duplicate.name}" уже существует.`}),
         variant: "destructive",
       });
       setSaving(false);
       return;
     }
 
-    const data = {
+    const skLen = parseInt(sachkontenlaenge, 10);
+    const data: any = {
       name,
       tax_id: taxId || null,
       address: address || null,
       org_type: orgType,
-      datev_berater_nr: datevBeraterNr.trim() || null,
-      datev_mandanten_nr: datevMandantenNr.trim() || null,
-      datev_kontenrahmen: datevBeraterNr.trim() ? datevKontenrahmen : null,
-      datev_konto_gegenkonto: datevBeraterNr.trim() ? datevKontoGegenkonto : null,
-      datev_wj_beginn: datevBeraterNr.trim() ? datevWjBeginn : null,
-      datev_sachkontenlaenge: datevBeraterNr.trim() ? datevSachkontenlaenge : null,
+      datev_berater_nr: beraterNr.trim() || null,
+      datev_mandanten_nr: mandantenNr.trim() || null,
+      datev_kontenrahmen: kontenrahmen || null,
+      datev_konto_gegenkonto: gegenkonto.trim() || null,
+      datev_bezeichnung: bezeichnung.trim() || null,
+      datev_diktatkuerzel: diktatkuerzel.trim() || null,
+      datev_wj_beginn: wjBeginn || null,
+      datev_sachkontenlaenge: Number.isFinite(skLen) && skLen >= 4 && skLen <= 8 ? skLen : null,
+      festschreibung_default: festschreibung === "1" ? 1 : 0,
     };
     let error;
-    if (editing) {
-      ({ error } = await supabase.from("companies").update(data).eq("id", editing.id));
-    } else {
-      ({ error } = await supabase.from("companies").insert({ ...data, user_id: user.id }));
-    }
+    if (editing) { ({ error } = await supabase.from("companies").update(data).eq("id", editing.id)); }
+    else { ({ error } = await supabase.from("companies").insert({ ...data, user_id: user.id })); }
 
-    if (error) {
-      toast({ title: error.message, variant: "destructive" });
-    } else {
-      toast({ title: tt({ de: "Gespeichert", en: "Saved" }) });
-      resetForm();
-      setDialogOpen(false);
-      fetchData();
+    if (error) { toast({ title: error.message, variant: "destructive" }); }
+    else {
+      toast({ title: tt({de:"Gespeichert", en:"Saved", tr:"Kaydedildi", ar:"تم الحفظ", ru:"Сохранено"}) });
+      resetForm(); setDialogOpen(false); fetchData();
     }
     setSaving(false);
   };
@@ -217,16 +175,11 @@ const Companies = () => {
     setDeleteTarget(null);
   };
 
-  const resetVehicleForm = () => {
-    setVehiclePlate("");
-    setVehicleName("");
-    setEditingVehicle(null);
-  };
+  // Vehicle form
+  const resetVehicleForm = () => { setVehiclePlate(""); setVehicleName(""); setEditingVehicle(null); };
 
   const openEditVehicle = (v: Vehicle) => {
-    setEditingVehicle(v);
-    setVehiclePlate(v.license_plate);
-    setVehicleName(v.name || "");
+    setEditingVehicle(v); setVehiclePlate(v.license_plate); setVehicleName(v.name || "");
     setVehicleDialogOpen(true);
   };
 
@@ -244,18 +197,12 @@ const Companies = () => {
     }
 
     if (error) {
-      toast({
-        title:
-          error.code === "23505"
-            ? tt({ de: "Kennzeichen bereits vorhanden", en: "License plate already exists" })
-            : error.message,
-        variant: "destructive",
-      });
+      toast({ title: error.code === "23505"
+        ? tt({de:"Kennzeichen bereits vorhanden", en:"License plate already exists", tr:"Plaka zaten mevcut", ar:"لوحة الترخيص موجودة بالفعل", ru:"Номер уже существует"})
+        : error.message, variant: "destructive" });
     } else {
-      toast({ title: tt({ de: "Gespeichert", en: "Saved" }) });
-      resetVehicleForm();
-      setVehicleDialogOpen(false);
-      fetchData();
+      toast({ title: tt({de:"Gespeichert", en:"Saved", tr:"Kaydedildi", ar:"تم الحفظ", ru:"Сохранено"}) });
+      resetVehicleForm(); setVehicleDialogOpen(false); fetchData();
     }
     setVehicleSaving(false);
   };
@@ -266,453 +213,274 @@ const Companies = () => {
   };
 
   return (
-    <div className="animate-fade-in space-y-8 max-w-3xl pb-12">
-      {/* Header */}
-      <div className="flex items-end justify-between gap-3">
-        <div className="space-y-1">
-          <p className="text-caption-2 uppercase tracking-wider text-muted-foreground">
-            {tt({ de: "Stammdaten", en: "Master Data" })}
-          </p>
-          <h1 className="text-title-1 md:text-large-title font-bold tracking-tight">{t("companies.title")}</h1>
-        </div>
+    <div className="animate-fade-in space-y-6">
+      {/* Organizations */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl md:text-2xl font-bold">{t("companies.title")}</h1>
+        <Button className="gap-2 w-full sm:w-auto" onClick={() => { resetForm(); setDialogOpen(true); }}>
+          <Plus className="h-4 w-4" />
+          {t("companies.add")}
+        </Button>
       </div>
 
-      {/* Sektion: Organisationen */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <p className="text-caption-2 uppercase tracking-wider text-muted-foreground font-semibold">
-            {tt({ de: "Mandanten & Organisationen", en: "Clients & Organizations" })}
-          </p>
-          <Button
-            className="h-11 px-4 text-footnote font-semibold text-primary-foreground gap-1.5"
-            onClick={() => {
-              resetForm();
-              setDialogOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            {t("companies.add")}
-          </Button>
-        </div>
-
-        {companies.length === 0 ? (
-          <div className="rounded-2xl border bg-card p-8 text-center space-y-3">
-            <div className="mx-auto h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
-              <Building2 className="h-7 w-7 text-primary" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-title-3 font-semibold">{t("companies.noCompanies")}</p>
-              <p className="text-subhead text-muted-foreground">
-                {tt({
-                  de: "Lege deinen ersten Mandanten an, um Belege zuzuordnen.",
-                  en: "Create your first organization to assign receipts to.",
-                })}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="rounded-2xl border bg-card overflow-hidden divide-y">
-            {companies.map((c) => {
-              const hasDatev = Boolean(c.datev_berater_nr && c.datev_mandanten_nr);
-              return (
-                <div
-                  key={c.id}
-                  className="flex items-start gap-3 px-4 py-3.5"
-                >
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 text-primary">
-                    {orgTypeIcons[(c.org_type as OrgType) || "company"]}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-body font-medium truncate">{c.name}</p>
-                      <span className="text-caption-2 uppercase tracking-wider text-muted-foreground bg-muted px-2 py-0.5 rounded-full shrink-0">
-                        {t(`companies.type.${(c.org_type as OrgType) || "company"}` as any)}
-                      </span>
-                      {hasDatev && (
-                        <span className="text-caption-2 font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                          DATEV
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-footnote text-muted-foreground mt-0.5 truncate">
-                      {[
-                        c.tax_id && `${t("companies.taxId")}: ${c.tax_id}`,
-                        c.address,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ") ||
-                        tt({ de: "Keine weiteren Angaben", en: "No further details" })}
-                    </div>
-                  </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button
-                      variant="ghost"
-                      className="h-11 w-11 p-0"
-                      onClick={() => openEdit(c)}
-                      aria-label={t("companies.edit")}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="h-11 w-11 p-0 text-destructive hover:text-destructive hover:bg-destructive/5"
-                      onClick={() => setDeleteTarget(c)}
-                      aria-label={tt({ de: "Löschen", en: "Delete" })}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Sektion: Fahrzeuge */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <p className="text-caption-2 uppercase tracking-wider text-muted-foreground font-semibold">
-            {tt({ de: "Fahrzeuge", en: "Vehicles" })}
-          </p>
-          <Button
-            className="h-11 px-4 text-footnote font-semibold text-primary-foreground gap-1.5"
-            onClick={() => {
-              resetVehicleForm();
-              setVehicleDialogOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            {tt({ de: "Hinzufügen", en: "Add" })}
-          </Button>
-        </div>
-
-        {vehicles.length === 0 ? (
-          <div className="rounded-2xl border bg-card p-8 text-center space-y-3">
-            <div className="mx-auto h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
-              <Car className="h-7 w-7 text-primary" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-title-3 font-semibold">
-                {tt({ de: "Noch keine Fahrzeuge", en: "No vehicles yet" })}
-              </p>
-              <p className="text-subhead text-muted-foreground">
-                {tt({
-                  de: "Fahrzeuge werden beim Tankbeleg-Upload als Auswahl angeboten.",
-                  en: "Vehicles will appear when uploading fuel receipts.",
-                })}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="rounded-2xl border bg-card overflow-hidden divide-y">
-            {vehicles.map((v) => (
-              <div key={v.id} className="flex items-center gap-3 px-4 py-3.5">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 text-primary">
-                  <Car className="h-5 w-5" />
-                </div>
+      {companies.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <Building2 className="mb-4 h-12 w-12 text-muted-foreground/40" />
+            <p className="text-muted-foreground">{t("companies.noCompanies")}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3">
+          {companies.map((c) => (
+            <Card key={c.id}>
+              <CardContent className="flex items-center justify-between gap-2 py-4">
                 <div className="min-w-0 flex-1">
-                  <p className="text-body font-mono font-semibold truncate">{v.license_plate}</p>
-                  {v.name && <p className="text-footnote text-muted-foreground truncate">{v.name}</p>}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-muted-foreground shrink-0">{orgTypeIcons[(c.org_type as OrgType) || "company"]}</span>
+                    <p className="font-medium text-foreground truncate">{c.name}</p>
+                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">
+                      {t(`companies.type.${(c.org_type as OrgType) || "company"}` as any)}
+                    </span>
+                  </div>
+                  <div className="flex gap-4 text-xs text-muted-foreground mt-0.5 truncate">
+                    {c.tax_id && <span>{t("companies.taxId")}: {c.tax_id}</span>}
+                    {c.address && <span className="truncate">{c.address}</span>}
+                  </div>
                 </div>
-                <div className="flex gap-1 shrink-0">
-                  <Button
-                    variant="ghost"
-                    className="h-11 w-11 p-0"
-                    onClick={() => openEditVehicle(v)}
-                    aria-label={tt({ de: "Bearbeiten", en: "Edit" })}
-                  >
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => openEdit(c)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    className="h-11 w-11 p-0 text-destructive hover:text-destructive hover:bg-destructive/5"
-                    onClick={() => handleDeleteVehicle(v.id)}
-                    aria-label={tt({ de: "Löschen", en: "Delete" })}
-                  >
+                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setDeleteTarget(c)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Vehicles */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-4">
+        <h2 className="text-lg md:text-xl font-bold flex items-center gap-2">
+          <Car className="h-5 w-5" />
+          {tt({de:"Fahrzeuge", en:"Vehicles", tr:"Araçlar", ar:"المركبات", ru:"Транспорт"})}
+        </h2>
+        <Button className="gap-2 w-full sm:w-auto" onClick={() => { resetVehicleForm(); setVehicleDialogOpen(true); }}>
+          <Plus className="h-4 w-4" />
+          {tt({de:"Fahrzeug hinzufügen", en:"Add Vehicle", tr:"Araç Ekle", ar:"إضافة مركبة", ru:"Добавить транспорт"})}
+        </Button>
       </div>
 
-      {/* Organization Dialog */}
-      <Dialog
-        open={dialogOpen}
-        onOpenChange={(o) => {
-          if (!o) resetForm();
-          setDialogOpen(o);
-        }}
-      >
-        <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0 rounded-2xl">
-          <DialogHeader className="px-5 pt-5 pb-3 border-b">
-            <DialogTitle className="text-title-2 font-bold">
-              {editing ? t("companies.edit") : t("companies.add")}
-            </DialogTitle>
-          </DialogHeader>
+      {vehicles.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Car className="mb-4 h-10 w-10 text-muted-foreground/40" />
+            <p className="text-muted-foreground text-sm">
+              {tt({de:"Noch keine Fahrzeuge angelegt", en:"No vehicles added yet", tr:"Henüz araç eklenmedi", ar:"لم تتم إضافة مركبات بعد", ru:"Транспорт ещё не добавлен"})}
+            </p>
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              {tt({de:"Fahrzeuge werden beim Tankbeleg-Upload als Auswahl angeboten.", en:"Vehicles will be offered as options when uploading fuel receipts.", tr:"Yakıt fişi yüklerken araçlar seçenek olarak sunulacak.", ar:"ستُعرض المركبات كخيارات عند تحميل إيصالات الوقود.", ru:"Транспорт будет предложен при загрузке чеков на топливо."})}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3">
+          {vehicles.map((v) => (
+            <Card key={v.id}>
+              <CardContent className="flex items-center justify-between gap-2 py-4">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <Car className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <p className="font-mono font-semibold text-foreground">{v.license_plate}</p>
+                  </div>
+                  {v.name && <p className="text-xs text-muted-foreground mt-0.5 ml-6">{v.name}</p>}
+                </div>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => openEditVehicle(v)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteVehicle(v.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-          <form onSubmit={handleSave} className="flex flex-col">
-            <div className="px-5 py-4 space-y-4">
-              <div className="space-y-2">
-                <Label className="text-footnote font-medium">{t("companies.name")}</Label>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  className="h-12 text-body"
-                />
+      {/* Organization Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(o) => { if (!o) resetForm(); setDialogOpen(o); }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editing ? t("companies.edit") : t("companies.add")}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSave} className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t("companies.name")}</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("companies.type")}</Label>
+              <Select value={orgType} onValueChange={(v) => setOrgType(v as OrgType)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ORG_TYPES.map((ot) => (
+                    <SelectItem key={ot} value={ot}>
+                      <span className="flex items-center gap-2">{orgTypeIcons[ot]} {t(`companies.type.${ot}` as any)}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{t("companies.address")}</Label>
+              <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+            </div>
+
+            <div className="border-t pt-4 space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold">
+                  {tt({de:"DATEV-Export (optional)", en:"DATEV Export (optional)", tr:"DATEV Dışa Aktarma (opsiyonel)", ar:"تصدير DATEV (اختياري)", ru:"Экспорт DATEV (опционально)"})}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {tt({de:"Erforderlich für den EXTF-Buchungsstapel-Export an den Steuerberater.", en:"Required for the EXTF booking stack export to your tax advisor.", tr:"Vergi danışmanına EXTF aktarımı için gereklidir.", ar:"مطلوب لتصدير حزمة قيود EXTF إلى مستشار الضرائب.", ru:"Требуется для экспорта EXTF в DATEV."})}
+                </p>
+              </div>
+
+              {editing && (
+                <button
+                  type="button"
+                  onClick={() => setInviteDialogOpen(true)}
+                  className="group w-full flex items-center gap-3 rounded-lg border border-indigo-400/40 bg-gradient-to-r from-indigo-500/15 to-purple-500/10 px-4 py-3 text-left transition-all hover:border-indigo-400/70 hover:shadow-[0_0_24px_-6px_rgba(99,102,241,0.45)]"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-indigo-500/20">
+                    <Mail className="h-4 w-4 text-indigo-300" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[10px] uppercase tracking-wider font-semibold text-indigo-700 dark:text-indigo-300">Empfohlen</div>
+                    <div className="text-sm font-semibold">Steuerberater einladen, das einzurichten</div>
+                  </div>
+                </button>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>{tt({de:"Berater-Nr.", en:"Advisor No.", tr:"Danışman No.", ar:"رقم المستشار", ru:"№ консультанта"})}</Label>
+                  <Input value={beraterNr} onChange={(e) => setBeraterNr(e.target.value)} placeholder="1234567" inputMode="numeric" />
+                </div>
+                <div className="space-y-2">
+                  <Label>{tt({de:"Mandanten-Nr.", en:"Client No.", tr:"Müvekkil No.", ar:"رقم العميل", ru:"№ клиента"})}</Label>
+                  <Input value={mandantenNr} onChange={(e) => setMandantenNr(e.target.value)} placeholder="12345" inputMode="numeric" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Kontenrahmen</Label>
+                  <Select value={kontenrahmen} onValueChange={(v) => {
+                    setKontenrahmen(v);
+                    if (!gegenkonto) setGegenkonto(v === "SKR03" ? "1600" : "3300");
+                  }}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SKR03">SKR03</SelectItem>
+                      <SelectItem value="SKR04">SKR04</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Gegenkonto</Label>
+                  <Input value={gegenkonto} onChange={(e) => setGegenkonto(e.target.value)} placeholder={kontenrahmen === "SKR03" ? "1600" : "3300"} inputMode="numeric" />
+                </div>
+              </div>
+
+              <div className="flex gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs">
+                <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <strong>Mandantenspezifisch</strong> – bitte mit Ihrem Steuerberater abstimmen. Beispiel Bakerix: <em>3641</em> (Gesellschafter-Verrechnung).
+                  <strong> Nicht das Bankkonto wählen</strong> – sonst entstehen beim Kontoauszug-Import doppelte Buchungen.
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Bezeichnung</Label>
+                  <Input value={bezeichnung} onChange={(e) => setBezeichnung(e.target.value)} maxLength={100} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Diktatkürzel</Label>
+                  <Input value={diktatkuerzel} onChange={(e) => setDiktatkuerzel(e.target.value)} maxLength={10} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>{tt({de:"WJ-Beginn", en:"Fiscal year start", tr:"Mali yıl başı", ar:"بداية السنة المالية", ru:"Начало финансового года"})}</Label>
+                  <Input type="date" value={wjBeginn} onChange={(e) => setWjBeginn(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>{tt({de:"Sachkontenlänge", en:"Account length", tr:"Hesap uzunluğu", ar:"طول الحساب", ru:"Длина счёта"})}</Label>
+                  <Select value={sachkontenlaenge} onValueChange={setSachkontenlaenge}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[4,5,6,7,8].map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-footnote font-medium">{t("companies.type")}</Label>
-                <Select value={orgType} onValueChange={(v) => setOrgType(v as OrgType)}>
-                  <SelectTrigger className="h-12 text-body">
-                    <SelectValue />
-                  </SelectTrigger>
+                <Label>{tt({de:"Festschreibung", en:"Lock bookings (Festschreibung)", tr:"Kayıt kilitleme", ar:"تثبيت القيود", ru:"Фиксация проводок"})}</Label>
+                <Select value={festschreibung} onValueChange={setFestschreibung}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {ORG_TYPES.map((ot) => (
-                      <SelectItem key={ot} value={ot}>
-                        <span className="flex items-center gap-2">
-                          {orgTypeIcons[ot]} {t(`companies.type.${ot}` as any)}
-                        </span>
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="0">{tt({de:"0 – nicht festschreiben (Steuerberater kann korrigieren)", en:"0 – do not lock (advisor can correct)", tr:"0 – kilitleme", ar:"0 – عدم التثبيت", ru:"0 – без фиксации"})}</SelectItem>
+                    <SelectItem value="1">{tt({de:"1 – sofort festschreiben", en:"1 – lock immediately", tr:"1 – hemen kilitle", ar:"1 – تثبيت فوري", ru:"1 – немедленная фиксация"})}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label className="text-footnote font-medium">{t("companies.address")}</Label>
-                <Input value={address} onChange={(e) => setAddress(e.target.value)} className="h-12 text-body" />
-              </div>
-
-              {/* DATEV-Stammdaten — collapsible Sektion-Card */}
-              <div className="rounded-2xl border bg-card overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setDatevSectionOpen(!datevSectionOpen)}
-                  className="flex w-full items-center justify-between px-4 py-3.5 hover:bg-muted/30 active:bg-muted"
-                >
-                  <div className="text-left">
-                    <p className="text-subhead font-semibold">
-                      {tt({ de: "DATEV-Stammdaten", en: "DATEV Master Data" })}
-                    </p>
-                    <p className="text-caption-1 text-muted-foreground">
-                      {tt({
-                        de: "Für Buchungsstapel-Export",
-                        en: "For booking stapel export",
-                      })}
-                    </p>
-                  </div>
-                  {datevSectionOpen ? (
-                    <ChevronUp className="h-5 w-5 text-muted-foreground shrink-0" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-muted-foreground shrink-0" />
-                  )}
-                </button>
-                {datevSectionOpen && (
-                  <div className="px-4 pb-4 space-y-3 border-t">
-                    <p className="text-caption-1 text-muted-foreground leading-relaxed pt-3">
-                      {tt({
-                        de: "Diese Werte bekommst du von deinem Steuerberater. Wenn leer, kann für diesen Mandanten kein DATEV-Stapel exportiert werden.",
-                        en: "Values come from your tax advisor. If empty, no DATEV stapel can be exported for this client.",
-                      })}
-                    </p>
-                    {/* CTA: Steuerberater einladen, das selbst auszufüllen — nur bei
-                        bestehender Company (braucht companyId für den Magic-Link). */}
-                    {editing?.id && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full justify-start gap-2 h-11"
-                        onClick={() => setInviteDialogOpen(true)}
-                      >
-                        <Mail className="h-4 w-4 text-indigo-600" />
-                        <span className="flex-1 text-left">
-                          {tt({
-                            de: "Steuerberater einladen, das einzurichten",
-                            en: "Invite tax advisor to set this up",
-                          })}
-                        </span>
-                      </Button>
-                    )}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1.5">
-                        <Label className="text-caption-1 font-medium">
-                          {tt({ de: "Berater-Nr (7-stellig)", en: "Consultant No (7-digit)" })}
-                        </Label>
-                        <Input
-                          value={datevBeraterNr}
-                          onChange={(e) => setDatevBeraterNr(e.target.value.replace(/\D/g, "").slice(0, 7))}
-                          placeholder={tt({ de: "vom Berater", en: "from advisor" })}
-                          className="h-11 font-mono text-subhead"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-caption-1 font-medium">
-                          {tt({ de: "Mandanten-Nr (max 5)", en: "Client No (max 5)" })}
-                        </Label>
-                        <Input
-                          value={datevMandantenNr}
-                          onChange={(e) => setDatevMandantenNr(e.target.value.replace(/\D/g, "").slice(0, 5))}
-                          placeholder={tt({ de: "vom Berater", en: "from advisor" })}
-                          className="h-11 font-mono text-subhead"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1.5">
-                        <Label className="text-caption-1 font-medium">
-                          {tt({ de: "Kontenrahmen", en: "Chart of Accounts" })}
-                        </Label>
-                        <Select
-                          value={datevKontenrahmen}
-                          onValueChange={(v) => {
-                            setDatevKontenrahmen(v as "SKR03" | "SKR04");
-                            if (
-                              datevKontoGegenkonto === "3300" ||
-                              datevKontoGegenkonto === "1600" ||
-                              !datevKontoGegenkonto
-                            ) {
-                              setDatevKontoGegenkonto(v === "SKR04" ? "3300" : "1600");
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="h-11 text-subhead">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="SKR03">SKR 03</SelectItem>
-                            <SelectItem value="SKR04">SKR 04</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-caption-1 font-medium">
-                          {tt({ de: "Sachkontenlänge", en: "Account Length" })}
-                        </Label>
-                        <Select
-                          value={String(datevSachkontenlaenge)}
-                          onValueChange={(v) => setDatevSachkontenlaenge(parseInt(v))}
-                        >
-                          <SelectTrigger className="h-11 text-subhead">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {[4, 5, 6, 7, 8].map((n) => (
-                              <SelectItem key={n} value={String(n)}>
-                                {n}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1.5">
-                        <Label className="text-caption-1 font-medium">
-                          {tt({ de: "WJ-Beginn", en: "Fiscal Year Start" })}
-                        </Label>
-                        <Input
-                          type="date"
-                          value={datevWjBeginn}
-                          onChange={(e) => setDatevWjBeginn(e.target.value)}
-                          className="h-11 text-subhead"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-caption-1 font-medium">
-                          {tt({ de: "Gegenkonto", en: "Counter Account" })}
-                        </Label>
-                        <Input
-                          value={datevKontoGegenkonto}
-                          onChange={(e) => setDatevKontoGegenkonto(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                          placeholder={datevKontenrahmen === "SKR04" ? "3300" : "1600"}
-                          className="h-11 font-mono text-subhead"
-                        />
-                      </div>
-                    </div>
-                    <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2 text-caption-1 text-amber-900 dark:text-amber-200 leading-relaxed">
-                      <span className="font-semibold">[!] Pflicht zur Abstimmung mit dem Steuerberater: </span>
-                      {tt({
-                        de: "Das Gegenkonto ist mandantenspezifisch — frag deinen Steuerberater nach dem genauen Konto. Beispielwerte: SKR 04 = 3300 oder 3641 (Gesellschafter-Verrechnung), SKR 03 = 1600. NICHT die Bank (1800/1200) wählen — sonst doppelte Bank-Buchung beim Kontoauszug-Import.",
-                        en: "The counter account is client-specific — ask your tax advisor for the exact account. Sample values: SKR 04 = 3300 or 3641 (shareholder clearing), SKR 03 = 1600. Do NOT pick the bank account (1800/1200) — would cause double booking with bank statement import.",
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
 
-            <div className="sticky bottom-0 border-t bg-background px-5 py-3 z-10">
-              <Button
-                type="submit"
-                className="w-full h-13 text-body font-semibold text-primary-foreground"
-                disabled={saving}
-              >
-                {saving ? t("general.loading") : t("general.save")}
-              </Button>
-            </div>
+            <Button type="submit" className="w-full" disabled={saving}>
+              {saving ? t("general.loading") : t("general.save")}
+            </Button>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Steuerberater-Einladungs-Dialog: nur sichtbar wenn editing.id existiert */}
-      {editing?.id && (
-        <AdvisorInviteDialog
-          companyId={editing.id}
-          companyName={name || editing.name}
-          open={inviteDialogOpen}
-          onOpenChange={setInviteDialogOpen}
-        />
-      )}
-
       {/* Vehicle Dialog */}
-      <Dialog
-        open={vehicleDialogOpen}
-        onOpenChange={(o) => {
-          if (!o) resetVehicleForm();
-          setVehicleDialogOpen(o);
-        }}
-      >
-        <DialogContent className="max-w-md rounded-2xl">
+      <Dialog open={vehicleDialogOpen} onOpenChange={(o) => { if (!o) resetVehicleForm(); setVehicleDialogOpen(o); }}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-title-2 font-bold">
+            <DialogTitle>
               {editingVehicle
-                ? tt({ de: "Fahrzeug bearbeiten", en: "Edit Vehicle" })
-                : tt({ de: "Fahrzeug hinzufügen", en: "Add Vehicle" })}
+                ? tt({de:"Fahrzeug bearbeiten", en:"Edit Vehicle", tr:"Aracı Düzenle", ar:"تعديل المركبة", ru:"Редактировать транспорт"})
+                : tt({de:"Fahrzeug hinzufügen", en:"Add Vehicle", tr:"Araç Ekle", ar:"إضافة مركبة", ru:"Добавить транспорт"})}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSaveVehicle} className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-footnote font-medium">
-                {tt({ de: "Kennzeichen", en: "License Plate" })} <span className="text-destructive">*</span>
-              </Label>
+              <Label>{tt({de:"Kennzeichen", en:"License Plate", tr:"Plaka", ar:"لوحة الترخيص", ru:"Номерной знак"})} <span className="text-destructive">*</span></Label>
               <Input
                 value={vehiclePlate}
                 onChange={(e) => setVehiclePlate(e.target.value)}
-                placeholder={tt({ de: "z.B. B-AB 1234", en: "e.g. B-AB 1234" })}
-                className="h-12 text-body uppercase font-mono"
+                placeholder={tt({de:"z.B. B-AB 1234", en:"e.g. B-AB 1234", tr:"ör. 34 ABC 123", ar:"مثال: B-AB 1234", ru:"напр. B-AB 1234"})}
+                className="uppercase font-mono"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-footnote font-medium">
-                {tt({ de: "Bezeichnung (optional)", en: "Name (optional)" })}
-              </Label>
+              <Label>{tt({de:"Bezeichnung (optional)", en:"Name (optional)", tr:"Ad (opsiyonel)", ar:"الاسم (اختياري)", ru:"Название (опционально)"})}</Label>
               <Input
                 value={vehicleName}
                 onChange={(e) => setVehicleName(e.target.value)}
-                placeholder={tt({ de: "z.B. Firmenwagen, VW Golf", en: "e.g. Company car, VW Golf" })}
-                className="h-12 text-body"
+                placeholder={tt({de:"z.B. Firmenwagen, VW Golf", en:"e.g. Company car, VW Golf", tr:"ör. Şirket arabası", ar:"مثال: سيارة الشركة", ru:"напр. Служебный авто"})}
               />
             </div>
-            <Button
-              type="submit"
-              className="w-full h-13 text-body font-semibold text-primary-foreground"
-              disabled={vehicleSaving}
-            >
+            <Button type="submit" className="w-full" disabled={vehicleSaving}>
               {vehicleSaving ? t("general.loading") : t("general.save")}
             </Button>
           </form>
@@ -720,37 +488,39 @@ const Companies = () => {
       </Dialog>
 
       {/* Delete Confirmation */}
-      <AlertDialog
-        open={!!deleteTarget}
-        onOpenChange={(o) => {
-          if (!o) setDeleteTarget(null);
-        }}
-      >
-        <AlertDialogContent className="rounded-2xl">
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
+        <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-title-2">
-              {tt({ de: "Organisation löschen?", en: "Delete organization?" })}
+            <AlertDialogTitle>
+              {tt({de:"Organisation löschen?", en:"Delete organization?", tr:"Kuruluşu sil?", ar:"حذف المنظمة؟", ru:"Удалить организацию?"})}
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-body">
+            <AlertDialogDescription>
               {tt({
-                de: `Möchtest du „${deleteTarget?.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`,
-                en: `Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`,
+                de:`Möchten Sie "${deleteTarget?.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`,
+                en:`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`,
+                tr:`"${deleteTarget?.name}" silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`,
+                ar:`هل أنت متأكد من حذف "${deleteTarget?.name}"؟ لا يمكن التراجع عن هذا الإجراء.`,
+                ru:`Вы уверены, что хотите удалить "${deleteTarget?.name}"? Это действие нельзя отменить.`
               })}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-12 text-body">
-              {tt({ de: "Abbrechen", en: "Cancel" })}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="h-12 text-body bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {tt({ de: "Löschen", en: "Delete" })}
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tt({de:"Abbrechen", en:"Cancel", tr:"İptal", ar:"إلغاء", ru:"Отмена"})}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {tt({de:"Löschen", en:"Delete", tr:"Sil", ar:"حذف", ru:"Удалить"})}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {editing && (
+        <AdvisorInviteDialog
+          companyId={editing.id}
+          companyName={editing.name}
+          open={inviteDialogOpen}
+          onOpenChange={setInviteDialogOpen}
+        />
+      )}
     </div>
   );
 };

@@ -65,57 +65,110 @@ export type Database = {
         }
         Relationships: []
       }
+      advisor_setup_tokens: {
+        Row: {
+          advisor_email: string
+          company_id: string
+          consumed_at: string | null
+          consumed_ip: string | null
+          consumed_user_agent: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          invitation_note: string | null
+          token_hash: string
+          user_id: string
+        }
+        Insert: {
+          advisor_email: string
+          company_id: string
+          consumed_at?: string | null
+          consumed_ip?: string | null
+          consumed_user_agent?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitation_note?: string | null
+          token_hash: string
+          user_id: string
+        }
+        Update: {
+          advisor_email?: string
+          company_id?: string
+          consumed_at?: string | null
+          consumed_ip?: string | null
+          consumed_user_agent?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitation_note?: string | null
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_setup_tokens_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           address: string | null
           created_at: string
+          datev_berater_nr: string | null
+          datev_bezeichnung: string | null
+          datev_diktatkuerzel: string | null
+          datev_kontenrahmen: string | null
+          datev_konto_gegenkonto: string | null
+          datev_mandanten_nr: string | null
+          datev_sachkontenlaenge: number | null
+          datev_wj_beginn: string | null
+          festschreibung_default: number
           id: string
           name: string
           org_type: string
           tax_id: string | null
           user_id: string
-          datev_berater_nr: string | null
-          datev_mandanten_nr: string | null
-          datev_kontenrahmen: string | null
-          datev_konto_gegenkonto: string | null
-          datev_wj_beginn: string | null
-          datev_sachkontenlaenge: number | null
-          datev_bezeichnung: string | null
-          datev_diktatkuerzel: string | null
         }
         Insert: {
           address?: string | null
           created_at?: string
+          datev_berater_nr?: string | null
+          datev_bezeichnung?: string | null
+          datev_diktatkuerzel?: string | null
+          datev_kontenrahmen?: string | null
+          datev_konto_gegenkonto?: string | null
+          datev_mandanten_nr?: string | null
+          datev_sachkontenlaenge?: number | null
+          datev_wj_beginn?: string | null
+          festschreibung_default?: number
           id?: string
           name: string
           org_type?: string
           tax_id?: string | null
           user_id: string
-          datev_berater_nr?: string | null
-          datev_mandanten_nr?: string | null
-          datev_kontenrahmen?: string | null
-          datev_konto_gegenkonto?: string | null
-          datev_wj_beginn?: string | null
-          datev_sachkontenlaenge?: number | null
-          datev_bezeichnung?: string | null
-          datev_diktatkuerzel?: string | null
         }
         Update: {
           address?: string | null
           created_at?: string
+          datev_berater_nr?: string | null
+          datev_bezeichnung?: string | null
+          datev_diktatkuerzel?: string | null
+          datev_kontenrahmen?: string | null
+          datev_konto_gegenkonto?: string | null
+          datev_mandanten_nr?: string | null
+          datev_sachkontenlaenge?: number | null
+          datev_wj_beginn?: string | null
+          festschreibung_default?: number
           id?: string
           name?: string
           org_type?: string
           tax_id?: string | null
           user_id?: string
-          datev_berater_nr?: string | null
-          datev_mandanten_nr?: string | null
-          datev_kontenrahmen?: string | null
-          datev_konto_gegenkonto?: string | null
-          datev_wj_beginn?: string | null
-          datev_sachkontenlaenge?: number | null
-          datev_bezeichnung?: string | null
-          datev_diktatkuerzel?: string | null
         }
         Relationships: []
       }
@@ -241,6 +294,42 @@ export type Database = {
         }
         Relationships: []
       }
+      datev_export_batches: {
+        Row: {
+          created_at: string
+          date_from: string | null
+          date_to: string | null
+          file_name: string | null
+          id: string
+          notes: string | null
+          receipt_count: number
+          total_amount_eur: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_from?: string | null
+          date_to?: string | null
+          file_name?: string | null
+          id?: string
+          notes?: string | null
+          receipt_count?: number
+          total_amount_eur?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_from?: string | null
+          date_to?: string | null
+          file_name?: string | null
+          id?: string
+          notes?: string | null
+          receipt_count?: number
+          total_amount_eur?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       invitations: {
         Row: {
           created_at: string
@@ -318,6 +407,54 @@ export type Database = {
           },
         ]
       }
+      receipt_changes: {
+        Row: {
+          change_reason: string | null
+          change_type: string
+          changed_by: string | null
+          created_at: string
+          field_name: string | null
+          id: string
+          new_value: string | null
+          new_values: Json | null
+          old_value: string | null
+          old_values: Json | null
+          reason: string | null
+          receipt_id: string
+          user_id: string
+        }
+        Insert: {
+          change_reason?: string | null
+          change_type: string
+          changed_by?: string | null
+          created_at?: string
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          new_values?: Json | null
+          old_value?: string | null
+          old_values?: Json | null
+          reason?: string | null
+          receipt_id: string
+          user_id: string
+        }
+        Update: {
+          change_reason?: string | null
+          change_type?: string
+          changed_by?: string | null
+          created_at?: string
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          new_values?: Json | null
+          old_value?: string | null
+          old_values?: Json | null
+          reason?: string | null
+          receipt_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       receipt_vat_items: {
         Row: {
           created_at: string
@@ -365,7 +502,10 @@ export type Database = {
           created_at: string
           currency: string
           date: string
+          datev_exported_at: string | null
           description: string | null
+          export_batch_id: string | null
+          exported_at: string | null
           file_path: string | null
           id: string
           license_plate: string | null
@@ -389,7 +529,10 @@ export type Database = {
           created_at?: string
           currency?: string
           date?: string
+          datev_exported_at?: string | null
           description?: string | null
+          export_batch_id?: string | null
+          exported_at?: string | null
           file_path?: string | null
           id?: string
           license_plate?: string | null
@@ -413,7 +556,10 @@ export type Database = {
           created_at?: string
           currency?: string
           date?: string
+          datev_exported_at?: string | null
           description?: string | null
+          export_batch_id?: string | null
+          exported_at?: string | null
           file_path?: string | null
           id?: string
           license_plate?: string | null
@@ -438,6 +584,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      scan_rate_log: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tax_advisor_registrations: {
+        Row: {
+          id: string
+          kanzlei: string
+          notes: string | null
+          registered_at: string
+          revoked_at: string | null
+          revoked_by: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          kanzlei: string
+          notes?: string | null
+          registered_at?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          kanzlei?: string
+          notes?: string | null
+          registered_at?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -486,6 +680,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_advisor_link: { Args: { _client_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -494,9 +689,26 @@ export type Database = {
         Returns: boolean
       }
       is_tax_advisor: { Args: { _user_id: string }; Returns: boolean }
+      redeem_coupon_atomic: {
+        Args: { _code: string; _user_id: string }
+        Returns: {
+          error: string
+          expires_at: string
+          tier: string
+        }[]
+      }
+      register_as_tax_advisor: { Args: { _kanzlei: string }; Returns: string }
       update_receipt_accounting_status: {
         Args: { _receipt_id: string; _status: string }
         Returns: undefined
+      }
+      validate_coupon: {
+        Args: { _code: string }
+        Returns: {
+          duration_days: number
+          tier: string
+          valid: boolean
+        }[]
       }
     }
     Enums: {

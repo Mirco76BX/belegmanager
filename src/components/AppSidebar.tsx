@@ -8,10 +8,9 @@ import InviteDialog from "@/components/InviteDialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useState } from "react";
-import { VERSION_LABEL } from "@/lib/version";
 
 const AppSidebar = () => {
-  const { signOut, subscription, isAdvisor, viewMode, setViewMode } = useAuth();
+  const { signOut, isAdvisor, viewMode, setViewMode } = useAuth();
   const { t, lang, setLang } = useLanguage();
   const { isAdmin } = useUserRole();
   const navigate = useNavigate();
@@ -19,20 +18,13 @@ const AppSidebar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
 
-  // View-Mode-aware: Sidebar zeigt entweder Personal- oder Kanzlei-Items,
-  // je nach aktueller viewMode. Der Switch (siehe handleToggleViewMode) ist
-  // nur sichtbar, wenn isAdvisor=true (= User darf umschalten).
   const isTaxAdvisor = viewMode === "advisor";
 
   const handleToggleViewMode = () => {
     setViewMode(viewMode === "advisor" ? "personal" : "advisor");
-    // Bei Wechsel zurück zum Dashboard navigieren — sonst landet der User
-    // auf einer Seite, die im neuen Modus nicht zugänglich ist (z. B.
-    // /clients im personal-Modus).
     navigate("/");
   };
 
-  // Desktop-Sidebar: alle Items vertikal (kein Platzproblem)
   const navItems = [
     { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/" },
     { key: "nav.receipts" as const, icon: Receipt, path: "/receipts" },
@@ -41,35 +33,6 @@ const AppSidebar = () => {
     { key: "nav.fahrtkosten" as const, icon: Car, path: "/fahrtkosten" },
     ...(isTaxAdvisor ? [{ key: "nav.clients" as const, icon: Users, path: "/clients" }] : []),
   ];
-
-  // Mobile-Bottom-Nav: EXAKT 4 Items + Scan-Button in der Mitte = 5 Spalten.
-  // Fahrtkosten landet immer im Hamburger-Menü (weniger frequent als die anderen).
-  // Bei Steuerberatern: Mandanten ersetzt Orga im Bottom-Nav (Mandanten = Daily-Driver).
-  const bottomNavItems = isTaxAdvisor
-    ? [
-        { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/" },
-        { key: "nav.receipts" as const, icon: Receipt, path: "/receipts" },
-        // [Scan-Button hier]
-        { key: "nav.clients" as const, icon: Users, path: "/clients" },
-        { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report" },
-      ]
-    : [
-        { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/" },
-        { key: "nav.receipts" as const, icon: Receipt, path: "/receipts" },
-        // [Scan-Button hier]
-        { key: "nav.companies" as const, icon: Building2, path: "/companies" },
-        { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report" },
-      ];
-
-  // Items, die NICHT im Bottom-Nav sind, müssen im Hamburger erreichbar sein
-  const hiddenNavItems = isTaxAdvisor
-    ? [
-        { key: "nav.companies" as const, icon: Building2, path: "/companies" },
-        { key: "nav.fahrtkosten" as const, icon: Car, path: "/fahrtkosten" },
-      ]
-    : [
-        { key: "nav.fahrtkosten" as const, icon: Car, path: "/fahrtkosten" },
-      ];
 
   return (
     <>
@@ -121,23 +84,29 @@ const AppSidebar = () => {
         )}
 
         <div className="border-t border-sidebar-border px-3 py-3 space-y-1">
-          {/* View-Mode-Switch — nur sichtbar wenn User Steuerberater-Status hat */}
           {isAdvisor && (
             <button
               onClick={handleToggleViewMode}
-              className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
+              className="group relative flex w-full items-center gap-3 rounded-xl border border-indigo-400/40 bg-gradient-to-r from-indigo-500/15 to-purple-500/10 px-3.5 py-3 text-sm text-sidebar-foreground transition-all hover:border-indigo-400/70 hover:from-indigo-500/25 hover:to-purple-500/20 hover:shadow-lg hover:shadow-indigo-500/10 my-2"
             >
-              {viewMode === "advisor" ? (
-                <UserCircle className="h-4 w-4 text-indigo-400" />
-              ) : (
-                <Briefcase className="h-4 w-4 text-indigo-400" />
-              )}
-              <span className="flex-1 text-left">
-                {viewMode === "advisor"
-                  ? (lang === "de" ? "Persönlicher Modus" : "Personal mode")
-                  : (lang === "de" ? "Kanzlei-Modus" : "Advisor mode")}
-              </span>
-              <ArrowLeftRight className="h-3.5 w-3.5 text-sidebar-foreground/40" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors">
+                {viewMode === "advisor" ? (
+                  <UserCircle className="h-[1.125rem] w-[1.125rem] text-indigo-300" />
+                ) : (
+                  <Briefcase className="h-[1.125rem] w-[1.125rem] text-indigo-300" />
+                )}
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-[10px] uppercase tracking-wider text-sidebar-foreground/50 leading-none mb-1">
+                  {lang === "de" ? "Wechseln zu" : "Switch to"}
+                </p>
+                <p className="text-sm font-semibold leading-none">
+                  {viewMode === "advisor"
+                    ? (lang === "de" ? "Persönlicher Modus" : "Personal mode")
+                    : (lang === "de" ? "Kanzlei-Modus" : "Advisor mode")}
+                </p>
+              </div>
+              <ArrowLeftRight className="h-4 w-4 text-indigo-300/70 group-hover:text-indigo-200 transition-colors" />
             </button>
           )}
           {isAdmin && (
@@ -180,7 +149,7 @@ const AppSidebar = () => {
       </aside>
 
       {/* Mobile Header */}
-      <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-sidebar px-4 py-3 safe-area-top">
+      <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-sidebar px-4 py-3">
         <button onClick={() => navigate("/")} className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
             <FileText className="h-4 w-4 text-sidebar-primary-foreground" />
@@ -199,45 +168,30 @@ const AppSidebar = () => {
 
       {/* Mobile Dropdown Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed left-0 right-0 z-40 bg-sidebar border-b border-sidebar-border px-4 py-3 space-y-1 animate-fade-in max-h-[calc(100vh-7rem)] overflow-y-auto" style={{ top: 'calc(env(safe-area-inset-top) + 52px)' }}>
-          {/* Navigation-Items, die nicht in der Bottom-Nav sind */}
-          {hiddenNavItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <button
-                key={item.path}
-                onClick={() => { navigate(item.path); setMobileMenuOpen(false); }}
-                className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm ${
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50"
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                {t(item.key)}
-              </button>
-            );
-          })}
-          {hiddenNavItems.length > 0 && (
-            <div className="border-t border-sidebar-border my-1" />
-          )}
-          {/* View-Mode-Switch — Mobile-Variante, auch Menü schließen */}
+        <div className="md:hidden fixed top-[52px] left-0 right-0 z-40 bg-sidebar border-b border-sidebar-border px-4 py-3 space-y-1 animate-fade-in">
           {isAdvisor && (
             <button
               onClick={() => { handleToggleViewMode(); setMobileMenuOpen(false); }}
-              className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors"
+              className="group relative flex w-full items-center gap-3 rounded-xl border border-indigo-400/40 bg-gradient-to-r from-indigo-500/15 to-purple-500/10 px-3.5 py-3 text-sm text-sidebar-foreground transition-all hover:border-indigo-400/70 hover:from-indigo-500/25 hover:to-purple-500/20 hover:shadow-lg hover:shadow-indigo-500/10 my-2"
             >
-              {viewMode === "advisor" ? (
-                <UserCircle className="h-4 w-4 text-indigo-400" />
-              ) : (
-                <Briefcase className="h-4 w-4 text-indigo-400" />
-              )}
-              <span className="flex-1 text-left">
-                {viewMode === "advisor"
-                  ? (lang === "de" ? "Persönlicher Modus" : "Personal mode")
-                  : (lang === "de" ? "Kanzlei-Modus" : "Advisor mode")}
-              </span>
-              <ArrowLeftRight className="h-3.5 w-3.5 text-sidebar-foreground/40" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors">
+                {viewMode === "advisor" ? (
+                  <UserCircle className="h-[1.125rem] w-[1.125rem] text-indigo-300" />
+                ) : (
+                  <Briefcase className="h-[1.125rem] w-[1.125rem] text-indigo-300" />
+                )}
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-[10px] uppercase tracking-wider text-sidebar-foreground/50 leading-none mb-1">
+                  {lang === "de" ? "Wechseln zu" : "Switch to"}
+                </p>
+                <p className="text-sm font-semibold leading-none">
+                  {viewMode === "advisor"
+                    ? (lang === "de" ? "Persönlicher Modus" : "Personal mode")
+                    : (lang === "de" ? "Kanzlei-Modus" : "Advisor mode")}
+                </p>
+              </div>
+              <ArrowLeftRight className="h-4 w-4 text-indigo-300/70 group-hover:text-indigo-200 transition-colors" />
             </button>
           )}
           {isAdmin && (
@@ -276,18 +230,14 @@ const AppSidebar = () => {
           >
             Impressum
           </Link>
-          {/* Version-Anzeige am Ende */}
-          <div className="border-t border-sidebar-border mt-1 pt-2 px-3">
-            <p className="text-[10px] text-sidebar-foreground/40 font-mono">{VERSION_LABEL}</p>
-          </div>
         </div>
       )}
 
-      {/* Mobile Bottom Navigation — exakt 4 Items + Scan-Button in der Mitte = 5 Spalten */}
+      {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border safe-area-bottom">
         <div className="grid grid-cols-5 items-end py-2">
-          {/* Erste zwei Items links */}
-          {bottomNavItems.slice(0, 2).map((item) => {
+          {/* First two nav items */}
+          {navItems.slice(0, 2).map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <button
@@ -303,7 +253,7 @@ const AppSidebar = () => {
             );
           })}
 
-          {/* Scan-Button mittig */}
+          {/* Central Scan Button — exact center column */}
           <div className="flex justify-center">
             <button
               onClick={() => {
@@ -316,8 +266,8 @@ const AppSidebar = () => {
             </button>
           </div>
 
-          {/* Letzte zwei Items rechts */}
-          {bottomNavItems.slice(2).map((item) => {
+          {/* Last two nav items */}
+          {navItems.slice(2).map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <button

@@ -36,39 +36,46 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Check for active coupon redemption FIRST — independent of Stripe
+    // Check for active coupon redemption FIRST — independent of Stripe.
+    // Defense in depth: join coupons and verify tier matches; reject mismatches.
     const { data: redemptions } = await supabaseClient
       .from("coupon_redemptions")
-      .select("tier, expires_at")
+      .select("id, tier, expires_at, coupon_id, coupons:coupon_id(id, tier, is_active)")
       .eq("user_id", user.id)
       .gte("expires_at", new Date().toISOString())
-      .order("expires_at", { ascending: false })
-      .limit(1);
+      .order("expires_at", { ascending: false });
 
-    if (redemptions && redemptions.length > 0) {
-      const redemption = redemptions[0];
-      logStep("Active coupon redemption found", { tier: redemption.tier, expires_at: redemption.expires_at });
+    const validRedemption = (redemptions ?? []).find((r: any) => {
+      const c = r.coupons;
+      if (!c) {
+        console.warn(`[CHECK-SUBSCRIPTION] Orphan redemption ${r.id} (coupon ${r.coupon_id} missing) — ignored`);
+        return false;
+      }
+      if (c.tier !== r.tier) {
+        console.warn(`[CHECK-SUBSCRIPTION] Tier mismatch on redemption ${r.id}: redemption.tier=${r.tier} coupon.tier=${c.tier} — ignored`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validRedemption) {
+      logStep("Active coupon redemption found", { tier: validRedemption.tier, expires_at: validRedemption.expires_at });
 
       const tierProductMap: Record<string, string> = {
-        // Aktuelle Tiers
-        basic: "coupon_basic",
-        pro: "coupon_pro",
-        business: "coupon_business",
-        cfo: "coupon_cfo",
-        // Legacy (Bestandsschutz): alte RELAX/MASTER-Coupons werden auf PRO gehoben
-        relax: "coupon_pro",
-        master: "coupon_pro",
+        relax: "coupon_relax",
+        master: "coupon_master",
       };
 
       return new Response(JSON.stringify({
         subscribed: true,
-        product_id: tierProductMap[redemption.tier] || "coupon_basic",
-        subscription_end: redemption.expires_at,
+        product_id: tierProductMap[validRedemption.tier] || "coupon_relax",
+        subscription_end: validRedemption.expires_at,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
+
 
     // Stripe check only needed if no active coupon
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -122,13 +129,12 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    // Security: Generic error code an Client, raw message nur server-seitig loggen
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    console.error("check-subscription: internal error", error);
-    return new Response(JSON.stringify({ error_code: "ERR_INTERNAL" }), {
+    const isAuthError = errorMessage.toLowerCase().includes("auth") || errorMessage.includes("authorization");
+    return new Response(JSON.stringify({ error: isAuthError ? "unauthorized" : "internal_error" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status: isAuthError ? 401 : 500,
     });
   }
 });
