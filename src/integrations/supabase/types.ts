@@ -502,6 +502,7 @@ export type Database = {
           created_at: string
           currency: string
           date: string
+          datev_exported_at: string | null
           description: string | null
           export_batch_id: string | null
           exported_at: string | null
@@ -528,6 +529,7 @@ export type Database = {
           created_at?: string
           currency?: string
           date?: string
+          datev_exported_at?: string | null
           description?: string | null
           export_batch_id?: string | null
           exported_at?: string | null
@@ -554,6 +556,7 @@ export type Database = {
           created_at?: string
           currency?: string
           date?: string
+          datev_exported_at?: string | null
           description?: string | null
           export_batch_id?: string | null
           exported_at?: string | null
