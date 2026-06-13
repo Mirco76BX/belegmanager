@@ -402,7 +402,26 @@ const ExpenseReport = () => {
     a.download = `EXTF_Buchungsstapel_${toYYYYMMDD(fromDate)}_${toYYYYMMDD(toDate)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast({ title: tt({ de: "DATEV EXTF erstellt", en: "DATEV EXTF generated" }) });
+
+    // GoBD-Festschreibung: Belege im Stapel als DATEV-exportiert markieren
+    const ids = filteredReceipts.map((r) => r.id);
+    if (ids.length > 0) {
+      const { error: lockErr } = await supabase
+        .from("receipts")
+        .update({ datev_exported_at: new Date().toISOString(), accounting_status: "verbucht" })
+        .in("id", ids)
+        .is("datev_exported_at", null);
+      if (lockErr) {
+        console.warn("[DATEV] Festschreibung fehlgeschlagen:", lockErr.message);
+        toast({
+          title: tt({ de: "DATEV EXTF erstellt – Festschreibung fehlgeschlagen", en: "DATEV EXTF generated – lock failed" }),
+          description: lockErr.message,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    toast({ title: tt({ de: "DATEV EXTF erstellt & festgeschrieben", en: "DATEV EXTF generated & locked" }) });
   };
 
   const generatePDF = async () => {
