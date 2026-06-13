@@ -361,7 +361,7 @@ const Companies = () => {
                     <Mail className="h-4 w-4 text-indigo-300" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-[10px] uppercase tracking-wider text-indigo-300/80">Empfohlen</div>
+                    <div className="text-[10px] uppercase tracking-wider font-semibold text-indigo-700 dark:text-indigo-300">Empfohlen</div>
                     <div className="text-sm font-semibold">Steuerberater einladen, das einzurichten</div>
                   </div>
                 </button>
