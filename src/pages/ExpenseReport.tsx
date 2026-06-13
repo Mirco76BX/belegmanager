@@ -271,7 +271,7 @@ const ExpenseReport = () => {
     return `${d}${m}`;
   };
 
-  const exportDATEV = () => {
+  const exportDATEV = async () => {
     if (filteredReceipts.length === 0) return;
 
     // Require a specific organization (Berater/Mandant/WJ are per-Mandant)
