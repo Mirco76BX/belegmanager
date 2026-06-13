@@ -143,48 +143,44 @@ const AdvisorInviteDialog = ({ companyId, companyName, open, onOpenChange }: Pro
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {(pending || lastConsumed) && (
-              <div className="space-y-2">
-                {pending && (
-                  <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="h-4 w-4 mt-0.5 text-amber-500 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-amber-700 dark:text-amber-200">
-                          Du hast bereits <strong>1 aktive Einladung</strong> an{" "}
-                          <span className="break-all font-medium">{pending.advisor_email}</span>, gültig bis{" "}
-                          <strong>{fmt(pending.expires_at)}</strong>. Eine erneute Einladung erstellt einen neuen Link — der alte bleibt aber gültig, bis er eingelöst oder widerrufen wird.
-                        </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="mt-2"
-                          onClick={() => handleRevoke(pending.id)}
-                          disabled={revoking === pending.id}
-                        >
-                          {revoking === pending.id ? (
-                            <><Loader2 className="h-3 w-3 animate-spin" /> Widerrufen…</>
-                          ) : (
-                            <><XCircle className="h-3 w-3" /> Widerrufen</>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
+            {pending ? (
+              <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 text-amber-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-amber-700 dark:text-amber-200">
+                      Du hast bereits <strong>1 aktive Einladung</strong> an{" "}
+                      <span className="break-all font-medium">{pending.advisor_email}</span>, gültig bis{" "}
+                      <strong>{fmt(pending.expires_at)}</strong>. Eine erneute Einladung erstellt einen neuen Link — der alte bleibt aber gültig, bis er eingelöst oder widerrufen wird.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => handleRevoke(pending.id)}
+                      disabled={revoking === pending.id}
+                    >
+                      {revoking === pending.id ? (
+                        <><Loader2 className="h-3 w-3 animate-spin" /> Widerrufen…</>
+                      ) : (
+                        <><XCircle className="h-3 w-3" /> Widerrufen</>
+                      )}
+                    </Button>
                   </div>
-                )}
-                {lastConsumed && (
-                  <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm">
-                    <div className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 mt-0.5 text-emerald-500 shrink-0" />
-                      <p className="text-emerald-700 dark:text-emerald-200">
-                        Letzte Einladung wurde am <strong>{fmt(lastConsumed.consumed_at!)}</strong> eingelöst und die DATEV-Stammdaten gespeichert.
-                      </p>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
-            )}
+            ) : lastConsumed ? (
+              <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm">
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 mt-0.5 text-emerald-500 shrink-0" />
+                  <p className="text-emerald-700 dark:text-emerald-200">
+                    Letzte Einladung an <span className="break-all font-medium">{lastConsumed.advisor_email}</span> wurde am{" "}
+                    <strong>{fmt(lastConsumed.consumed_at!)}</strong> eingelöst und die DATEV-Stammdaten gespeichert.
+                  </p>
+                </div>
+              </div>
+            ) : null}
 
             <div className="space-y-2">
               <Label>E-Mail des Steuerberaters <span className="text-destructive">*</span></Label>
