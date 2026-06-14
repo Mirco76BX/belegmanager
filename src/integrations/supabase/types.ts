@@ -115,6 +115,36 @@ export type Database = {
           },
         ]
       }
+      business_seats: {
+        Row: {
+          granted_at: string
+          id: string
+          note: string | null
+          owner_id: string
+          revoked_at: string | null
+          seat_user_id: string
+          source: string
+        }
+        Insert: {
+          granted_at?: string
+          id?: string
+          note?: string | null
+          owner_id: string
+          revoked_at?: string | null
+          seat_user_id: string
+          source?: string
+        }
+        Update: {
+          granted_at?: string
+          id?: string
+          note?: string | null
+          owner_id?: string
+          revoked_at?: string | null
+          seat_user_id?: string
+          source?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           address: string | null
@@ -330,6 +360,36 @@ export type Database = {
         }
         Relationships: []
       }
+      founder_overrides: {
+        Row: {
+          expires_at: string | null
+          granted_at: string
+          granted_by: string | null
+          id: string
+          reason: string | null
+          tier: string
+          user_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          tier: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          tier?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       invitations: {
         Row: {
           created_at: string
@@ -364,6 +424,7 @@ export type Database = {
           kanzlei: string | null
           last_name: string | null
           onboarding_seen: boolean
+          scan_quota_topup: number
           tax_advisor_email: string | null
           tax_advisor_name: string | null
         }
@@ -379,6 +440,7 @@ export type Database = {
           kanzlei?: string | null
           last_name?: string | null
           onboarding_seen?: boolean
+          scan_quota_topup?: number
           tax_advisor_email?: string | null
           tax_advisor_name?: string | null
         }
@@ -394,6 +456,7 @@ export type Database = {
           kanzlei?: string | null
           last_name?: string | null
           onboarding_seen?: boolean
+          scan_quota_topup?: number
           tax_advisor_email?: string | null
           tax_advisor_name?: string | null
         }
