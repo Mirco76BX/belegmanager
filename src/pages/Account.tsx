@@ -1,4 +1,4 @@
-import { useAuth, TIERS } from "@/contexts/AuthContext";
+import { useAuth, TIERS, effectiveScanQuota } from "@/contexts/AuthContext";
 import { useLanguage, getLocale } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -165,7 +165,12 @@ const Account = () => {
 
   const profileIncomplete = !firstName.trim() || !lastName.trim();
   const tierConfig = TIERS[subscription.tier] || TIERS.free;
-  const maxScans = tierConfig.maxScans === Infinity ? null : tierConfig.maxScans;
+  const effectiveMax = effectiveScanQuota(
+    subscription.tier,
+    subscription.scanQuotaTopup,
+    subscription.addonUserSeats
+  );
+  const maxScans = Number.isFinite(effectiveMax) ? effectiveMax : null;
   const progress = maxScans ? Math.min((scanCount / maxScans) * 100, 100) : 0;
 
   const handleSaveProfile = async () => {
@@ -374,17 +379,20 @@ const Account = () => {
               </div>
             )}
             <div className="flex flex-col gap-2 pt-2">
-              {(subscription.tier === "relax" || subscription.tier === "master") && (
-                <Button variant="outline" size="sm" onClick={handleManage} disabled={portalLoading}>
-                  {portalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {tt({ de: "Abo verwalten", en: "Manage subscription", tr: "Aboneliği yönet", ar: "إدارة الاشتراك", ru: "Управление подпиской" })}
-                </Button>
-              )}
-              {(subscription.tier === "free" || subscription.tier === "tax_advisor") && (
-                <Button size="sm" onClick={() => navigate("/pricing")}>
-                  {tt({ de: "Plan upgraden", en: "Upgrade plan", tr: "Planı yükselt", ar: "ترقية الخطة", ru: "Обновить план" })}
-                </Button>
-              )}
+              {(() => {
+                const PAID_TIERS = new Set(["basic", "pro", "business", "cfo"]);
+                const isPaid = PAID_TIERS.has(subscription.tier);
+                return isPaid ? (
+                  <Button variant="outline" size="sm" onClick={handleManage} disabled={portalLoading}>
+                    {portalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {tt({ de: "Abo verwalten", en: "Manage subscription", tr: "Aboneliği yönet", ar: "إدارة الاشتراك", ru: "Управление подпиской" })}
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={() => navigate("/pricing")}>
+                    {tt({ de: "Plan upgraden", en: "Upgrade plan", tr: "Planı yükselt", ar: "ترقية الخطة", ru: "Обновить план" })}
+                  </Button>
+                );
+              })()}
             </div>
           </CardContent>
         </Card>

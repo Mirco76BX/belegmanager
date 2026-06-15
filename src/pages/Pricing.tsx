@@ -72,9 +72,8 @@ const Pricing = () => {
     } catch (e: any) { toast.error(e.message || "Portal failed"); } finally { setPortalLoading(false); }
   };
 
-  const isRelax = subscription.tier === "relax";
-  const isMaster = subscription.tier === "master";
-  const isPaid = isRelax || isMaster;
+  const PAID_TIERS = new Set(["basic", "pro", "business", "cfo"]);
+  const isPaid = PAID_TIERS.has(subscription.tier);
 
   return (
     <div className="space-y-8 pb-24 md:pb-8">
@@ -134,6 +133,12 @@ const Pricing = () => {
           }
           return null;
         }}
+        renderScanPackAction={(priceId) => (
+          <Button size="sm" variant="outline" onClick={() => handleCheckout(priceId)} disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {tt({ de: "Top-up kaufen", en: "Buy Top-up" })}
+          </Button>
+        )}
       />
       {isPaid && subscription.subscriptionEnd && (
         <p className="text-center text-sm text-muted-foreground">
