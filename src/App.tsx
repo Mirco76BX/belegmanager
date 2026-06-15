@@ -111,6 +111,7 @@ const App = () => (
             <ScrollToTop />
             <NativeDeepLinkHandler />
             <Routes>
+              <Route path="/landing" element={<Landing />} />
               <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
               <Route path="/auth/native-callback" element={<NativeAuthCallback />} />
               <Route path="/reset-password" element={<ResetPassword />} />
