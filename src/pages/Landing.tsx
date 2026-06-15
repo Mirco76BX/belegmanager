@@ -87,6 +87,25 @@ const Landing = () => {
 
   const personas = [
     {
+      icon: Briefcase,
+      title: tt({
+        de: "Unternehmer & Inhaber",
+        en: "Entrepreneurs & owners",
+        tr: "Girişimciler ve sahipler",
+        ar: "رواد الأعمال والمُلّاك",
+        ru: "Предприниматели и владельцы",
+      }),
+      plan: "PRO / BUSINESS",
+      featured: true,
+      desc: tt({
+        de: "Für alle, die sich den Papierkram vom Leib halten wollen. Beleg fotografieren, Rest erledigt die App – inkl. DATEV-Übergabe an deinen Steuerberater. Du bleibst im operativen Geschäft, nicht in der Schuhkarton-Buchhaltung.",
+        en: "For owners who want paperwork off their back. Snap the receipt, the app handles the rest — including DATEV handover to your tax advisor. You stay in the business, not in the shoebox.",
+        tr: "Evrak işlerinden uzak durmak isteyen sahipler için. Fişi çek, gerisini uygulama halletsin – DATEV teslimi dahil.",
+        ar: "لأصحاب الأعمال الذين يريدون التخلّص من الأوراق. صوّر الإيصال، والتطبيق يتكفّل بالباقي – بما في ذلك تسليم DATEV.",
+        ru: "Для владельцев, которым бумаги не нужны под боком. Сфотографируй чек — приложение делает остальное, включая передачу DATEV.",
+      }),
+    },
+    {
       icon: Users,
       title: tt({
         de: "Selbstständige & Freelancer",
@@ -97,53 +116,29 @@ const Landing = () => {
       }),
       plan: "BASIC / PRO",
       desc: tt({
-        de: "Alle Belege, Reisekosten und Fahrten an einem Ort. PRO inkl. unbegrenzte Scans und Multi-Mandant.",
-        en: "All receipts, expenses and trips in one place. PRO incl. unlimited scans and multi-client.",
-        tr: "Tüm fişler, masraflar ve seyahatler tek yerde. PRO sınırsız tarama içerir.",
-        ar: "كل الإيصالات والمصاريف والرحلات في مكان واحد. PRO يشمل المسح غير المحدود.",
-        ru: "Все чеки, расходы и поездки в одном месте. PRO включает неограниченное сканирование.",
-      }),
-    },
-    {
-      icon: Briefcase,
-      title: tt({
-        de: "Kleine Unternehmen mit Team",
-        en: "Small companies with a team",
-        tr: "Ekipli küçük işletmeler",
-        ar: "الشركات الصغيرة ذات الفرق",
-        ru: "Малый бизнес с командой",
-      }),
-      plan: "BUSINESS",
-      desc: tt({
-        de: "5 Nutzer inklusive. Belege erfassen das ganze Team, Auswertung läuft zentral.",
-        en: "5 users included. The whole team captures receipts, reporting runs centrally.",
-        tr: "5 kullanıcı dahil. Tüm ekip fiş çeker, raporlama merkezi.",
-        ar: "يشمل 5 مستخدمين. الفريق بأكمله يلتقط الإيصالات والتقارير مركزية.",
-        ru: "5 пользователей включено. Вся команда сканирует, отчёты централизованы.",
+        de: "Belege, Reisekosten und Fahrten an einem Ort. PRO mit unbegrenzten Scans und Multi-Mandant.",
+        en: "Receipts, expenses and trips in one place. PRO with unlimited scans and multi-client.",
+        tr: "Fişler, masraflar, seyahatler tek yerde. PRO sınırsız tarama.",
+        ar: "الإيصالات والمصاريف والرحلات في مكان واحد. PRO بمسح غير محدود.",
+        ru: "Чеки, расходы, поездки в одном месте. PRO — безлимит.",
       }),
     },
     {
       icon: Calculator,
       title: tt({
-        de: "Steuerberater",
-        en: "Tax advisors",
-        tr: "Mali müşavirler",
-        ar: "المستشارون الضريبيون",
-        ru: "Налоговые консультанты",
+        de: "Dein Steuerberater",
+        en: "Your tax advisor",
+        tr: "Mali müşaviriniz",
+        ar: "مستشارك الضريبي",
+        ru: "Ваш налоговый консультант",
       }),
-      plan: tt({
-        de: "Kostenlos",
-        en: "Free",
-        tr: "Ücretsiz",
-        ar: "مجاناً",
-        ru: "Бесплатно",
-      }),
+      plan: tt({ de: "Kostenlos", en: "Free", tr: "Ücretsiz", ar: "مجاناً", ru: "Бесплатно" }),
       desc: tt({
-        de: "Kostenlos für Steuerberater-Accounts. Mandanten per Magic-Link einladen – DATEV-Export liegt bereit.",
-        en: "Free for tax advisor accounts. Invite clients via magic-link — DATEV export is ready to pull.",
-        tr: "Mali müşavir hesapları ücretsiz. Müşterileri magic-link ile davet edin.",
-        ar: "مجاناً لحسابات المستشارين الضريبيين. ادعُ العملاء عبر رابط سحري.",
-        ru: "Бесплатно для аккаунтов налоговых консультантов. Приглашайте клиентов по magic-link.",
+        de: "Kostenloser Zugang. Greift per Magic-Link auf deine Belege zu, holt sich den DATEV-Export selbst. Schluss mit Mail-Anhängen und Rückfragen.",
+        en: "Free access. Pulls receipts via magic-link and grabs the DATEV export directly. No more email attachments or follow-ups.",
+        tr: "Ücretsiz erişim. Magic-link ile fişlere erişir, DATEV dışa aktarımı kendisi alır.",
+        ar: "وصول مجاني. يصل إلى الإيصالات عبر رابط سحري ويأخذ تصدير DATEV بنفسه.",
+        ru: "Бесплатный доступ. Забирает чеки и DATEV-экспорт по magic-link сам.",
       }),
     },
   ];
@@ -473,10 +468,19 @@ const Landing = () => {
             <h2 className="text-3xl font-bold md:text-4xl">
               {tt({ de: "Für wen?", en: "For whom?", tr: "Kimler için?", ar: "لمن؟", ru: "Для кого?" })}
             </h2>
+            <p className="mt-3 text-muted-foreground">
+              {tt({
+                de: "Gebaut für Unternehmer, die sich den Papierkram vom Leib halten wollen – ohne den Überblick zu verlieren.",
+                en: "Built for entrepreneurs who want paperwork off their back — without losing the overview.",
+                tr: "Evrak işlerinden uzak durmak isteyen girişimciler için – kontrolü kaybetmeden.",
+                ar: "مصمَّم لرواد الأعمال الذين يريدون التخلّص من الأوراق دون فقدان الرؤية.",
+                ru: "Для предпринимателей, которым бумаги не нужны под рукой — но контроль остаётся.",
+              })}
+            </p>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
             {personas.map((p, i) => (
-              <Card key={i}>
+              <Card key={i} className={p.featured ? "border-primary ring-1 ring-primary/40 shadow-md" : ""}>
                 <CardContent className="p-6">
                   <div className="mb-4 flex items-center justify-between">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
