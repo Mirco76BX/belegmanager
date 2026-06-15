@@ -27,63 +27,70 @@ import {
   Calculator,
 } from "lucide-react";
 import receiptScanImg from "@/assets/receipt-scan.jpg";
+import benefitTimeImg from "@/assets/benefit-time.jpg";
+import benefitOrderImg from "@/assets/benefit-order.jpg";
+import benefitCostImg from "@/assets/benefit-cost.jpg";
 
 const Landing = () => {
   const { tt } = useLanguage();
 
   const benefits = [
     {
-      icon: Clock,
+      img: benefitTimeImg,
+      kpi: tt({ de: "−15 h", en: "−15 h", tr: "−15 sa", ar: "−15 س", ru: "−15 ч" }),
       title: tt({
-        de: "15 Stunden/Monat sparen",
-        en: "Save 15 hours/month",
-        tr: "Ayda 15 saat tasarruf",
-        ar: "وفّر 15 ساعة شهرياً",
-        ru: "Экономьте 15 часов в месяц",
+        de: "Zeit zurück",
+        en: "Time back",
+        tr: "Zaman geri",
+        ar: "وقت مُستعاد",
+        ru: "Время назад",
       }),
       desc: tt({
-        de: "OCR + automatische Verbuchung erspart das Tippen in Excel-Listen. Ein Foto pro Beleg – das war's.",
-        en: "OCR + auto-booking removes Excel data entry. One photo per receipt — done.",
-        tr: "OCR + otomatik kayıt Excel'e veri girişini ortadan kaldırır. Fiş başına bir fotoğraf yeter.",
-        ar: "التعرّف الضوئي + الحجز التلقائي يلغي إدخال البيانات يدويًا. صورة واحدة لكل إيصال.",
-        ru: "OCR + автоматический учёт избавляют от ввода в Excel. Одно фото — и всё.",
+        de: "15 Stunden pro Monat, die nicht mehr in die Belegerfassung fließen.",
+        en: "15 hours per month no longer lost to receipt entry.",
+        tr: "Ayda 15 saat artık fiş girişine harcanmıyor.",
+        ar: "15 ساعة شهريًا لم تعد تُهدر في إدخال الإيصالات.",
+        ru: "15 часов в месяц больше не уходят на ввод чеков.",
       }),
     },
     {
-      icon: FileDown,
+      img: benefitOrderImg,
+      kpi: tt({ de: "0", en: "0", tr: "0", ar: "0", ru: "0" }),
       title: tt({
-        de: "DATEV-Export in 2 Klicks",
-        en: "DATEV export in 2 clicks",
-        tr: "2 tıkla DATEV dışa aktarımı",
-        ar: "تصدير DATEV بنقرتين",
-        ru: "Экспорт DATEV в 2 клика",
+        de: "Kein Schuhkarton mehr",
+        en: "No more shoebox",
+        tr: "Ayakkabı kutusu yok",
+        ar: "لا صندوق أحذية بعد الآن",
+        ru: "Никаких коробок",
       }),
       desc: tt({
-        de: "Direkt an deinen Steuerberater senden. GoBD-konform mit Festschreibung – ohne Medienbruch.",
-        en: "Send straight to your tax advisor. GoBD-compliant with locking — no breaks in the audit trail.",
-        tr: "Doğrudan mali müşavirinize gönderin. GoBD uyumlu, denetim güvenli.",
-        ar: "أرسل مباشرة إلى مستشارك الضريبي. متوافق مع GoBD بدون انقطاع في التدقيق.",
-        ru: "Отправляйте налоговому консультанту напрямую. GoBD-совместимо, с фиксацией.",
+        de: "Belege landen sofort sortiert im System – nicht erst im März im Karton.",
+        en: "Receipts land sorted in the system instantly – not in a box come March.",
+        tr: "Fişler anında sınıflandırılmış olarak sisteme düşer.",
+        ar: "تصل الإيصالات مصنّفة فورًا إلى النظام.",
+        ru: "Чеки сразу попадают в систему отсортированными.",
       }),
     },
     {
-      icon: Smartphone,
+      img: benefitCostImg,
+      kpi: tt({ de: "−€€€", en: "−€€€", tr: "−€€€", ar: "−€€€", ru: "−€€€" }),
       title: tt({
-        de: "Funktioniert von überall",
-        en: "Works from anywhere",
-        tr: "Her yerden çalışır",
-        ar: "يعمل من أي مكان",
-        ru: "Работает откуда угодно",
+        de: "Weniger Steuerberater-Stunden",
+        en: "Fewer advisor hours",
+        tr: "Daha az müşavir saati",
+        ar: "ساعات أقل لدى المستشار",
+        ru: "Меньше часов у консультанта",
       }),
       desc: tt({
-        de: "iPhone, Android, Web – gleicher Login. Beleg fotografieren im Restaurant, fertig abrechnen am Schreibtisch.",
-        en: "iPhone, Android, web – same login. Snap a receipt at the restaurant, finalize at your desk.",
-        tr: "iPhone, Android, web – aynı giriş. Restoranda çek, masada tamamla.",
-        ar: "iPhone وAndroid والويب – نفس تسجيل الدخول. صوّر في المطعم وأنهِ على المكتب.",
-        ru: "iPhone, Android, веб — один логин. Сфотографировал в ресторане, оформил за столом.",
+        de: "Vorsortiert und DATEV-ready übergeben – die Rechnung deines Beraters wird spürbar kleiner.",
+        en: "Hand over pre-sorted and DATEV-ready – your advisor's invoice shrinks noticeably.",
+        tr: "Önceden sınıflandırılmış ve DATEV-hazır teslim – müşavir faturası küçülür.",
+        ar: "تسليم منظّم وجاهز لـ DATEV – تنخفض فاتورة المستشار بوضوح.",
+        ru: "Передача отсортированно и в DATEV — счёт консультанта заметно меньше.",
       }),
     },
   ];
+
 
   const personas = [
     {
@@ -373,21 +380,21 @@ const Landing = () => {
               })}
               <span className="block text-primary mt-2">
                 {tt({
-                  de: "Belege scannen, automatisch erfassen, an den Steuerberater senden — in 3 Minuten pro Woche.",
-                  en: "Scan receipts, capture them automatically, send to your tax advisor — in 3 minutes per week.",
-                  tr: "Fişleri tara, otomatik kaydet, mali müşavire gönder — haftada 3 dakika.",
-                  ar: "امسح الإيصالات، سجّلها تلقائيًا، أرسلها للمستشار — 3 دقائق أسبوعيًا.",
-                  ru: "Сканируй чеки, фиксируй автоматически, отправляй консультанту — 3 минуты в неделю.",
+                  de: "3 Minuten pro Woche statt 15 Stunden im Monat.",
+                  en: "3 minutes a week instead of 15 hours a month.",
+                  tr: "Ayda 15 saat yerine haftada 3 dakika.",
+                  ar: "3 دقائق أسبوعيًا بدل 15 ساعة شهريًا.",
+                  ru: "3 минуты в неделю вместо 15 часов в месяц.",
                 })}
               </span>
             </h1>
             <p className="text-lg text-muted-foreground">
               {tt({
-                de: "Für Selbstständige, kleine Unternehmen und Steuerberater. GoBD-konform. DATEV-Export. Made in Germany.",
-                en: "For self-employed, small companies and tax advisors. GoBD-compliant. DATEV export. Made in Germany.",
-                tr: "Serbest çalışanlar, küçük işletmeler ve mali müşavirler için. GoBD uyumlu. DATEV dışa aktarımı.",
-                ar: "للعاملين لحسابهم والشركات الصغيرة والمستشارين الضريبيين. متوافق مع GoBD. تصدير DATEV.",
-                ru: "Для самозанятых, малого бизнеса и налоговых консультантов. GoBD. Экспорт DATEV.",
+                de: "Fotografieren. Erledigt. DATEV-fertig für den Steuerberater.",
+                en: "Snap it. Done. DATEV-ready for your tax advisor.",
+                tr: "Çek. Bitti. Müşavir için DATEV-hazır.",
+                ar: "صوّر. انتهى. جاهز لـ DATEV للمستشار.",
+                ru: "Сфотографируй. Готово. DATEV-готово для консультанта.",
               })}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -433,25 +440,32 @@ const Landing = () => {
         <div className="mx-auto max-w-6xl px-4 py-16 md:py-20">
           <div className="mb-12 max-w-2xl">
             <h2 className="text-3xl font-bold md:text-4xl">
-              {tt({ de: "Warum BelegManager?", en: "Why BelegManager?", tr: "Neden BelegManager?", ar: "لماذا BelegManager؟", ru: "Почему BelegManager?" })}
-            </h2>
-            <p className="mt-3 text-muted-foreground">
               {tt({
-                de: "Drei messbare Versprechen statt Buzzwords.",
-                en: "Three measurable promises instead of buzzwords.",
-                tr: "Vızıltı yerine üç ölçülebilir söz.",
-                ar: "ثلاثة وعود قابلة للقياس بدلًا من الكلمات الطنانة.",
-                ru: "Три измеримых обещания вместо громких слов.",
+                de: "Weniger Aufwand. Weniger Chaos. Weniger Kosten.",
+                en: "Less work. Less chaos. Lower costs.",
+                tr: "Daha az iş. Daha az kaos. Daha az maliyet.",
+                ar: "جهد أقل. فوضى أقل. تكلفة أقل.",
+                ru: "Меньше работы. Меньше хаоса. Меньше расходов.",
               })}
-            </p>
+            </h2>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
             {benefits.map((b, i) => (
-              <Card key={i} className="border-2">
-                <CardContent className="p-6">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                    <b.icon className="h-6 w-6 text-primary" />
+              <Card key={i} className="overflow-hidden border-2">
+                <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
+                  <img
+                    src={b.img}
+                    alt={b.title}
+                    loading="lazy"
+                    width={1024}
+                    height={768}
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute bottom-3 left-3 rounded-md bg-background/90 px-2.5 py-1 text-sm font-bold text-foreground backdrop-blur">
+                    {b.kpi}
                   </div>
+                </div>
+                <CardContent className="p-6">
                   <h3 className="mb-2 text-lg font-semibold">{b.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{b.desc}</p>
                 </CardContent>
