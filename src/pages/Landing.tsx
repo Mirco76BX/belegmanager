@@ -440,25 +440,32 @@ const Landing = () => {
         <div className="mx-auto max-w-6xl px-4 py-16 md:py-20">
           <div className="mb-12 max-w-2xl">
             <h2 className="text-3xl font-bold md:text-4xl">
-              {tt({ de: "Warum BelegManager?", en: "Why BelegManager?", tr: "Neden BelegManager?", ar: "لماذا BelegManager؟", ru: "Почему BelegManager?" })}
-            </h2>
-            <p className="mt-3 text-muted-foreground">
               {tt({
-                de: "Drei messbare Versprechen statt Buzzwords.",
-                en: "Three measurable promises instead of buzzwords.",
-                tr: "Vızıltı yerine üç ölçülebilir söz.",
-                ar: "ثلاثة وعود قابلة للقياس بدلًا من الكلمات الطنانة.",
-                ru: "Три измеримых обещания вместо громких слов.",
+                de: "Weniger Aufwand. Weniger Chaos. Weniger Kosten.",
+                en: "Less work. Less chaos. Lower costs.",
+                tr: "Daha az iş. Daha az kaos. Daha az maliyet.",
+                ar: "جهد أقل. فوضى أقل. تكلفة أقل.",
+                ru: "Меньше работы. Меньше хаоса. Меньше расходов.",
               })}
-            </p>
+            </h2>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
             {benefits.map((b, i) => (
-              <Card key={i} className="border-2">
-                <CardContent className="p-6">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                    <b.icon className="h-6 w-6 text-primary" />
+              <Card key={i} className="overflow-hidden border-2">
+                <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
+                  <img
+                    src={b.img}
+                    alt={b.title}
+                    loading="lazy"
+                    width={1024}
+                    height={768}
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute bottom-3 left-3 rounded-md bg-background/90 px-2.5 py-1 text-sm font-bold text-foreground backdrop-blur">
+                    {b.kpi}
                   </div>
+                </div>
+                <CardContent className="p-6">
                   <h3 className="mb-2 text-lg font-semibold">{b.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{b.desc}</p>
                 </CardContent>
