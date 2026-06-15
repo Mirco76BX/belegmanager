@@ -28,6 +28,7 @@ import Demo from "@/pages/Demo";
 import ResetPassword from "@/pages/ResetPassword";
 import NativeAuthCallback from "@/pages/NativeAuthCallback";
 import AdvisorSetup from "@/pages/AdvisorSetup";
+import Landing from "@/pages/Landing";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,7 +36,7 @@ const queryClient = new QueryClient();
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Laden...</div>;
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!user) return <Navigate to="/landing" replace />;
   return <>{children}</>;
 };
 
@@ -110,6 +111,7 @@ const App = () => (
             <ScrollToTop />
             <NativeDeepLinkHandler />
             <Routes>
+              <Route path="/landing" element={<Landing />} />
               <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
               <Route path="/auth/native-callback" element={<NativeAuthCallback />} />
               <Route path="/reset-password" element={<ResetPassword />} />
