@@ -25,6 +25,11 @@ import {
   Users,
   Briefcase,
   Calculator,
+  Building2,
+  Receipt,
+  HeartPulse,
+  Plane,
+  Folder,
 } from "lucide-react";
 import receiptScanImg from "@/assets/receipt-scan.jpg";
 import benefitTimeImg from "@/assets/benefit-time.jpg";
