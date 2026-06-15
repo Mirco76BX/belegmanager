@@ -480,6 +480,75 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* USE CASES */}
+      <section className="border-b border-border">
+        <div className="mx-auto max-w-6xl px-4 py-14 md:py-16">
+          <div className="mb-8 max-w-2xl">
+            <h2 className="text-2xl font-bold md:text-3xl">
+              {tt({
+                de: "Für jeden Beleg den richtigen Topf.",
+                en: "Every receipt in the right bucket.",
+                tr: "Her fişi doğru kovaya.",
+                ar: "كل إيصال في مكانه الصحيح.",
+                ru: "Каждый чек — в свою папку.",
+              })}
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {tt({
+                de: "Firma, Privat, Krankenkasse, Reise – getrennt erfasst, sauber exportierbar.",
+                en: "Business, private, health insurance, travel – captured separately, cleanly exportable.",
+                tr: "Şirket, özel, sağlık sigortası, seyahat – ayrı tutulur, temiz dışa aktarılır.",
+                ar: "شركة، خاص، تأمين صحي، سفر – مفصولة ومُصدَّرة بنظافة.",
+                ru: "Бизнес, личное, страховка, поездки — раздельно и аккуратно для экспорта.",
+              })}
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                icon: Building2,
+                title: tt({ de: "Firmenbelege", en: "Business receipts", tr: "Şirket fişleri", ar: "إيصالات الشركة", ru: "Бизнес-чеки" }),
+                desc: tt({ de: "DATEV-Struktur, BU-Schlüssel, Buchungstexte.", en: "DATEV structure, posting keys, booking texts.", tr: "DATEV yapısı, kayıt anahtarları.", ar: "هيكل DATEV ومفاتيح الترحيل.", ru: "Структура DATEV, ключи проводок." }),
+              },
+              {
+                icon: Receipt,
+                title: tt({ de: "Steuererklärung", en: "Tax return", tr: "Vergi beyanı", ar: "الإقرار الضريبي", ru: "Налоговая декларация" }),
+                desc: tt({ de: "Werbungskosten, Sonderausgaben, haushaltsnah.", en: "Work expenses, special expenses, household.", tr: "Mesleki ve özel giderler.", ar: "نفقات العمل والنفقات الخاصة.", ru: "Расходы по работе и спецрасходы." }),
+              },
+              {
+                icon: HeartPulse,
+                title: tt({ de: "Krankenkasse", en: "Health insurance", tr: "Sağlık sigortası", ar: "التأمين الصحي", ru: "Мед. страховка" }),
+                desc: tt({ de: "Rezepte, Atteste, Erstattungsbelege gebündelt.", en: "Prescriptions, certificates, reimbursements bundled.", tr: "Reçeteler ve geri ödeme belgeleri.", ar: "وصفات وشهادات وإيصالات استرداد.", ru: "Рецепты и чеки на возмещение." }),
+              },
+              {
+                icon: Plane,
+                title: tt({ de: "Reise & Bewirtung", en: "Travel & meals", tr: "Seyahat ve ağırlama", ar: "السفر والضيافة", ru: "Поездки и питание" }),
+                desc: tt({ de: "Hotel, Taxi, Restaurant – mit Pflichtfeldern.", en: "Hotel, taxi, restaurant – with required fields.", tr: "Otel, taksi, restoran – zorunlu alanlarla.", ar: "فنادق وسيارات أجرة ومطاعم بحقول إلزامية.", ru: "Отели, такси, рестораны — с обязательными полями." }),
+              },
+            ].map((u, i) => (
+              <div key={i} className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <u.icon className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold">{u.title}</div>
+                  <div className="text-xs text-muted-foreground leading-relaxed">{u.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-xs text-muted-foreground">
+            {tt({
+              de: "…und mehr: Vereine, Fahrtkosten, Tankquittungen.",
+              en: "…and more: associations, mileage, fuel receipts.",
+              tr: "…ve daha fazlası: dernekler, yol giderleri, yakıt fişleri.",
+              ar: "…والمزيد: الجمعيات، المسافات، إيصالات الوقود.",
+              ru: "…и больше: объединения, пробег, чеки на топливо.",
+            })}
+          </p>
+        </div>
+      </section>
+
       {/* FOR WHOM */}
       <section className="border-b border-border">
         <div className="mx-auto max-w-6xl px-4 py-16 md:py-20">
