@@ -380,21 +380,21 @@ const Landing = () => {
               })}
               <span className="block text-primary mt-2">
                 {tt({
-                  de: "Belege scannen, automatisch erfassen, an den Steuerberater senden — in 3 Minuten pro Woche.",
-                  en: "Scan receipts, capture them automatically, send to your tax advisor — in 3 minutes per week.",
-                  tr: "Fişleri tara, otomatik kaydet, mali müşavire gönder — haftada 3 dakika.",
-                  ar: "امسح الإيصالات، سجّلها تلقائيًا، أرسلها للمستشار — 3 دقائق أسبوعيًا.",
-                  ru: "Сканируй чеки, фиксируй автоматически, отправляй консультанту — 3 минуты в неделю.",
+                  de: "3 Minuten pro Woche statt 15 Stunden im Monat.",
+                  en: "3 minutes a week instead of 15 hours a month.",
+                  tr: "Ayda 15 saat yerine haftada 3 dakika.",
+                  ar: "3 دقائق أسبوعيًا بدل 15 ساعة شهريًا.",
+                  ru: "3 минуты в неделю вместо 15 часов в месяц.",
                 })}
               </span>
             </h1>
             <p className="text-lg text-muted-foreground">
               {tt({
-                de: "Für Selbstständige, kleine Unternehmen und Steuerberater. GoBD-konform. DATEV-Export. Made in Germany.",
-                en: "For self-employed, small companies and tax advisors. GoBD-compliant. DATEV export. Made in Germany.",
-                tr: "Serbest çalışanlar, küçük işletmeler ve mali müşavirler için. GoBD uyumlu. DATEV dışa aktarımı.",
-                ar: "للعاملين لحسابهم والشركات الصغيرة والمستشارين الضريبيين. متوافق مع GoBD. تصدير DATEV.",
-                ru: "Для самозанятых, малого бизнеса и налоговых консультантов. GoBD. Экспорт DATEV.",
+                de: "Fotografieren. Erledigt. DATEV-fertig für den Steuerberater.",
+                en: "Snap it. Done. DATEV-ready for your tax advisor.",
+                tr: "Çek. Bitti. Müşavir için DATEV-hazır.",
+                ar: "صوّر. انتهى. جاهز لـ DATEV للمستشار.",
+                ru: "Сфотографируй. Готово. DATEV-готово для консультанта.",
               })}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
