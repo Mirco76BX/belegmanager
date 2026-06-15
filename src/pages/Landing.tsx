@@ -363,7 +363,7 @@ const Landing = () => {
 
       {/* HERO */}
       <section className="border-b border-border">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 md:grid-cols-2 md:py-24 md:items-center">
+        <div className="mx-auto grid max-w-6xl gap-x-16 gap-y-10 px-4 py-16 md:grid-cols-2 md:py-24 md:items-center">
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
               <MapPin className="h-3 w-3" />
