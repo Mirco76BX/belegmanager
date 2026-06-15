@@ -317,7 +317,7 @@ const Auth = () => {
           </p>
         </div>
         <div className="mx-auto max-w-4xl mt-8">
-          <PricingPlans compact />
+          <PricingPlans />
         </div>
       </div>
 

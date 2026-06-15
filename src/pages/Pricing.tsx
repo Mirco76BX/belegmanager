@@ -110,7 +110,7 @@ const Pricing = () => {
       )}
 
       <PricingPlans
-        currentTier={subscription.tier}
+        currentTier={subscription.tier as any}
         renderAction={(plan) => {
           if (plan.priceId && !isPaid && subscription.tier !== plan.id) {
             return (
