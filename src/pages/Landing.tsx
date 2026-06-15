@@ -468,10 +468,19 @@ const Landing = () => {
             <h2 className="text-3xl font-bold md:text-4xl">
               {tt({ de: "Für wen?", en: "For whom?", tr: "Kimler için?", ar: "لمن؟", ru: "Для кого?" })}
             </h2>
+            <p className="mt-3 text-muted-foreground">
+              {tt({
+                de: "Gebaut für Unternehmer, die sich den Papierkram vom Leib halten wollen – ohne den Überblick zu verlieren.",
+                en: "Built for entrepreneurs who want paperwork off their back — without losing the overview.",
+                tr: "Evrak işlerinden uzak durmak isteyen girişimciler için – kontrolü kaybetmeden.",
+                ar: "مصمَّم لرواد الأعمال الذين يريدون التخلّص من الأوراق دون فقدان الرؤية.",
+                ru: "Для предпринимателей, которым бумаги не нужны под рукой — но контроль остаётся.",
+              })}
+            </p>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
             {personas.map((p, i) => (
-              <Card key={i}>
+              <Card key={i} className={p.featured ? "border-primary ring-1 ring-primary/40 shadow-md" : ""}>
                 <CardContent className="p-6">
                   <div className="mb-4 flex items-center justify-between">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
