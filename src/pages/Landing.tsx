@@ -172,11 +172,11 @@ const Landing = () => {
         ru: "2. Приложение считывает всё",
       }),
       desc: tt({
-        de: "Datum, Betrag, MwSt., Lieferant und Kategorie – automatisch.",
-        en: "Date, amount, VAT, vendor and category — automatically.",
-        tr: "Tarih, tutar, KDV, satıcı ve kategori – otomatik.",
-        ar: "التاريخ والمبلغ والضريبة والمورّد والفئة – تلقائيًا.",
-        ru: "Дата, сумма, НДС, поставщик и категория — автоматически.",
+        de: "Datum, Betrag, MwSt., Lieferant und Kategorie – automatisch. Sogar Fremdwährung.",
+        en: "Date, amount, VAT, vendor and category — automatically. Even foreign currency.",
+        tr: "Tarih, tutar, KDV, satıcı ve kategori – otomatik. Yabancı para birimi bile.",
+        ar: "التاريخ والمبلغ والضريبة والمورّد والفئة – تلقائيًا. حتى العملات الأجنبية.",
+        ru: "Дата, сумма, НДС, поставщик и категория — автоматически. Даже иностранная валюта.",
       }),
     },
     {
