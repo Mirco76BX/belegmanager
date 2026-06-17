@@ -130,7 +130,7 @@ serve(async (req) => {
       line_items: [{ price: priceId, quantity }],
       mode,
       ...(discounts.length > 0 && mode === "subscription" ? { discounts } : {}),
-      success_url: `${origin}/pricing?success=true`,
+      success_url: `${origin}/pricing?success=true${mode === "payment" ? "&type=topup" : ""}`,
       cancel_url: `${origin}/pricing?canceled=true`,
     });
 
