@@ -238,8 +238,8 @@ const AppSidebar = () => {
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border safe-area-bottom">
         <div className="grid grid-cols-5 items-end py-2">
-          {/* First two nav items */}
-          {navItems.slice(0, 2).map((item) => {
+          {/* First two nav items (exclude pricing on mobile bottom nav) */}
+          {navItems.filter(i => i.path !== "/pricing").slice(0, 2).map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <button
@@ -250,7 +250,7 @@ const AppSidebar = () => {
                 }`}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium">{t(item.key)}</span>
+                <span className="text-[10px] font-medium">{item.label ?? t(item.key)}</span>
               </button>
             );
           })}
@@ -268,8 +268,8 @@ const AppSidebar = () => {
             </button>
           </div>
 
-          {/* Last two nav items */}
-          {navItems.slice(2).map((item) => {
+          {/* Last two nav items (exclude pricing on mobile bottom nav) */}
+          {navItems.filter(i => i.path !== "/pricing").slice(2).slice(0, 2).map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <button
@@ -280,7 +280,7 @@ const AppSidebar = () => {
                 }`}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium">{t(item.key)}</span>
+                <span className="text-[10px] font-medium">{item.label ?? t(item.key)}</span>
               </button>
             );
           })}
