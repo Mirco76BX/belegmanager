@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { User, CreditCard, ScanLine, Loader2, Ticket, AlertTriangle, Shield, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { User, CreditCard, ScanLine, Loader2, Ticket, AlertTriangle, Shield, CheckCircle2, XCircle, Clock, Tag } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -371,6 +371,17 @@ const Account = () => {
               </div>
               {maxScans && <Progress value={progress} className="h-2" />}
               {!maxScans && <p className="text-xs text-muted-foreground">{tt({ de: "Unbegrenzt", en: "Unlimited", tr: "Sınırsız", ar: "غير محدود", ru: "Безлимит" })}</p>}
+              {subscription.scanQuotaTopup > 0 && (
+                <div className="flex items-center gap-2 rounded-md bg-accent/10 border border-accent/30 px-2.5 py-1.5 text-xs">
+                  <span className="text-base leading-none">🎁</span>
+                  <span className="text-foreground">
+                    {tt({
+                      de: `Scan-Pack-Top-up: ${subscription.scanQuotaTopup} verfügbar (kumulativ, läuft nie ab)`,
+                      en: `Scan-Pack top-up: ${subscription.scanQuotaTopup} available (cumulative, never expires)`,
+                    })}
+                  </span>
+                </div>
+              )}
             </div>
             {subscription.subscriptionEnd && (
               <div className="space-y-1.5">
@@ -382,15 +393,23 @@ const Account = () => {
               {(() => {
                 const PAID_TIERS = new Set(["basic", "pro", "business", "cfo"]);
                 const isPaid = PAID_TIERS.has(subscription.tier);
-                return isPaid ? (
-                  <Button variant="outline" size="sm" onClick={handleManage} disabled={portalLoading}>
-                    {portalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {tt({ de: "Abo verwalten", en: "Manage subscription", tr: "Aboneliği yönet", ar: "إدارة الاشتراك", ru: "Управление подпиской" })}
-                  </Button>
-                ) : (
-                  <Button size="sm" onClick={() => navigate("/pricing")}>
-                    {tt({ de: "Plan upgraden", en: "Upgrade plan", tr: "Planı yükselt", ar: "ترقية الخطة", ru: "Обновить план" })}
-                  </Button>
+                return (
+                  <>
+                    {isPaid ? (
+                      <Button variant="outline" size="sm" onClick={handleManage} disabled={portalLoading}>
+                        {portalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {tt({ de: "Abo verwalten", en: "Manage subscription", tr: "Aboneliği yönet", ar: "إدارة الاشتراك", ru: "Управление подпиской" })}
+                      </Button>
+                    ) : (
+                      <Button size="sm" onClick={() => navigate("/pricing")}>
+                        {tt({ de: "Plan upgraden", en: "Upgrade plan", tr: "Planı yükselt", ar: "ترقية الخطة", ru: "Обновить план" })}
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => navigate("/pricing")} className="justify-start">
+                      <Tag className="h-3.5 w-3.5 mr-2" />
+                      {tt({ de: "Plan ändern oder Scan-Pack kaufen", en: "Change plan or buy scan pack" })}
+                    </Button>
+                  </>
                 );
               })()}
             </div>

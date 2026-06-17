@@ -14,16 +14,23 @@ const OnboardingOverlay = () => {
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("profiles")
-      .select("onboarding_seen")
-      .eq("id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (data && !data.onboarding_seen) {
-          setTimeout(() => setVisible(true), 600);
-        }
-      });
+    let cancelled = false;
+    (async () => {
+      const [profileRes, countRes] = await Promise.all([
+        supabase.from("profiles").select("onboarding_seen").eq("id", user.id).maybeSingle(),
+        supabase.from("receipts").select("id", { count: "exact", head: true }),
+      ]);
+      if (cancelled) return;
+      const hasReceipts = (countRes.count ?? 0) > 0;
+      const profile = profileRes.data;
+      if (profile && !profile.onboarding_seen && !hasReceipts) {
+        setTimeout(() => setVisible(true), 600);
+      } else if (profile && !profile.onboarding_seen && hasReceipts) {
+        // User hat schon Belege – Onboarding still abhaken
+        supabase.from("profiles").update({ onboarding_seen: true }).eq("id", user.id).then(() => {});
+      }
+    })();
+    return () => { cancelled = true; };
   }, [user]);
 
   const dismiss = async () => {

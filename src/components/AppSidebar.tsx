@@ -2,7 +2,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard, UserCircle, Users, Car, Briefcase, ArrowLeftRight } from "lucide-react";
+import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard, UserCircle, Users, Car, Briefcase, ArrowLeftRight, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InviteDialog from "@/components/InviteDialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -25,13 +25,15 @@ const AppSidebar = () => {
     navigate("/");
   };
 
+  const pricingLabel = lang === "de" ? "Preise & Top-ups" : "Pricing & Top-ups";
   const navItems = [
-    { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/" },
-    { key: "nav.receipts" as const, icon: Receipt, path: "/receipts" },
-    { key: "nav.companies" as const, icon: Building2, path: "/companies" },
-    { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report" },
-    { key: "nav.fahrtkosten" as const, icon: Car, path: "/fahrtkosten" },
-    ...(isTaxAdvisor ? [{ key: "nav.clients" as const, icon: Users, path: "/clients" }] : []),
+    { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/", label: undefined as string | undefined },
+    { key: "nav.receipts" as const, icon: Receipt, path: "/receipts", label: undefined },
+    { key: "nav.companies" as const, icon: Building2, path: "/companies", label: undefined },
+    { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report", label: undefined },
+    { key: "nav.fahrtkosten" as const, icon: Car, path: "/fahrtkosten", label: undefined },
+    ...(isTaxAdvisor ? [{ key: "nav.clients" as const, icon: Users, path: "/clients", label: undefined }] : []),
+    { key: "nav.pricing" as any, icon: Tag, path: "/pricing", label: pricingLabel },
   ];
 
   return (
@@ -62,7 +64,7 @@ const AppSidebar = () => {
                 }`}
               >
                 <item.icon className="h-4 w-4" />
-                {t(item.key)}
+                {item.label ?? t(item.key)}
               </button>
             );
           })}
@@ -236,8 +238,8 @@ const AppSidebar = () => {
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border safe-area-bottom">
         <div className="grid grid-cols-5 items-end py-2">
-          {/* First two nav items */}
-          {navItems.slice(0, 2).map((item) => {
+          {/* First two nav items (exclude pricing on mobile bottom nav) */}
+          {navItems.filter(i => i.path !== "/pricing").slice(0, 2).map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <button
@@ -248,7 +250,7 @@ const AppSidebar = () => {
                 }`}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium">{t(item.key)}</span>
+                <span className="text-[10px] font-medium">{item.label ?? t(item.key)}</span>
               </button>
             );
           })}
@@ -266,8 +268,8 @@ const AppSidebar = () => {
             </button>
           </div>
 
-          {/* Last two nav items */}
-          {navItems.slice(2).map((item) => {
+          {/* Last two nav items (exclude pricing on mobile bottom nav) */}
+          {navItems.filter(i => i.path !== "/pricing").slice(2).slice(0, 2).map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <button
@@ -278,7 +280,7 @@ const AppSidebar = () => {
                 }`}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium">{t(item.key)}</span>
+                <span className="text-[10px] font-medium">{item.label ?? t(item.key)}</span>
               </button>
             );
           })}
