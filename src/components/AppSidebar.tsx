@@ -2,7 +2,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard, UserCircle, Users, Car, Briefcase, ArrowLeftRight } from "lucide-react";
+import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard, UserCircle, Users, Car, Briefcase, ArrowLeftRight, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InviteDialog from "@/components/InviteDialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -25,13 +25,15 @@ const AppSidebar = () => {
     navigate("/");
   };
 
+  const pricingLabel = lang === "de" ? "Preise & Top-ups" : "Pricing & Top-ups";
   const navItems = [
-    { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/" },
-    { key: "nav.receipts" as const, icon: Receipt, path: "/receipts" },
-    { key: "nav.companies" as const, icon: Building2, path: "/companies" },
-    { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report" },
-    { key: "nav.fahrtkosten" as const, icon: Car, path: "/fahrtkosten" },
-    ...(isTaxAdvisor ? [{ key: "nav.clients" as const, icon: Users, path: "/clients" }] : []),
+    { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/", label: undefined as string | undefined },
+    { key: "nav.receipts" as const, icon: Receipt, path: "/receipts", label: undefined },
+    { key: "nav.companies" as const, icon: Building2, path: "/companies", label: undefined },
+    { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report", label: undefined },
+    { key: "nav.fahrtkosten" as const, icon: Car, path: "/fahrtkosten", label: undefined },
+    ...(isTaxAdvisor ? [{ key: "nav.clients" as const, icon: Users, path: "/clients", label: undefined }] : []),
+    { key: "nav.pricing" as any, icon: Tag, path: "/pricing", label: pricingLabel },
   ];
 
   return (
@@ -62,7 +64,7 @@ const AppSidebar = () => {
                 }`}
               >
                 <item.icon className="h-4 w-4" />
-                {t(item.key)}
+                {item.label ?? t(item.key)}
               </button>
             );
           })}
