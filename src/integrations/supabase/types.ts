@@ -740,7 +740,47 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      advisor_setup_tokens_safe: {
+        Row: {
+          advisor_email: string | null
+          company_id: string | null
+          consumed_at: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string | null
+          invitation_note: string | null
+          user_id: string | null
+        }
+        Insert: {
+          advisor_email?: string | null
+          company_id?: string | null
+          consumed_at?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          invitation_note?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          advisor_email?: string | null
+          company_id?: string | null
+          consumed_at?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          invitation_note?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_setup_tokens_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       accept_advisor_link: { Args: { _client_id: string }; Returns: string }
