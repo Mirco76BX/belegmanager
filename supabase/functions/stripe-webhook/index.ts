@@ -47,6 +47,21 @@ serve(async (req) => {
       return new Response("ok (event ignored)", { status: 200 });
     }
 
+    // Idempotency: claim event_id before applying side effects
+    const { data: claimed, error: claimErr } = await supabase
+      .from("stripe_webhook_events")
+      .insert({ event_id: event.id, event_type: event.type })
+      .select("event_id")
+      .maybeSingle();
+    if (claimErr && claimErr.code !== "23505") {
+      console.error("[stripe-webhook] idempotency insert failed:", claimErr);
+      return new Response("Idempotency check failed", { status: 500 });
+    }
+    if (!claimed) {
+      console.log(`[stripe-webhook] duplicate event ignored: ${event.id}`);
+      return new Response("ok (duplicate)", { status: 200 });
+    }
+
     const session = event.data.object as Stripe.Checkout.Session;
 
     // Subscription-Sessions ignorieren — die werden via check-subscription Polling abgedeckt
