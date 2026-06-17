@@ -22,7 +22,17 @@ const Pricing = () => {
 
   useEffect(() => {
     if (searchParams.get("success") === "true") {
-      toast.success(tt({de:"Abo erfolgreich abgeschlossen!", en:"Subscription successful!", tr:"Abonelik başarılı!", ar:"تم الاشتراك بنجاح!", ru:"Подписка оформлена!"}));
+      if (searchParams.get("type") === "topup") {
+        toast.success(tt({
+          de: "🎉 +50 Scans gutgeschrieben! Top-ups laufen nie ab.",
+          en: "🎉 +50 scans added! Top-ups never expire.",
+          tr: "🎉 +50 tarama eklendi! Top-up'lar süresiz.",
+          ar: "🎉 تمت إضافة 50 مسحاً! الباقات الإضافية لا تنتهي صلاحيتها.",
+          ru: "🎉 +50 сканов добавлено! Top-up не истекает.",
+        }));
+      } else {
+        toast.success(tt({de:"Abo erfolgreich abgeschlossen!", en:"Subscription successful!", tr:"Abonelik başarılı!", ar:"تم الاشتراك بنجاح!", ru:"Подписка оформлена!"}));
+      }
       checkSubscription();
     }
     if (searchParams.get("canceled") === "true") {
