@@ -45,6 +45,14 @@ const logStep = (step: string, details?: unknown) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
+const unixSecondsToIso = (value: unknown): string | null => {
+  const seconds = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(seconds) || seconds <= 0) return null;
+
+  const date = new Date(seconds * 1000);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -148,7 +156,8 @@ serve(async (req) => {
               if (!stripeTier || TIER_PRIORITY[tier] > TIER_PRIORITY[stripeTier]) {
                 stripeTier = tier;
                 stripeProductId = productId;
-                stripeSubEnd = new Date(sub.current_period_end * 1000).toISOString();
+                stripeSubEnd = unixSecondsToIso((sub as any).current_period_end)
+                  ?? unixSecondsToIso((item as any).current_period_end);
               }
             }
           }
@@ -241,7 +250,11 @@ serve(async (req) => {
     );
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    logStep("ERROR", { message: msg });
+    logStep("ERROR", {
+      message: msg,
+      name: error instanceof Error ? error.name : undefined,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     const isAuthError =
       msg.toLowerCase().includes("auth") || msg.includes("authorization");
     return new Response(
