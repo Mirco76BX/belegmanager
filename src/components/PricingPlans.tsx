@@ -8,26 +8,26 @@ export type PricingPlanId = "free" | "basic" | "pro" | "business" | "cfo";
 // Stripe Sandbox Price-IDs (Sub-Step 8: durch Live-IDs ersetzen)
 export const PRICE_IDS = {
   basic: {
-    monthly: "price_1TeAum2OSLlEeYaU0fwftxL5",
-    yearly:  "price_1TeAum2OSLlEeYaUNjPgClz9",
+    monthly: "price_1TjeMu2MxelQLIKMrfmQ12yU",
+    yearly:  "price_1TjeMv2MxelQLIKMOYBv5vGR",
   },
   pro: {
-    monthly: "price_1TeAvC2OSLlEeYaU3M2hR3H6",
-    yearly:  "price_1TeAve2OSLlEeYaUUoM91rwc",
+    monthly: "price_1TjeMv2MxelQLIKMlRPGKUvJ",
+    yearly:  "price_1TjeMu2MxelQLIKMq8A2R9aO",
   },
   business: {
-    monthly: "price_1TeAwT2OSLlEeYaUQGKFGKV3",
-    yearly:  "price_1TeAwm2OSLlEeYaUQUxexiO6",
+    monthly: "price_1TjeMw2MxelQLIKMXl3bmMnh",
+    yearly:  "price_1TjeMv2MxelQLIKMEf5tjGzd",
   },
   cfo: {
-    monthly: "price_1TeAxn2OSLlEeYaU3ji6Hu4R",
+    monthly: "price_1TjeMu2MxelQLIKMZWRwuPOR",
     yearly: null as string | null,
   },
   business_addon_user: {
-    monthly: "price_1TeAx62OSLlEeYaU067gNLCC",
-    yearly:  "price_1TeAxN2OSLlEeYaUWIncLoLo",
+    monthly: "price_1TjeMv2MxelQLIKMGCF3vtMQ",
+    yearly:  "price_1TjeMv2MxelQLIKMkZtPVjrE",
   },
-  scan_pack_50: "price_1TeAyW2OSLlEeYaU9bZEoeZ9",
+  scan_pack_50: "price_1TjeMv2MxelQLIKMliIzW9Od",
 } as const;
 
 interface PricingPlansProps {
