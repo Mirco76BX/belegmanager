@@ -94,7 +94,7 @@ serve(async (req) => {
         .maybeSingle(),
       supabase
         .from("profiles")
-        .select("is_tax_advisor, scan_quota_topup, trial_started_at, trial_blocked_at, scheduled_deletion_at")
+        .select("is_tax_advisor, scan_quota_topup, trial_started_at, trial_blocked_at, scheduled_deletion_at, scans_period_start")
         .eq("id", user.id)
         .maybeSingle(),
       supabase
