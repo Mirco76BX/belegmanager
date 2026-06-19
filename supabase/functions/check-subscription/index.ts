@@ -18,6 +18,9 @@ const STRIPE_PRODUCT_TIER_MAP: Record<string, "basic" | "pro" | "business" | "cf
 const BUSINESS_ADDON_USER_PRODUCT_ID = "prod_UdRqbEso4okAzf";
 const SCAN_PACK_PRODUCT_ID = "prod_UdRsyk6KmmwUyO";
 
+const TRIAL_DURATION_DAYS = 30;
+const TRIAL_GRACE_PERIOD_DAYS = 28;
+
 // Legacy-Coupon-Mapping: alte RELAX/MASTER-Coupons werden fair gemappt
 // (kein Tier-Geschenk-Upgrade).
 const LEGACY_COUPON_TIER_MAP: Record<string, string> = {
@@ -91,7 +94,7 @@ serve(async (req) => {
         .maybeSingle(),
       supabase
         .from("profiles")
-        .select("is_tax_advisor, scan_quota_topup")
+        .select("is_tax_advisor, scan_quota_topup, trial_started_at, trial_blocked_at, scheduled_deletion_at")
         .eq("id", user.id)
         .maybeSingle(),
       supabase
@@ -165,10 +168,65 @@ serve(async (req) => {
       }
     }
 
+    // ─── Trial-State-Resolution ────────────────────────────────────────
+    let trialState:
+      | {
+          tier: "trial_active" | "trial_blocked";
+          ends_at?: string;
+          blocked_at?: string;
+          deletion_at?: string;
+        }
+      | null = null;
+
+    if (profile?.trial_started_at) {
+      const startedAt = new Date(profile.trial_started_at).getTime();
+      const trialEndsAt = startedAt + TRIAL_DURATION_DAYS * 24 * 3600 * 1000;
+      const now = Date.now();
+
+      if (now < trialEndsAt) {
+        trialState = {
+          tier: "trial_active",
+          ends_at: new Date(trialEndsAt).toISOString(),
+        };
+      } else {
+        let blockedAt = profile.trial_blocked_at as string | null;
+        let deletionAt = profile.scheduled_deletion_at as string | null;
+
+        if (!blockedAt) {
+          blockedAt = new Date(now).toISOString();
+          deletionAt = new Date(
+            now + TRIAL_GRACE_PERIOD_DAYS * 24 * 3600 * 1000
+          ).toISOString();
+          const { error: blockErr } = await supabase
+            .from("profiles")
+            .update({
+              trial_blocked_at: blockedAt,
+              scheduled_deletion_at: deletionAt,
+            })
+            .eq("id", user.id);
+          if (blockErr) {
+            logStep("Failed to set trial_blocked_at", blockErr);
+          } else {
+            logStep("Trial expired, account blocked", {
+              userId: user.id,
+              blockedAt,
+              deletionAt,
+            });
+          }
+        }
+
+        trialState = {
+          tier: "trial_blocked",
+          blocked_at: blockedAt ?? undefined,
+          deletion_at: deletionAt ?? undefined,
+        };
+      }
+    }
+
     // ─── Tier-Resolution: höchste Priorität gewinnt ───────────────────
     type Candidate = {
       tier: string;
-      source: "founder_override" | "stripe" | "coupon" | "tax_advisor";
+      source: "founder_override" | "stripe" | "coupon" | "tax_advisor" | "trial";
       productId: string | null;
       subEnd: string | null;
     };
@@ -224,6 +282,11 @@ serve(async (req) => {
       subscribed = winner.tier !== "free";
       resolvedProductId = winner.productId;
       resolvedSubEnd = winner.subEnd;
+    } else if (trialState) {
+      finalTier = trialState.tier;
+      source = "trial";
+      subscribed = trialState.tier === "trial_active";
+      resolvedSubEnd = trialState.ends_at ?? null;
     }
 
     logStep("Tier resolved", {
@@ -231,6 +294,7 @@ serve(async (req) => {
       source,
       scanQuotaTopup,
       addonUserSeats,
+      trial: trialState?.tier ?? null,
     });
 
     return new Response(
@@ -242,6 +306,15 @@ serve(async (req) => {
         source,
         scan_quota_topup: scanQuotaTopup,
         addon_user_seats: addonUserSeats,
+        trial: trialState
+          ? {
+              active: trialState.tier === "trial_active",
+              blocked: trialState.tier === "trial_blocked",
+              ends_at: trialState.ends_at ?? null,
+              blocked_at: trialState.blocked_at ?? null,
+              deletion_at: trialState.deletion_at ?? null,
+            }
+          : null,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
