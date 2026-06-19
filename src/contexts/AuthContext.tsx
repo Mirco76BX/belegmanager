@@ -237,6 +237,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         subscriptionEnd: data.subscription_end ?? null,
         scanQuotaTopup: typeof data.scan_quota_topup === "number" ? data.scan_quota_topup : 0,
         addonUserSeats: typeof data.addon_user_seats === "number" ? data.addon_user_seats : 0,
+        trial: data.trial
+          ? {
+              active: !!data.trial.active,
+              blocked: !!data.trial.blocked,
+              endsAt: data.trial.ends_at ?? null,
+              blockedAt: data.trial.blocked_at ?? null,
+              deletionAt: data.trial.deletion_at ?? null,
+            }
+          : null,
         loading: false,
       });
     } catch {
