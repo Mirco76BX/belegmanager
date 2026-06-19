@@ -178,6 +178,31 @@ serve(async (req) => {
       return jsonResponse({ ok: true, warm: true, ts: new Date().toISOString() });
     }
 
+    // Health-check: real mini AI call for uptime monitoring
+    if (body.health === true) {
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) return jsonResponse({ ok: true, ai_ok: false, error: "missing_key" }, 200);
+      const started = Date.now();
+      try {
+        const ctrl = new AbortController();
+        const tId = setTimeout(() => ctrl.abort(), 10_000);
+        const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [{ role: "user", content: "ping" }],
+            max_tokens: 1,
+          }),
+          signal: ctrl.signal,
+        });
+        clearTimeout(tId);
+        return jsonResponse({ ok: true, ai_ok: r.ok, latency_ms: Date.now() - started, status: r.status });
+      } catch (e) {
+        return jsonResponse({ ok: true, ai_ok: false, latency_ms: Date.now() - started, error: String((e as Error).message || e) });
+      }
+    }
+
     const MAX_PAGES = 10;
     const MAX_IMAGE_BYTES = 5_000_000; // ~5MB per image (base64 string length)
     const MAX_TOTAL_BYTES = 25_000_000; // ~25MB total payload
@@ -256,21 +281,57 @@ serve(async (req) => {
       }
     }
 
-    // --- 4. AI call ---
+    // --- 4. AI call with 45s timeout + 1× retry on 5xx/network error ---
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{ role: "user", content: buildImageContent(images) }],
-      }),
+    const aiPayload = JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [{ role: "user", content: buildImageContent(images) }],
     });
+
+    async function callAi(): Promise<{ response?: Response; networkError?: unknown; timedOut?: boolean }> {
+      const ctrl = new AbortController();
+      const timeoutId = setTimeout(() => ctrl.abort(), 45_000);
+      try {
+        const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: aiPayload,
+          signal: ctrl.signal,
+        });
+        return { response: r };
+      } catch (e) {
+        const timedOut = (e as Error)?.name === "AbortError";
+        return { networkError: e, timedOut };
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+
+    let attempt = await callAi();
+
+    // Decide whether to retry: 5xx OR network error (NOT timeout, NOT 4xx)
+    const firstStatus = attempt.response?.status;
+    const isServerError = !!firstStatus && firstStatus >= 500 && firstStatus < 600;
+    const isNetworkError = !!attempt.networkError && !attempt.timedOut;
+
+    if (isServerError || isNetworkError) {
+      console.log(`[scan-receipt] retry after first failure status=${firstStatus ?? "network"}`);
+      await new Promise((r) => setTimeout(r, 500));
+      attempt = await callAi();
+    }
+
+    if (attempt.timedOut) {
+      return jsonResponse({ error: "ai_timeout", message: "KI-Anfrage hat zu lange gedauert. Bitte erneut versuchen." }, 504);
+    }
+
+    if (!attempt.response) {
+      // network error after retry
+      return jsonResponse({ error: "ai_unavailable", message: "KI-Service kurz nicht erreichbar.", retry_after: 30 }, 503);
+    }
+
+    const response = attempt.response;
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -279,7 +340,12 @@ serve(async (req) => {
       if (response.status === 402) {
         return jsonResponse({ error: "ai_credits", message: "KI-Guthaben aufgebraucht. Bitte Admin informieren." }, 402);
       }
-      const errorText = await response.text();
+      if (response.status >= 500) {
+        const errorText = await response.text().catch(() => "");
+        console.error("AI gateway 5xx after retry:", response.status, errorText);
+        return jsonResponse({ error: "ai_unavailable", message: "KI-Service kurz nicht erreichbar.", retry_after: 30 }, 503);
+      }
+      const errorText = await response.text().catch(() => "");
       console.error("AI gateway error:", response.status, errorText);
       throw new Error(`AI gateway error: ${response.status}`);
     }
