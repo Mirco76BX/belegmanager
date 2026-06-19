@@ -68,7 +68,8 @@ const Account = () => {
         setDisplayName(data.display_name || "");
       }
     });
-    supabase.from("receipts").select("id", { count: "exact", head: true }).then(({ count }) => { setScanCount(count ?? 0); });
+    // Scan-Count kommt jetzt aus subscription.scansUsedThisMonth (check-subscription),
+    // nicht mehr aus receipts.count — Belege löschen umgeht die Quota nicht mehr.
     fetchAdvisorData();
   }, [user]);
 
