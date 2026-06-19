@@ -39,9 +39,17 @@ const Trust = () => {
       </div>
 
       {/* Hero */}
-      <section className="px-4 py-16 md:py-24">
-        <div className="mx-auto max-w-4xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-4 py-1.5 text-xs font-medium text-primary">
+      <section className="relative overflow-hidden border-b border-border/40">
+        <img
+          src={trustHero}
+          alt=""
+          width={1600}
+          height={896}
+          className="absolute inset-0 h-full w-full object-cover opacity-40"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/70 to-background" />
+        <div className="relative mx-auto max-w-4xl px-4 py-20 text-center md:py-28">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-medium text-primary backdrop-blur">
             <ShieldCheck className="h-3.5 w-3.5" />
             Vertrauen & Sicherheit
           </div>
@@ -61,7 +69,7 @@ const Trust = () => {
             ].map((b) => (
               <span
                 key={b}
-                className="rounded-full border border-border bg-card px-3 py-1.5 font-medium text-foreground"
+                className="rounded-full border border-border bg-card/80 px-3 py-1.5 font-medium text-foreground backdrop-blur"
               >
                 {b}
               </span>
