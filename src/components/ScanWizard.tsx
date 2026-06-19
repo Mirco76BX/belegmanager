@@ -338,6 +338,23 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
           setStep("upload"); setFile(null); setPreview(null);
           return;
         }
+        if (status === 403 || code === "trial_blocked") {
+          toast({
+            title: tt({ de: "Account gesperrt", en: "Account locked" }),
+            description: tt({
+              de: "Trial abgelaufen. Bitte wähle einen Plan.",
+              en: "Trial expired. Please choose a plan.",
+            }),
+            variant: "destructive",
+            action: (
+              <ToastAction altText="Upgrade" onClick={() => navigate("/pricing")}>
+                {tt({ de: "Plan wählen", en: "Choose plan" })}
+              </ToastAction>
+            ),
+          });
+          setStep("upload"); setFile(null); setPreview(null);
+          return;
+        }
         if (status === 401) {
           toast({
             title: tt({ de: "Sitzung abgelaufen", en: "Session expired" }),
