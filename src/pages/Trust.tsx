@@ -86,25 +86,78 @@ const Trust = () => {
       <div className="mx-auto max-w-4xl space-y-8 px-4 pb-16">
         {/* Section 1 — Wo */}
         <Section icon={<MapPin className="h-5 w-5" />} title="Wo liegen meine Daten?">
-          <ItemList
-            items={[
-              {
-                icon: <Globe2 className="h-4 w-4" />,
-                title: "Datenstandort EU",
-                desc: "Alle Daten und die Datenbank liegen in der EU (Supabase Frankfurt). Kein Transfer in Drittländer ohne explizite Zustimmung.",
-              },
-              {
-                icon: <Server className="h-4 w-4" />,
-                title: "Hosting-Anbieter",
-                desc: "Supabase (eingetragen in Irland), Infrastruktur AWS Frankfurt.",
-              },
-              {
-                icon: <HardDrive className="h-4 w-4" />,
-                title: "Backups",
-                desc: "Täglich automatisch, 30-Tage-Retention.",
-              },
-            ]}
-          />
+          <div className="grid gap-6 md:grid-cols-[1fr_240px] md:items-center">
+            <ItemList
+              items={[
+                {
+                  icon: <Globe2 className="h-4 w-4" />,
+                  title: "Datenstandort EU",
+                  desc: "Alle Daten und die Datenbank liegen in der EU (Supabase Frankfurt). Kein Transfer in Drittländer ohne explizite Zustimmung.",
+                },
+                {
+                  icon: <Server className="h-4 w-4" />,
+                  title: "Hosting-Anbieter",
+                  desc: "Supabase (eingetragen in Irland), Infrastruktur AWS Frankfurt.",
+                },
+                {
+                  icon: <HardDrive className="h-4 w-4" />,
+                  title: "Backups",
+                  desc: "Täglich automatisch, 30-Tage-Retention.",
+                },
+              ]}
+            />
+            <img
+              src={trustEuHosting}
+              alt="EU-Hosting in Frankfurt"
+              width={1280}
+              height={800}
+              loading="lazy"
+              className="hidden rounded-xl border border-border object-cover md:block aspect-square"
+            />
+          </div>
+        </Section>
+
+        {/* Section 2 — Schutz */}
+        <Section icon={<Lock className="h-5 w-5" />} title="Wie sind meine Daten geschützt?">
+          <div className="grid gap-6 md:grid-cols-[240px_1fr] md:items-center">
+            <img
+              src={trustEncryption}
+              alt="Verschlüsselung"
+              width={1280}
+              height={800}
+              loading="lazy"
+              className="hidden rounded-xl border border-border object-cover md:block aspect-square"
+            />
+            <ItemList
+              items={[
+                {
+                  icon: <Lock className="h-4 w-4" />,
+                  title: "Verschlüsselung in Transit",
+                  desc: "TLS 1.3 — HTTPS überall.",
+                },
+                {
+                  icon: <Database className="h-4 w-4" />,
+                  title: "Verschlüsselung at Rest",
+                  desc: "AES-256 (Postgres-Standard).",
+                },
+                {
+                  icon: <UserCheck className="h-4 w-4" />,
+                  title: "Zugriffskontrolle",
+                  desc: "Row-Level Security — jeder User sieht nur seine eigenen Belege, technisch garantiert auf Datenbankebene.",
+                },
+                {
+                  icon: <KeyRound className="h-4 w-4" />,
+                  title: "Authentifizierung",
+                  desc: "E-Mail + Passwort, OAuth (Google) und Magic-Link für Steuerberater.",
+                },
+                {
+                  icon: <FileSignature className="h-4 w-4" />,
+                  title: "Webhook-Signaturen",
+                  desc: "Alle Zahlungs-Events von Stripe werden signaturverifiziert verarbeitet.",
+                },
+              ]}
+            />
+          </div>
         </Section>
 
         {/* Section 2 — Schutz */}
