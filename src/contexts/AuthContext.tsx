@@ -54,6 +54,21 @@ export const TIERS = {
     },
     features: ["Alles aus BUSINESS", "Unlimited Scans"],
   },
+  trial_active: {
+    name: "TRIAL",
+    maxScans: 30,
+    features: [
+      "Alle PRO-Features für 30 Tage",
+      "DATEV-Export",
+      "GoBD-Festschreibung",
+      "Multi-Mandant",
+    ],
+  },
+  trial_blocked: {
+    name: "TRIAL ABGELAUFEN",
+    maxScans: 0,
+    features: ["Account gesperrt — bitte upgraden"],
+  },
   // ─── DEPRECATED Legacy-Stubs (werden in Sub-Step 6 entfernt) ────────
   relax: {
     name: "RELAX (deprecated)",
@@ -76,14 +91,17 @@ export type SubscriptionTier =
   | "pro"
   | "business"
   | "cfo"
-  | "relax"   // deprecated, wird nie mehr vom Backend zurückgegeben
-  | "master"; // deprecated
+  | "trial_active"
+  | "trial_blocked"
+  | "relax"
+  | "master";
 
 export type SubscriptionSource =
   | "founder_override"
   | "stripe"
   | "coupon"
   | "tax_advisor"
+  | "trial"
   | "free";
 
 const TIER_BASE_SCANS: Record<SubscriptionTier, number> = {
@@ -93,6 +111,8 @@ const TIER_BASE_SCANS: Record<SubscriptionTier, number> = {
   pro: 200,
   business: 1000,
   cfo: Number.POSITIVE_INFINITY,
+  trial_active: 30,
+  trial_blocked: 0,
   relax: 150,
   master: Number.POSITIVE_INFINITY,
 };
@@ -106,6 +126,7 @@ export function effectiveScanQuota(
   scanQuotaTopup: number = 0,
   addonUserSeats: number = 0
 ): number {
+  if (tier === "trial_blocked") return 0;
   const base = TIER_BASE_SCANS[tier];
   if (!Number.isFinite(base)) return Number.POSITIVE_INFINITY;
   const addonBoost = tier === "business" ? addonUserSeats * 200 : 0;
@@ -115,6 +136,14 @@ export function effectiveScanQuota(
 const VIEW_MODE_KEY = "belegmanager.viewMode";
 export type ViewMode = "personal" | "advisor";
 
+interface TrialInfo {
+  active: boolean;
+  blocked: boolean;
+  endsAt: string | null;
+  blockedAt: string | null;
+  deletionAt: string | null;
+}
+
 interface SubscriptionState {
   subscribed: boolean;
   tier: SubscriptionTier;
@@ -123,6 +152,7 @@ interface SubscriptionState {
   subscriptionEnd: string | null;
   scanQuotaTopup: number;
   addonUserSeats: number;
+  trial: TrialInfo | null;
   loading: boolean;
 }
 
@@ -148,6 +178,7 @@ const initialSubscription: SubscriptionState = {
   subscriptionEnd: null,
   scanQuotaTopup: 0,
   addonUserSeats: 0,
+  trial: null,
   loading: true,
 };
 
@@ -206,6 +237,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         subscriptionEnd: data.subscription_end ?? null,
         scanQuotaTopup: typeof data.scan_quota_topup === "number" ? data.scan_quota_topup : 0,
         addonUserSeats: typeof data.addon_user_seats === "number" ? data.addon_user_seats : 0,
+        trial: data.trial
+          ? {
+              active: !!data.trial.active,
+              blocked: !!data.trial.blocked,
+              endsAt: data.trial.ends_at ?? null,
+              blockedAt: data.trial.blocked_at ?? null,
+              deletionAt: data.trial.deletion_at ?? null,
+            }
+          : null,
         loading: false,
       });
     } catch {
