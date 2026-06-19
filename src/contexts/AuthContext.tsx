@@ -54,6 +54,21 @@ export const TIERS = {
     },
     features: ["Alles aus BUSINESS", "Unlimited Scans"],
   },
+  trial_active: {
+    name: "TRIAL",
+    maxScans: 30,
+    features: [
+      "Alle PRO-Features für 30 Tage",
+      "DATEV-Export",
+      "GoBD-Festschreibung",
+      "Multi-Mandant",
+    ],
+  },
+  trial_blocked: {
+    name: "TRIAL ABGELAUFEN",
+    maxScans: 0,
+    features: ["Account gesperrt — bitte upgraden"],
+  },
   // ─── DEPRECATED Legacy-Stubs (werden in Sub-Step 6 entfernt) ────────
   relax: {
     name: "RELAX (deprecated)",
@@ -61,6 +76,62 @@ export const TIERS = {
     yearly: { price_id: "", product_id: "" },
     monthly: { price_id: "", product_id: "" },
   },
+  master: {
+    name: "MASTER (deprecated)",
+    maxScans: Number.POSITIVE_INFINITY,
+    yearly: { price_id: "", product_id: "" },
+    monthly: { price_id: "", product_id: "" },
+  },
+} as const;
+
+export type SubscriptionTier =
+  | "free"
+  | "tax_advisor"
+  | "basic"
+  | "pro"
+  | "business"
+  | "cfo"
+  | "trial_active"
+  | "trial_blocked"
+  | "relax"
+  | "master";
+
+export type SubscriptionSource =
+  | "founder_override"
+  | "stripe"
+  | "coupon"
+  | "tax_advisor"
+  | "trial"
+  | "free";
+
+const TIER_BASE_SCANS: Record<SubscriptionTier, number> = {
+  free: 7,
+  tax_advisor: 50,
+  basic: 50,
+  pro: 200,
+  business: 1000,
+  cfo: Number.POSITIVE_INFINITY,
+  trial_active: 30,
+  trial_blocked: 0,
+  relax: 150,
+  master: Number.POSITIVE_INFINITY,
+};
+
+/**
+ * Effektives Scan-Limit: Tier-Basis + Add-on-User-Boost (nur BUSINESS:
+ * +200 pro Add-on-User) + Scan-Pack-Top-up.
+ */
+export function effectiveScanQuota(
+  tier: SubscriptionTier,
+  scanQuotaTopup: number = 0,
+  addonUserSeats: number = 0
+): number {
+  if (tier === "trial_blocked") return 0;
+  const base = TIER_BASE_SCANS[tier];
+  if (!Number.isFinite(base)) return Number.POSITIVE_INFINITY;
+  const addonBoost = tier === "business" ? addonUserSeats * 200 : 0;
+  return base + addonBoost + scanQuotaTopup;
+}
   master: {
     name: "MASTER (deprecated)",
     maxScans: Number.POSITIVE_INFINITY,
