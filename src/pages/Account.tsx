@@ -44,7 +44,7 @@ const Account = () => {
   const { lang, tt } = useLanguage();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [scanCount, setScanCount] = useState(0);
+  const scanCount = subscription.scansUsedThisMonth;
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [displayName, setDisplayName] = useState("");
