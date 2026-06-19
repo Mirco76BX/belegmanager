@@ -151,6 +151,7 @@ interface SubscriptionState {
   productId: string | null;
   subscriptionEnd: string | null;
   scanQuotaTopup: number;
+  scansUsedThisMonth: number;
   addonUserSeats: number;
   trial: TrialInfo | null;
   loading: boolean;
@@ -177,6 +178,7 @@ const initialSubscription: SubscriptionState = {
   productId: null,
   subscriptionEnd: null,
   scanQuotaTopup: 0,
+  scansUsedThisMonth: 0,
   addonUserSeats: 0,
   trial: null,
   loading: true,
@@ -236,6 +238,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         productId: data.product_id ?? null,
         subscriptionEnd: data.subscription_end ?? null,
         scanQuotaTopup: typeof data.scan_quota_topup === "number" ? data.scan_quota_topup : 0,
+        scansUsedThisMonth: typeof data.scans_used_this_month === "number" ? data.scans_used_this_month : 0,
         addonUserSeats: typeof data.addon_user_seats === "number" ? data.addon_user_seats : 0,
         trial: data.trial
           ? {

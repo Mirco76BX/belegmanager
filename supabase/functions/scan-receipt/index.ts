@@ -284,26 +284,29 @@ serve(async (req) => {
       }
     }
 
-    // --- 3. Plan check (monthly scans for FREE/tax_advisor/relax) ---
+    // --- 3. Plan check (monthly scans) ---
+    // Quota is tracked on profiles.scans_used_this_month (append-only counter
+    // incremented AFTER each successful AI call). Decoupled from receipts.count
+    // to prevent bypass via receipt deletion.
     const tier = await deriveTier(admin, userId);
-    const limit = TIER_LIMITS[tier];
-    if (Number.isFinite(limit)) {
-      const monthStart = new Date();
-      monthStart.setUTCDate(1);
-      monthStart.setUTCHours(0, 0, 0, 0);
-      const { count: monthCount } = await admin
-        .from("receipts")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .gte("created_at", monthStart.toISOString());
-      if ((monthCount ?? 0) >= limit) {
+    const baseLimit = TIER_LIMITS[tier];
+    const { data: quotaProfile } = await admin
+      .from("profiles")
+      .select("scans_used_this_month, scan_quota_topup")
+      .eq("id", userId)
+      .maybeSingle();
+    const usedThisMonth = quotaProfile?.scans_used_this_month ?? 0;
+    const topup = quotaProfile?.scan_quota_topup ?? 0;
+    if (Number.isFinite(baseLimit)) {
+      const effectiveLimit = baseLimit + topup;
+      if (usedThisMonth >= effectiveLimit) {
         const tierLabel = tier === "free" ? "FREE" : tier === "tax_advisor" ? "STEUERBERATER" : "RELAX";
-        const upgrade = tier === "master" ? "" : tier === "relax" ? " Upgrade auf MASTER für unbegrenzte Scans." : " Upgrade auf RELAX für 150 Scans pro Monat.";
+        const upgrade = tier === "relax" ? " Upgrade auf MASTER für unbegrenzte Scans." : " Upgrade auf RELAX für 150 Scans pro Monat.";
         return jsonResponse({
           error: "limit_reached",
           tier,
-          limit,
-          message: `Monatslimit erreicht (${monthCount}/${limit} im ${tierLabel}-Tarif).${upgrade}`,
+          limit: effectiveLimit,
+          message: `Monatslimit erreicht (${usedThisMonth}/${effectiveLimit} im ${tierLabel}-Tarif).${upgrade}`,
         }, 402);
       }
     }
@@ -397,8 +400,12 @@ serve(async (req) => {
 
     extracted = postProcess(extracted);
 
-    // --- 5. Log successful scan for rate limiting ---
+    // --- 5. Log successful scan for rate limiting + increment monthly quota ---
     await admin.from("scan_rate_log").insert({ user_id: userId });
+    // Atomic increment AFTER a successful AI call. Failures above return early
+    // and never reach this point, so the counter stays in sync with real usage.
+    const { error: incErr } = await admin.rpc("increment_scan_usage", { _user_id: userId });
+    if (incErr) console.warn("increment_scan_usage error:", incErr.message);
     // Opportunistic cleanup (5% of requests)
     if (Math.random() < 0.05) {
       const oneHourAgo = new Date(Date.now() - 3_600_000).toISOString();
