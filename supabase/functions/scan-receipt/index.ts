@@ -400,8 +400,12 @@ serve(async (req) => {
 
     extracted = postProcess(extracted);
 
-    // --- 5. Log successful scan for rate limiting ---
+    // --- 5. Log successful scan for rate limiting + increment monthly quota ---
     await admin.from("scan_rate_log").insert({ user_id: userId });
+    // Atomic increment AFTER a successful AI call. Failures above return early
+    // and never reach this point, so the counter stays in sync with real usage.
+    const { error: incErr } = await admin.rpc("increment_scan_usage", { _user_id: userId });
+    if (incErr) console.warn("increment_scan_usage error:", incErr.message);
     // Opportunistic cleanup (5% of requests)
     if (Math.random() < 0.05) {
       const oneHourAgo = new Date(Date.now() - 3_600_000).toISOString();
