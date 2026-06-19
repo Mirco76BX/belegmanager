@@ -10,12 +10,32 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { useState } from "react";
 
 const AppSidebar = () => {
-  const { signOut, isAdvisor, viewMode, setViewMode } = useAuth();
+  const { signOut, isAdvisor, viewMode, setViewMode, subscription } = useAuth();
   const { t, lang, setLang } = useLanguage();
   const { isAdmin } = useUserRole();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const isTrialBlocked = subscription.tier === "trial_blocked";
+
+  const handleOpenScan = () => {
+    if (isTrialBlocked) {
+      import("sonner").then(({ toast }) =>
+        toast.error(
+          lang === "de"
+            ? "Account gesperrt. Bitte Plan wählen, um neue Belege hochzuladen."
+            : "Account locked. Please choose a plan to upload new receipts."
+        )
+      );
+      navigate("/pricing");
+      return;
+    }
+    navigate("/receipts");
+    setTimeout(() => window.dispatchEvent(new CustomEvent("open-scan")), 100);
+  };
+
+  const blockedTooltip = lang === "de" ? "Trial abgelaufen — bitte upgraden" : "Trial expired — please upgrade";
 
 
   const isTaxAdvisor = viewMode === "advisor";
