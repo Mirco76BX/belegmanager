@@ -128,6 +128,7 @@ serve(async (req) => {
     let stripeTier: "basic" | "pro" | "business" | "cfo" | null = null;
     let stripeProductId: string | null = null;
     let stripeSubEnd: string | null = null;
+    let stripeCurrentPeriodStart: string | null = null;
     let addonUserSeats = 0;
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -161,11 +162,27 @@ serve(async (req) => {
                 stripeProductId = productId;
                 stripeSubEnd = unixSecondsToIso((sub as any).current_period_end)
                   ?? unixSecondsToIso((item as any).current_period_end);
+                stripeCurrentPeriodStart = unixSecondsToIso((sub as any).current_period_start)
+                  ?? unixSecondsToIso((item as any).current_period_start);
               }
             }
           }
         }
       }
+    }
+
+    // ─── Monthly scan-usage reset ──────────────────────────────────────
+    // For Stripe subscribers: reset when current_period_start advances.
+    // For FREE/Trial/coupon users: reset on the 1st of each calendar month (UTC).
+    try {
+      const periodStart = stripeCurrentPeriodStart
+        ?? new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)).toISOString();
+      await supabase.rpc("reset_scan_usage_if_new_period", {
+        _user_id: user.id,
+        _period_start: periodStart,
+      });
+    } catch (e) {
+      logStep("reset_scan_usage_if_new_period failed", { error: String((e as Error).message ?? e) });
     }
 
     // ─── Trial-State-Resolution ────────────────────────────────────────
