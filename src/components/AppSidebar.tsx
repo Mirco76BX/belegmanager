@@ -276,11 +276,9 @@ const AppSidebar = () => {
           {/* Central Scan Button — exact center column */}
           <div className="flex justify-center">
             <button
-              onClick={() => {
-                navigate("/receipts");
-                setTimeout(() => window.dispatchEvent(new CustomEvent("open-scan")), 100);
-              }}
-              className="flex items-center justify-center -mt-10 h-[4.5rem] w-[4.5rem] rounded-full bg-primary text-primary-foreground shadow-2xl active:scale-95 transition-transform ring-4 ring-sidebar"
+              onClick={handleOpenScan}
+              title={isTrialBlocked ? blockedTooltip : undefined}
+              className={`flex items-center justify-center -mt-10 h-[4.5rem] w-[4.5rem] rounded-full bg-primary text-primary-foreground shadow-2xl active:scale-95 transition-transform ring-4 ring-sidebar ${isTrialBlocked ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <ScanLine className="h-8 w-8" />
             </button>
