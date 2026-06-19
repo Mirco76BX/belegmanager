@@ -136,6 +136,14 @@ export function effectiveScanQuota(
 const VIEW_MODE_KEY = "belegmanager.viewMode";
 export type ViewMode = "personal" | "advisor";
 
+interface TrialInfo {
+  active: boolean;
+  blocked: boolean;
+  endsAt: string | null;
+  blockedAt: string | null;
+  deletionAt: string | null;
+}
+
 interface SubscriptionState {
   subscribed: boolean;
   tier: SubscriptionTier;
@@ -144,6 +152,7 @@ interface SubscriptionState {
   subscriptionEnd: string | null;
   scanQuotaTopup: number;
   addonUserSeats: number;
+  trial: TrialInfo | null;
   loading: boolean;
 }
 
@@ -169,6 +178,7 @@ const initialSubscription: SubscriptionState = {
   subscriptionEnd: null,
   scanQuotaTopup: 0,
   addonUserSeats: 0,
+  trial: null,
   loading: true,
 };
 
