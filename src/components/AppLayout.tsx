@@ -1,6 +1,7 @@
 import { Outlet, Link } from "react-router-dom";
 import AppSidebar from "./AppSidebar";
 import OnboardingOverlay from "./OnboardingOverlay";
+import TrialBanner from "./TrialBanner";
 
 const AppLayout = () => {
   return (
@@ -8,6 +9,7 @@ const AppLayout = () => {
       <AppSidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <main className="flex-1 overflow-y-auto pt-[52px] pb-[68px] md:pt-0 md:pb-0">
+          <TrialBanner />
           <div className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-8">
             <Outlet />
           </div>
