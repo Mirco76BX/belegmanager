@@ -425,8 +425,11 @@ export type Database = {
           last_name: string | null
           onboarding_seen: boolean
           scan_quota_topup: number
+          scheduled_deletion_at: string | null
           tax_advisor_email: string | null
           tax_advisor_name: string | null
+          trial_blocked_at: string | null
+          trial_started_at: string | null
         }
         Insert: {
           created_at?: string
@@ -441,8 +444,11 @@ export type Database = {
           last_name?: string | null
           onboarding_seen?: boolean
           scan_quota_topup?: number
+          scheduled_deletion_at?: string | null
           tax_advisor_email?: string | null
           tax_advisor_name?: string | null
+          trial_blocked_at?: string | null
+          trial_started_at?: string | null
         }
         Update: {
           created_at?: string
@@ -457,8 +463,11 @@ export type Database = {
           last_name?: string | null
           onboarding_seen?: boolean
           scan_quota_topup?: number
+          scheduled_deletion_at?: string | null
           tax_advisor_email?: string | null
           tax_advisor_name?: string | null
+          trial_blocked_at?: string | null
+          trial_started_at?: string | null
         }
         Relationships: [
           {
