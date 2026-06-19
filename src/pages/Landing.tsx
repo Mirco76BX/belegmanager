@@ -766,6 +766,9 @@ const Landing = () => {
         <Link to="/demo" className="text-xs text-muted-foreground hover:text-foreground hover:underline">
           {tt({ de: "Für Steuerberater", en: "For Tax Advisors", tr: "Vergi danışmanları için", ar: "للمستشارين الضريبيين", ru: "Для налоговых консультантов" })}
         </Link>
+        <Link to="/trust" className="text-xs text-muted-foreground hover:text-foreground hover:underline">
+          {tt({ de: "Vertrauen & Sicherheit", en: "Trust & Security", tr: "Güven ve Güvenlik", ar: "الثقة والأمان", ru: "Доверие и безопасность" })}
+        </Link>
         <Link to="/impressum" className="text-xs text-muted-foreground hover:text-foreground hover:underline">
           Impressum
         </Link>
