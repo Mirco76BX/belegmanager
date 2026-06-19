@@ -316,6 +316,15 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
           setStep("upload"); setFile(null); setPreview(null);
           return;
         }
+        if (code === "ai_timeout" || code === "ai_unavailable" || status === 503 || status === 504) {
+          toast({
+            title: tt({ de: "KI vorübergehend nicht erreichbar", en: "AI temporarily unavailable" }),
+            description: tt({ de: "AI-Service kurz nicht erreichbar. Bitte erneut versuchen.", en: "AI service briefly unavailable. Please try again." }),
+            variant: "destructive",
+          });
+          setStep("upload"); setFile(null); setPreview(null);
+          return;
+        }
         if (status === 401) {
           toast({
             title: tt({ de: "Sitzung abgelaufen", en: "Session expired" }),
