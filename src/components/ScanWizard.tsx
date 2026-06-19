@@ -168,14 +168,15 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         .then(({ data }) => { if (data) setCustomPurposes(data as any); });
 
       const tierConfig = TIERS[subscription.tier] || TIERS.free;
-      const maxScans = tierConfig.maxScans;
+      const maxScans = tierConfig.maxScans + (subscription.scanQuotaTopup ?? 0);
 
-      if (maxScans !== Infinity) {
-        supabase.from("receipts").select("id", { count: "exact", head: true })
-          .then(({ count }) => { const c = count ?? 0; setScanCount(c); if (c >= maxScans) setLimitReached(true); });
+      if (Number.isFinite(maxScans)) {
+        const used = subscription.scansUsedThisMonth ?? 0;
+        setScanCount(used);
+        if (used >= maxScans) setLimitReached(true);
       } else { setScanCount(null); setLimitReached(false); }
     }
-  }, [open, defaultCompanyId, user, subscription.tier]);
+  }, [open, defaultCompanyId, user, subscription.tier, subscription.scansUsedThisMonth, subscription.scanQuotaTopup]);
 
   const convertToEur = async (value: number | null, detectedCurrency?: string, receiptDate?: string | null) => {
     if (value == null) return null;
