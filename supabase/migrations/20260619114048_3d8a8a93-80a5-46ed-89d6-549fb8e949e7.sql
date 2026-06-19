@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.set_trial_started_at_on_signup() FROM anon, PUBLIC;
