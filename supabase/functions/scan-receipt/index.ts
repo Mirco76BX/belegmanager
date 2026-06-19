@@ -257,6 +257,33 @@ serve(async (req) => {
       }, 429);
     }
 
+    // --- 2b. Trial-Blocked check (hard block) ---
+    {
+      const { data: trialProfile } = await admin
+        .from("profiles")
+        .select("trial_started_at, trial_blocked_at")
+        .eq("id", userId)
+        .maybeSingle();
+      const TRIAL_DURATION_MS = 30 * 24 * 3600 * 1000;
+      const startedAt = trialProfile?.trial_started_at
+        ? new Date(trialProfile.trial_started_at).getTime()
+        : null;
+      const isExpired = startedAt !== null && Date.now() >= startedAt + TRIAL_DURATION_MS;
+      if (trialProfile?.trial_blocked_at || isExpired) {
+        // Allow if user has an alternate non-trial entitlement (coupon/tax_advisor).
+        // Stripe entitlements are checked in check-subscription; here we rely on
+        // the same deriveTier signal — if it returns non-free, user has access.
+        const altTier = await deriveTier(admin, userId);
+        if (altTier === "free") {
+          return jsonResponse({
+            error: "trial_blocked",
+            message: "Trial abgelaufen — Account gesperrt. Bitte Plan wählen.",
+            retry_after: null,
+          }, 403);
+        }
+      }
+    }
+
     // --- 3. Plan check (monthly scans for FREE/tax_advisor/relax) ---
     const tier = await deriveTier(admin, userId);
     const limit = TIER_LIMITS[tier];
