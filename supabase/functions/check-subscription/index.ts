@@ -314,6 +314,14 @@ serve(async (req) => {
       trial: trialState?.tier ?? null,
     });
 
+    // Re-read scans_used_this_month after potential reset above.
+    const { data: usageRow } = await supabase
+      .from("profiles")
+      .select("scans_used_this_month")
+      .eq("id", user.id)
+      .maybeSingle();
+    const scansUsedThisMonth = usageRow?.scans_used_this_month ?? 0;
+
     return new Response(
       JSON.stringify({
         subscribed,
@@ -322,6 +330,7 @@ serve(async (req) => {
         subscription_end: resolvedSubEnd,
         source,
         scan_quota_topup: scanQuotaTopup,
+        scans_used_this_month: scansUsedThisMonth,
         addon_user_seats: addonUserSeats,
         trial: trialState
           ? {
