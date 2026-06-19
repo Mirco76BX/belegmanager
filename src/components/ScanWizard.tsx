@@ -268,8 +268,21 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
     setPages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const isTrialBlocked = subscription.tier === "trial_blocked";
+
   const handleStartScan = async () => {
     if (pages.length === 0) return;
+    if (isTrialBlocked) {
+      toast({
+        title: tt({ de: "Account gesperrt", en: "Account locked" }),
+        description: tt({
+          de: "Trial abgelaufen. Bitte wähle einen Plan.",
+          en: "Trial expired. Please choose a plan.",
+        }),
+        variant: "destructive",
+      });
+      return;
+    }
     setStep("scanning");
 
     // Use first page as main preview/file
