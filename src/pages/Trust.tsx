@@ -20,6 +20,9 @@ import {
   Server,
   HardDrive,
 } from "lucide-react";
+import trustHero from "@/assets/trust-hero.jpg";
+import trustEuHosting from "@/assets/trust-eu-hosting.jpg";
+import trustEncryption from "@/assets/trust-encryption.jpg";
 
 const Trust = () => {
   const navigate = useNavigate();
@@ -36,9 +39,17 @@ const Trust = () => {
       </div>
 
       {/* Hero */}
-      <section className="px-4 py-16 md:py-24">
-        <div className="mx-auto max-w-4xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-4 py-1.5 text-xs font-medium text-primary">
+      <section className="relative overflow-hidden border-b border-border/40">
+        <img
+          src={trustHero}
+          alt=""
+          width={1600}
+          height={896}
+          className="absolute inset-0 h-full w-full object-cover opacity-40"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/70 to-background" />
+        <div className="relative mx-auto max-w-4xl px-4 py-20 text-center md:py-28">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-medium text-primary backdrop-blur">
             <ShieldCheck className="h-3.5 w-3.5" />
             Vertrauen & Sicherheit
           </div>
@@ -58,7 +69,7 @@ const Trust = () => {
             ].map((b) => (
               <span
                 key={b}
-                className="rounded-full border border-border bg-card px-3 py-1.5 font-medium text-foreground"
+                className="rounded-full border border-border bg-card/80 px-3 py-1.5 font-medium text-foreground backdrop-blur"
               >
                 {b}
               </span>
@@ -75,58 +86,78 @@ const Trust = () => {
       <div className="mx-auto max-w-4xl space-y-8 px-4 pb-16">
         {/* Section 1 — Wo */}
         <Section icon={<MapPin className="h-5 w-5" />} title="Wo liegen meine Daten?">
-          <ItemList
-            items={[
-              {
-                icon: <Globe2 className="h-4 w-4" />,
-                title: "Datenstandort EU",
-                desc: "Alle Daten und die Datenbank liegen in der EU (Supabase Frankfurt). Kein Transfer in Drittländer ohne explizite Zustimmung.",
-              },
-              {
-                icon: <Server className="h-4 w-4" />,
-                title: "Hosting-Anbieter",
-                desc: "Supabase (eingetragen in Irland), Infrastruktur AWS Frankfurt.",
-              },
-              {
-                icon: <HardDrive className="h-4 w-4" />,
-                title: "Backups",
-                desc: "Täglich automatisch, 30-Tage-Retention.",
-              },
-            ]}
-          />
+          <div className="grid gap-6 md:grid-cols-[1fr_240px] md:items-center">
+            <ItemList
+              items={[
+                {
+                  icon: <Globe2 className="h-4 w-4" />,
+                  title: "Datenstandort EU",
+                  desc: "Alle Daten und die Datenbank liegen in der EU (Supabase Frankfurt). Kein Transfer in Drittländer ohne explizite Zustimmung.",
+                },
+                {
+                  icon: <Server className="h-4 w-4" />,
+                  title: "Hosting-Anbieter",
+                  desc: "Supabase (eingetragen in Irland), Infrastruktur AWS Frankfurt.",
+                },
+                {
+                  icon: <HardDrive className="h-4 w-4" />,
+                  title: "Backups",
+                  desc: "Täglich automatisch, 30-Tage-Retention.",
+                },
+              ]}
+            />
+            <img
+              src={trustEuHosting}
+              alt="EU-Hosting in Frankfurt"
+              width={1280}
+              height={800}
+              loading="lazy"
+              className="hidden rounded-xl border border-border object-cover md:block aspect-square"
+            />
+          </div>
         </Section>
 
         {/* Section 2 — Schutz */}
         <Section icon={<Lock className="h-5 w-5" />} title="Wie sind meine Daten geschützt?">
-          <ItemList
-            items={[
-              {
-                icon: <Lock className="h-4 w-4" />,
-                title: "Verschlüsselung in Transit",
-                desc: "TLS 1.3 — HTTPS überall.",
-              },
-              {
-                icon: <Database className="h-4 w-4" />,
-                title: "Verschlüsselung at Rest",
-                desc: "AES-256 (Postgres-Standard).",
-              },
-              {
-                icon: <UserCheck className="h-4 w-4" />,
-                title: "Zugriffskontrolle",
-                desc: "Row-Level Security — jeder User sieht nur seine eigenen Belege, technisch garantiert auf Datenbankebene.",
-              },
-              {
-                icon: <KeyRound className="h-4 w-4" />,
-                title: "Authentifizierung",
-                desc: "E-Mail + Passwort, OAuth (Google) und Magic-Link für Steuerberater.",
-              },
-              {
-                icon: <FileSignature className="h-4 w-4" />,
-                title: "Webhook-Signaturen",
-                desc: "Alle Zahlungs-Events von Stripe werden signaturverifiziert verarbeitet.",
-              },
-            ]}
-          />
+          <div className="grid gap-6 md:grid-cols-[240px_1fr] md:items-center">
+            <img
+              src={trustEncryption}
+              alt="Verschlüsselung"
+              width={1280}
+              height={800}
+              loading="lazy"
+              className="hidden rounded-xl border border-border object-cover md:block aspect-square"
+            />
+            <ItemList
+              items={[
+                {
+                  icon: <Lock className="h-4 w-4" />,
+                  title: "Verschlüsselung in Transit",
+                  desc: "TLS 1.3 — HTTPS überall.",
+                },
+                {
+                  icon: <Database className="h-4 w-4" />,
+                  title: "Verschlüsselung at Rest",
+                  desc: "AES-256 (Postgres-Standard).",
+                },
+                {
+                  icon: <UserCheck className="h-4 w-4" />,
+                  title: "Zugriffskontrolle",
+                  desc: "Row-Level Security — jeder User sieht nur seine eigenen Belege, technisch garantiert auf Datenbankebene.",
+                },
+                {
+                  icon: <KeyRound className="h-4 w-4" />,
+                  title: "Authentifizierung",
+                  desc: "E-Mail + Passwort, OAuth (Google) und Magic-Link für Steuerberater.",
+                },
+                {
+                  icon: <FileSignature className="h-4 w-4" />,
+                  title: "Webhook-Signaturen",
+                  desc: "Alle Zahlungs-Events von Stripe werden signaturverifiziert verarbeitet.",
+                },
+              ]}
+            />
+          </div>
         </Section>
 
         {/* Section 3 — Sub-Processors */}
