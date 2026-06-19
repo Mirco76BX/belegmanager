@@ -178,6 +178,7 @@ const initialSubscription: SubscriptionState = {
   productId: null,
   subscriptionEnd: null,
   scanQuotaTopup: 0,
+  scansUsedThisMonth: 0,
   addonUserSeats: 0,
   trial: null,
   loading: true,
