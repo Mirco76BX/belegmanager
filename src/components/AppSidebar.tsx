@@ -93,11 +93,9 @@ const AppSidebar = () => {
         {location.pathname !== "/admin/users" && (
           <div className="px-3 pb-2">
             <Button
-              className="w-full gap-2"
-              onClick={() => {
-                navigate("/receipts");
-                setTimeout(() => window.dispatchEvent(new CustomEvent("open-scan")), 100);
-              }}
+              className={`w-full gap-2 ${isTrialBlocked ? "opacity-50 cursor-not-allowed" : ""}`}
+              title={isTrialBlocked ? blockedTooltip : undefined}
+              onClick={handleOpenScan}
             >
               <Upload className="h-4 w-4" />
               {lang === "de" ? "Beleg hochladen" : "Upload Receipt"}
