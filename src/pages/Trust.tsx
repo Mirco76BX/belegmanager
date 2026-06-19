@@ -160,39 +160,6 @@ const Trust = () => {
           </div>
         </Section>
 
-        {/* Section 2 — Schutz */}
-        <Section icon={<Lock className="h-5 w-5" />} title="Wie sind meine Daten geschützt?">
-          <ItemList
-            items={[
-              {
-                icon: <Lock className="h-4 w-4" />,
-                title: "Verschlüsselung in Transit",
-                desc: "TLS 1.3 — HTTPS überall.",
-              },
-              {
-                icon: <Database className="h-4 w-4" />,
-                title: "Verschlüsselung at Rest",
-                desc: "AES-256 (Postgres-Standard).",
-              },
-              {
-                icon: <UserCheck className="h-4 w-4" />,
-                title: "Zugriffskontrolle",
-                desc: "Row-Level Security — jeder User sieht nur seine eigenen Belege, technisch garantiert auf Datenbankebene.",
-              },
-              {
-                icon: <KeyRound className="h-4 w-4" />,
-                title: "Authentifizierung",
-                desc: "E-Mail + Passwort, OAuth (Google) und Magic-Link für Steuerberater.",
-              },
-              {
-                icon: <FileSignature className="h-4 w-4" />,
-                title: "Webhook-Signaturen",
-                desc: "Alle Zahlungs-Events von Stripe werden signaturverifiziert verarbeitet.",
-              },
-            ]}
-          />
-        </Section>
-
         {/* Section 3 — Sub-Processors */}
         <Section icon={<Server className="h-5 w-5" />} title="Welche externen Dienste nutzen wir?">
           <p className="mb-4 text-sm text-muted-foreground">
