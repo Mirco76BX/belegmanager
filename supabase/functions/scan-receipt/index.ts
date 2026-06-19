@@ -178,6 +178,31 @@ serve(async (req) => {
       return jsonResponse({ ok: true, warm: true, ts: new Date().toISOString() });
     }
 
+    // Health-check: real mini AI call for uptime monitoring
+    if (body.health === true) {
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) return jsonResponse({ ok: true, ai_ok: false, error: "missing_key" }, 200);
+      const started = Date.now();
+      try {
+        const ctrl = new AbortController();
+        const tId = setTimeout(() => ctrl.abort(), 10_000);
+        const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [{ role: "user", content: "ping" }],
+            max_tokens: 1,
+          }),
+          signal: ctrl.signal,
+        });
+        clearTimeout(tId);
+        return jsonResponse({ ok: true, ai_ok: r.ok, latency_ms: Date.now() - started, status: r.status });
+      } catch (e) {
+        return jsonResponse({ ok: true, ai_ok: false, latency_ms: Date.now() - started, error: String((e as Error).message || e) });
+      }
+    }
+
     const MAX_PAGES = 10;
     const MAX_IMAGE_BYTES = 5_000_000; // ~5MB per image (base64 string length)
     const MAX_TOTAL_BYTES = 25_000_000; // ~25MB total payload
