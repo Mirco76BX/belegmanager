@@ -425,6 +425,8 @@ export type Database = {
           last_name: string | null
           onboarding_seen: boolean
           scan_quota_topup: number
+          scans_period_start: string
+          scans_used_this_month: number
           scheduled_deletion_at: string | null
           tax_advisor_email: string | null
           tax_advisor_name: string | null
@@ -444,6 +446,8 @@ export type Database = {
           last_name?: string | null
           onboarding_seen?: boolean
           scan_quota_topup?: number
+          scans_period_start?: string
+          scans_used_this_month?: number
           scheduled_deletion_at?: string | null
           tax_advisor_email?: string | null
           tax_advisor_name?: string | null
@@ -463,6 +467,8 @@ export type Database = {
           last_name?: string | null
           onboarding_seen?: boolean
           scan_quota_topup?: number
+          scans_period_start?: string
+          scans_used_this_month?: number
           scheduled_deletion_at?: string | null
           tax_advisor_email?: string | null
           tax_advisor_name?: string | null
@@ -778,6 +784,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_scan_usage: { Args: { _user_id: string }; Returns: number }
       is_tax_advisor: { Args: { _user_id: string }; Returns: boolean }
       redeem_coupon_atomic: {
         Args: { _code: string; _user_id: string }
@@ -788,6 +795,10 @@ export type Database = {
         }[]
       }
       register_as_tax_advisor: { Args: { _kanzlei: string }; Returns: string }
+      reset_scan_usage_if_new_period: {
+        Args: { _period_start: string; _user_id: string }
+        Returns: undefined
+      }
       update_receipt_accounting_status: {
         Args: { _receipt_id: string; _status: string }
         Returns: undefined
