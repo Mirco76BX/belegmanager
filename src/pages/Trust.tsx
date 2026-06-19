@@ -20,6 +20,9 @@ import {
   Server,
   HardDrive,
 } from "lucide-react";
+import trustHero from "@/assets/trust-hero.jpg";
+import trustEuHosting from "@/assets/trust-eu-hosting.jpg";
+import trustEncryption from "@/assets/trust-encryption.jpg";
 
 const Trust = () => {
   const navigate = useNavigate();
