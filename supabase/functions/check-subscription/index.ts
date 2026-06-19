@@ -18,6 +18,9 @@ const STRIPE_PRODUCT_TIER_MAP: Record<string, "basic" | "pro" | "business" | "cf
 const BUSINESS_ADDON_USER_PRODUCT_ID = "prod_UdRqbEso4okAzf";
 const SCAN_PACK_PRODUCT_ID = "prod_UdRsyk6KmmwUyO";
 
+const TRIAL_DURATION_DAYS = 30;
+const TRIAL_GRACE_PERIOD_DAYS = 28;
+
 // Legacy-Coupon-Mapping: alte RELAX/MASTER-Coupons werden fair gemappt
 // (kein Tier-Geschenk-Upgrade).
 const LEGACY_COUPON_TIER_MAP: Record<string, string> = {
