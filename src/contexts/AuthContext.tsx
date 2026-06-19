@@ -151,6 +151,7 @@ interface SubscriptionState {
   productId: string | null;
   subscriptionEnd: string | null;
   scanQuotaTopup: number;
+  scansUsedThisMonth: number;
   addonUserSeats: number;
   trial: TrialInfo | null;
   loading: boolean;
