@@ -675,7 +675,30 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
           </DialogTitle>
         </DialogHeader>
 
-        {limitReached && (
+        {isTrialBlocked && (
+          <div className="flex flex-col items-center gap-4 py-6 text-center">
+            <AlertTriangle className="h-10 w-10 text-destructive" />
+            <h3 className="font-semibold text-foreground">
+              {tt({ de: "Account gesperrt — Trial abgelaufen", en: "Account locked — trial expired" })}
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              {tt({
+                de: "Dein 30-Tage-Trial ist abgelaufen. Um wieder Belege scannen zu können, wähle bitte einen Plan. Deine bestehenden Daten bleiben weiterhin lesbar.",
+                en: "Your 30-day trial has expired. To scan receipts again, please choose a plan. Your existing data remains readable.",
+              })}
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose}>
+                {tt({ de: "Später", en: "Later" })}
+              </Button>
+              <Button onClick={() => { onClose(); navigate("/pricing"); }}>
+                {tt({ de: "Jetzt Plan wählen", en: "Choose plan now" })}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!isTrialBlocked && limitReached && (
           <div className="flex flex-col items-center gap-4 py-6 text-center">
             <AlertTriangle className="h-10 w-10 text-destructive" />
             <h3 className="font-semibold text-foreground">
@@ -698,7 +721,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
           </div>
         )}
 
-        {step === "upload" && !limitReached && (
+        {step === "upload" && !limitReached && !isTrialBlocked && (
           <div className="space-y-4">
             {scanCount !== null && !limitReached && (
               <p className="text-xs text-muted-foreground text-right">
