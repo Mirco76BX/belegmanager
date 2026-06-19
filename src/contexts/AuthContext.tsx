@@ -132,56 +132,6 @@ export function effectiveScanQuota(
   const addonBoost = tier === "business" ? addonUserSeats * 200 : 0;
   return base + addonBoost + scanQuotaTopup;
 }
-  master: {
-    name: "MASTER (deprecated)",
-    maxScans: Number.POSITIVE_INFINITY,
-    yearly: { price_id: "", product_id: "" },
-    monthly: { price_id: "", product_id: "" },
-  },
-} as const;
-
-export type SubscriptionTier =
-  | "free"
-  | "tax_advisor"
-  | "basic"
-  | "pro"
-  | "business"
-  | "cfo"
-  | "relax"   // deprecated, wird nie mehr vom Backend zurückgegeben
-  | "master"; // deprecated
-
-export type SubscriptionSource =
-  | "founder_override"
-  | "stripe"
-  | "coupon"
-  | "tax_advisor"
-  | "free";
-
-const TIER_BASE_SCANS: Record<SubscriptionTier, number> = {
-  free: 7,
-  tax_advisor: 50,
-  basic: 50,
-  pro: 200,
-  business: 1000,
-  cfo: Number.POSITIVE_INFINITY,
-  relax: 150,
-  master: Number.POSITIVE_INFINITY,
-};
-
-/**
- * Effektives Scan-Limit: Tier-Basis + Add-on-User-Boost (nur BUSINESS:
- * +200 pro Add-on-User) + Scan-Pack-Top-up.
- */
-export function effectiveScanQuota(
-  tier: SubscriptionTier,
-  scanQuotaTopup: number = 0,
-  addonUserSeats: number = 0
-): number {
-  const base = TIER_BASE_SCANS[tier];
-  if (!Number.isFinite(base)) return Number.POSITIVE_INFINITY;
-  const addonBoost = tier === "business" ? addonUserSeats * 200 : 0;
-  return base + addonBoost + scanQuotaTopup;
-}
 
 const VIEW_MODE_KEY = "belegmanager.viewMode";
 export type ViewMode = "personal" | "advisor";
