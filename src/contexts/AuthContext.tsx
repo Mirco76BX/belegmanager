@@ -238,6 +238,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         productId: data.product_id ?? null,
         subscriptionEnd: data.subscription_end ?? null,
         scanQuotaTopup: typeof data.scan_quota_topup === "number" ? data.scan_quota_topup : 0,
+        scansUsedThisMonth: typeof data.scans_used_this_month === "number" ? data.scans_used_this_month : 0,
         addonUserSeats: typeof data.addon_user_seats === "number" ? data.addon_user_seats : 0,
         trial: data.trial
           ? {
