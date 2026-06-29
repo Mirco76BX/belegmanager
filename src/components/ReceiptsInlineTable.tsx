@@ -68,14 +68,34 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
       person_met: r.person_met, organization: r.organization,
       meeting_purpose: r.meeting_purpose, company_id: r.company_id,
       receipt_type: r.receipt_type, license_plate: r.license_plate, mileage: r.mileage,
+      tax_category: r.tax_category,
     });
   };
 
   const cancelEdit = () => { setEditingId(null); setEditValues({}); };
 
-  const saveEdit = async (id: string) => {
-    setSaving(true);
+  const isBewirtungRow = (r: Receipt) => (editValues.tax_category ?? r.tax_category) === "bewirtung";
+  const requiredMissing = (r: Receipt) => {
+    if (!isBewirtungRow(r)) return false;
+    const req = getRequiredFields((editValues.tax_category ?? r.tax_category) || null);
+    if (req.includes("person_met") && !(editValues.person_met || "").trim()) return true;
+    if (req.includes("meeting_purpose") && !(editValues.meeting_purpose || "").trim()) return true;
+    return false;
+  };
+
+  const saveEdit = async (id: string, row: Receipt) => {
     const isFuel = editValues.receipt_type === "fuel";
+    if (!isFuel && requiredMissing(row)) {
+      toast({
+        title: tt({
+          de: "Bitte Zweck des Meetings ausfüllen (Pflicht nach § 4 Abs. 5 EStG)",
+          en: "Please fill meeting purpose (required by § 4 Abs. 5 EStG)",
+        }),
+        variant: "destructive",
+      });
+      return;
+    }
+    setSaving(true);
     const updateData: any = {
       company_id: editValues.company_id || null,
       status: "complete",
@@ -87,6 +107,9 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
       updateData.person_met = editValues.person_met || null;
       updateData.organization = editValues.organization || null;
       updateData.meeting_purpose = editValues.meeting_purpose || null;
+    }
+    if (isBewirtungRow(row)) {
+      updateData.accounting_status = requiredMissing(row) ? "open" : "ready";
     }
 
     const { error } = await supabase.from("receipts").update(updateData).eq("id", id);
