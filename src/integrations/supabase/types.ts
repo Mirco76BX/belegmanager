@@ -115,6 +115,45 @@ export type Database = {
           },
         ]
       }
+      business_contacts: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          last_used_at: string | null
+          notes: string | null
+          organization: string | null
+          updated_at: string
+          use_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          last_used_at?: string | null
+          notes?: string | null
+          organization?: string | null
+          updated_at?: string
+          use_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          last_used_at?: string | null
+          notes?: string | null
+          organization?: string | null
+          updated_at?: string
+          use_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       business_seats: {
         Row: {
           granted_at: string
@@ -577,6 +616,7 @@ export type Database = {
           amount: number | null
           amount_eur: number | null
           company_id: string | null
+          contact_id: string | null
           created_at: string
           currency: string
           date: string
@@ -604,6 +644,7 @@ export type Database = {
           amount?: number | null
           amount_eur?: number | null
           company_id?: string | null
+          contact_id?: string | null
           created_at?: string
           currency?: string
           date?: string
@@ -631,6 +672,7 @@ export type Database = {
           amount?: number | null
           amount_eur?: number | null
           company_id?: string | null
+          contact_id?: string | null
           created_at?: string
           currency?: string
           date?: string
@@ -659,6 +701,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipts_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "business_contacts"
             referencedColumns: ["id"]
           },
         ]
@@ -802,6 +851,15 @@ export type Database = {
       update_receipt_accounting_status: {
         Args: { _receipt_id: string; _status: string }
         Returns: undefined
+      }
+      upsert_business_contact: {
+        Args: {
+          _email?: string
+          _full_name: string
+          _notes?: string
+          _organization?: string
+        }
+        Returns: string
       }
       validate_coupon: {
         Args: { _code: string }

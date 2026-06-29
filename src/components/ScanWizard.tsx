@@ -14,6 +14,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Camera, Upload, Loader2, Check, SkipForward, ArrowRight, Plus, AlertTriangle, Info, X } from "lucide-react";
 import { ToastAction } from "@/components/ui/toast";
 import { TAX_CATEGORIES, getSmartGuessVat, getRequiredFields, guessTaxCategoryFromScan } from "@/lib/taxCategories";
+import ContactCombobox from "@/components/ContactCombobox";
+import PurposeAutocomplete from "@/components/PurposeAutocomplete";
 
 const PURPOSE_PRESETS = [
   { value: "Geschäftsessen", de: "🍽️ Geschäftsessen", en: "🍽️ Business meal", tr: "🍽️ İş yemeği", ar: "🍽️ وجبة عمل", ru: "🍽️ Деловой обед" },
@@ -126,6 +128,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const [companyId, setCompanyId] = useState(defaultCompanyId || "");
   const [personMet, setPersonMet] = useState("");
   const [organization, setOrganization] = useState("");
+  const [contactId, setContactId] = useState<string | null>(null);
   const [meetingPurpose, setMeetingPurpose] = useState("");
   const [showCustomPurpose, setShowCustomPurpose] = useState(false);
   const [customPurposes, setCustomPurposes] = useState<{ id: string; label: string }[]>([]);
@@ -155,7 +158,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       setPages([]);
       setDate(""); setAmount(""); setOriginalAmount(""); setDescription("");
       setCompanyId(defaultCompanyId || "");
-      setPersonMet(""); setOrganization(""); setMeetingPurpose("");
+      setPersonMet(""); setOrganization(""); setContactId(null); setMeetingPurpose("");
       setShowCustomPurpose(false); setShowNewCompany(false); setNewCompanyName("");
       setLimitReached(false); setIsFuelReceipt(false);
       setLicensePlate(""); setMileage(""); setMileageWarning(null);
@@ -616,9 +619,25 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         receiptData.mileage = skipDetails ? null : (mileage ? parseFloat(mileage) : null);
         receiptData.meeting_purpose = "Tanken";
       } else {
-        receiptData.person_met = skipDetails ? null : personMet || null;
-        receiptData.organization = skipDetails ? null : organization || null;
+        let finalContactId: string | null = contactId;
+        const finalPerson = skipDetails ? null : (personMet || null);
+        const finalOrg = skipDetails ? null : (organization || null);
+        // Upsert contact (creates new or bumps last_used_at/use_count for existing)
+        if (!skipDetails && finalPerson) {
+          try {
+            const { data: cid, error: rpcErr } = await supabase.rpc("upsert_business_contact", {
+              _full_name: finalPerson,
+              _organization: finalOrg || undefined,
+            });
+            if (!rpcErr && cid) finalContactId = cid as unknown as string;
+          } catch (err) {
+            console.warn("upsert_business_contact failed", err);
+          }
+        }
+        receiptData.person_met = finalPerson;
+        receiptData.organization = finalOrg;
         receiptData.meeting_purpose = skipDetails ? null : meetingPurpose || null;
+        receiptData.contact_id = skipDetails ? null : finalContactId;
       }
 
       let receiptId: string;
@@ -1167,67 +1186,55 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
               <>
                 <div className="space-y-1.5">
                   <Label className={`text-sm ${isBewirtung ? "font-semibold text-foreground" : ""}`}>
-                    {tt({de:"Getroffene Person / Teilnehmer", en:"Person Met / Participants"})}
+                    {tt({de:"Geschäftskontakt / Teilnehmer", en:"Business contact / Participants"})}
                     {isBewirtung && <span className="text-destructive ml-1">*</span>}
                   </Label>
-                  <Input
-                    value={personMet}
-                    onChange={(e) => setPersonMet(e.target.value)}
-                    className={`h-11 text-base ${isBewirtung && !personMet.trim() ? "ring-2 ring-destructive/50" : ""}`}
-                    placeholder={isBewirtung ? tt({de:"Pflichtfeld bei Bewirtung", en:"Required for entertainment"}) : ""}
+                  <ContactCombobox
+                    value={contactId}
+                    displayName={personMet}
+                    displayOrg={organization}
+                    onChange={(id, name, org) => {
+                      setContactId(id);
+                      setPersonMet(name);
+                      setOrganization(org || "");
+                    }}
+                    required={isBewirtung}
+                    invalid={isBewirtung && !personMet.trim()}
+                    placeholder={isBewirtung
+                      ? tt({de:"Pflichtfeld bei Bewirtung – Kontakt wählen oder neu anlegen", en:"Required for entertainment – pick or create contact"})
+                      : tt({de:"Kontakt suchen oder neu anlegen…", en:"Search or create contact…"})}
                   />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm">{tt({de:"Unternehmung/Organisation", en:"Organization"})}</Label>
-                  <Input value={organization} onChange={(e) => setOrganization(e.target.value)} className="h-11 text-base" />
+                  <p className="text-[11px] text-muted-foreground">
+                    {tt({
+                      de: "Aus deinen Geschäftskontakten wählen oder direkt neu anlegen.",
+                      en: "Pick from your business contacts or create a new one.",
+                    })}
+                  </p>
                 </div>
                 <div className="space-y-1.5">
                   <Label className={`text-sm ${isBewirtung ? "font-semibold text-foreground" : ""}`}>
                     {isBewirtung ? tt({de:"Anlass der Bewirtung", en:"Purpose of Entertainment"}) : tt({de:"Zweck", en:"Purpose"})}
                     {isBewirtung && <span className="text-destructive ml-1">*</span>}
                   </Label>
-                  <Select
-                    value={PURPOSE_PRESETS.some(p => p.value === meetingPurpose) || customPurposes.some(cp => cp.label === meetingPurpose)
-                      ? meetingPurpose : (meetingPurpose ? "custom" : "")}
-                    onValueChange={(val) => {
-                      if (val === "custom") { setMeetingPurpose(""); setShowCustomPurpose(true); }
-                      else { setMeetingPurpose(val); setShowCustomPurpose(false); }
-                    }}
-                  >
-                    <SelectTrigger className={`h-11 text-base ${isBewirtung && !meetingPurpose.trim() ? "ring-2 ring-destructive/50" : ""}`}>
-                      <SelectValue placeholder={tt({de:"Zweck wählen...", en:"Select purpose..."})} />
-                    </SelectTrigger>
-                    <SelectContent position="popper" sideOffset={4} className="max-h-56">
-                      {PURPOSE_PRESETS.map((p) => (
-                        <SelectItem key={p.value} value={p.value}>
-                          {tt({de: p.de, en: p.en, tr: p.tr, ar: p.ar, ru: p.ru})}
-                        </SelectItem>
-                      ))}
-                      {customPurposes.length > 0 && (
-                        <>
-                          <div className="px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider border-t mt-1 pt-2">
-                            {tt({de:"Eigene Zwecke", en:"Custom purposes", tr:"Özel amaçlar", ar:"أغراض مخصصة", ru:"Свои цели"})}
-                          </div>
-                          {customPurposes.map((cp) => (
-                            <SelectItem key={cp.id} value={cp.label}>
-                              ⭐ {cp.label}
-                            </SelectItem>
-                          ))}
-                        </>
-                      )}
-                      <SelectItem value="custom">
-                        {tt({de:"✏️ Eigener Zweck...", en:"✏️ Custom purpose..."})}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {(showCustomPurpose || (!PURPOSE_PRESETS.some(p => p.value === meetingPurpose) && meetingPurpose !== "")) && (
-                    <Input value={meetingPurpose} onChange={(e) => setMeetingPurpose(e.target.value)}
-                      placeholder={isBewirtung ? tt({de:"Anlass eingeben (Pflicht)...", en:"Enter purpose (required)..."}) : tt({de:"Zweck eingeben...", en:"Enter purpose..."})}
-                      className={`h-11 text-base mt-2 ${isBewirtung && !meetingPurpose.trim() ? "ring-2 ring-destructive/50" : ""}`} autoFocus />
-                  )}
+                  <PurposeAutocomplete
+                    value={meetingPurpose}
+                    onChange={setMeetingPurpose}
+                    invalid={isBewirtung && !meetingPurpose.trim()}
+                    placeholder={isBewirtung
+                      ? tt({de:"Konkreter Anlass (§ 4 Abs. 5 EStG) – Vorschläge im Dropdown", en:"Specific purpose (§ 4 Abs. 5 EStG) – suggestions in dropdown"})
+                      : tt({de:"Zweck eingeben…", en:"Enter purpose…"})}
+                    className="h-11 text-base"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    {tt({
+                      de: "Frei editierbar. Vorschläge sind Hilfen – steuerlich muss der konkrete Anlass benannt sein.",
+                      en: "Free-form. Suggestions are helpers – the specific purpose must be stated for tax purposes.",
+                    })}
+                  </p>
                 </div>
               </>
             )}
+
 
             {isBewirtung && (!personMet.trim() || !meetingPurpose.trim()) && (
               <p className="text-xs text-destructive">
