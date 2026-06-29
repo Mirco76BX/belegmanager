@@ -619,9 +619,25 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         receiptData.mileage = skipDetails ? null : (mileage ? parseFloat(mileage) : null);
         receiptData.meeting_purpose = "Tanken";
       } else {
-        receiptData.person_met = skipDetails ? null : personMet || null;
-        receiptData.organization = skipDetails ? null : organization || null;
+        let finalContactId: string | null = contactId;
+        const finalPerson = skipDetails ? null : (personMet || null);
+        const finalOrg = skipDetails ? null : (organization || null);
+        // Upsert contact (creates new or bumps last_used_at/use_count for existing)
+        if (!skipDetails && finalPerson) {
+          try {
+            const { data: cid, error: rpcErr } = await supabase.rpc("upsert_business_contact", {
+              _full_name: finalPerson,
+              _organization: finalOrg || undefined,
+            });
+            if (!rpcErr && cid) finalContactId = cid as unknown as string;
+          } catch (err) {
+            console.warn("upsert_business_contact failed", err);
+          }
+        }
+        receiptData.person_met = finalPerson;
+        receiptData.organization = finalOrg;
         receiptData.meeting_purpose = skipDetails ? null : meetingPurpose || null;
+        receiptData.contact_id = skipDetails ? null : finalContactId;
       }
 
       let receiptId: string;
