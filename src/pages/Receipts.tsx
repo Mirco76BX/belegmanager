@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Camera, Receipt as ReceiptIcon, Trash2, Pencil, ScanLine } from "lucide-react";
 import ScanWizard from "@/components/ScanWizard";
 import ReceiptsInlineTable from "@/components/ReceiptsInlineTable";
+import { getRequiredFields } from "@/lib/taxCategories";
 
 interface VatItem {
   id: string;
@@ -40,6 +41,8 @@ interface Receipt {
   vat_amount?: number | null;
   vat_rate?: number | null;
   amount_eur?: number | null;
+  tax_category?: string | null;
+  accounting_status?: string;
 }
 
 interface Company {
@@ -130,9 +133,28 @@ const Receipts = () => {
 
   const isFuel = (r: Receipt | null) => r?.receipt_type === "fuel";
 
+  const editIsBewirtung = detailReceipt?.tax_category === "bewirtung";
+  const editRequiredFields = getRequiredFields(detailReceipt?.tax_category || null);
+  const editBewirtungMissing =
+    editIsBewirtung &&
+    ((editRequiredFields.includes("person_met") && !editPersonMet.trim()) ||
+      (editRequiredFields.includes("meeting_purpose") && !editMeetingPurpose.trim()));
+
   const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!detailReceipt) return;
+
+    if (editBewirtungMissing) {
+      toast({
+        title: tt({
+          de: "Bitte Zweck des Meetings ausfüllen (Pflicht nach § 4 Abs. 5 EStG)",
+          en: "Please fill meeting purpose (required by § 4 Abs. 5 EStG)",
+        }),
+        variant: "destructive",
+      });
+      return;
+    }
+
     setEditSaving(true);
 
     const updateData: any = {
@@ -147,6 +169,11 @@ const Receipts = () => {
       updateData.person_met = editPersonMet || null;
       updateData.organization = editOrganization || null;
       updateData.meeting_purpose = editMeetingPurpose || null;
+    }
+
+    // Status-Awareness: ready when all required fields filled, otherwise open
+    if (editIsBewirtung) {
+      updateData.accounting_status = editBewirtungMissing ? "open" : "ready";
     }
 
     const { error } = await supabase.from("receipts").update(updateData).eq("id", detailReceipt.id);
@@ -528,17 +555,45 @@ const Receipts = () => {
                 </>
               ) : (
                 <>
+                  {editIsBewirtung && (
+                    <div className="rounded-md bg-primary/5 border border-primary/20 p-2 text-xs text-primary">
+                      {tt({
+                        de: "Bei Bewirtungskosten sind gemäß § 4 Abs. 5 EStG Teilnehmer und Anlass Pflicht.",
+                        en: "For entertainment (§ 4 Abs. 5 EStG), participants and purpose are required.",
+                      })}
+                    </div>
+                  )}
                   <div className="space-y-1.5">
-                    <Label className="text-sm">{t("receipts.person")}</Label>
-                    <Input value={editPersonMet} onChange={(e) => setEditPersonMet(e.target.value)} className="h-10" />
+                    <Label className="text-sm">
+                      {t("receipts.person")}
+                      {editIsBewirtung && editRequiredFields.includes("person_met") && <span className="text-destructive ml-1">*</span>}
+                    </Label>
+                    <Input
+                      value={editPersonMet}
+                      onChange={(e) => setEditPersonMet(e.target.value)}
+                      className={`h-10 ${editIsBewirtung && editRequiredFields.includes("person_met") && !editPersonMet.trim() ? "border-destructive ring-1 ring-destructive/40" : ""}`}
+                    />
+                    {editIsBewirtung && editRequiredFields.includes("person_met") && !editPersonMet.trim() && (
+                      <p className="text-xs text-destructive">{tt({de:"Pflichtfeld (§ 4 Abs. 5 EStG)", en:"Required (§ 4 Abs. 5 EStG)"})}</p>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm">{t("receipts.organization")}</Label>
                     <Input value={editOrganization} onChange={(e) => setEditOrganization(e.target.value)} className="h-10" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm">{t("receipts.meetingPurpose")}</Label>
-                    <Input value={editMeetingPurpose} onChange={(e) => setEditMeetingPurpose(e.target.value)} className="h-10" />
+                    <Label className="text-sm">
+                      {t("receipts.meetingPurpose")}
+                      {editIsBewirtung && editRequiredFields.includes("meeting_purpose") && <span className="text-destructive ml-1">*</span>}
+                    </Label>
+                    <Input
+                      value={editMeetingPurpose}
+                      onChange={(e) => setEditMeetingPurpose(e.target.value)}
+                      className={`h-10 ${editIsBewirtung && editRequiredFields.includes("meeting_purpose") && !editMeetingPurpose.trim() ? "border-destructive ring-1 ring-destructive/40" : ""}`}
+                    />
+                    {editIsBewirtung && editRequiredFields.includes("meeting_purpose") && !editMeetingPurpose.trim() && (
+                      <p className="text-xs text-destructive">{tt({de:"Zweck des Meetings ist Pflicht (§ 4 Abs. 5 EStG)", en:"Meeting purpose required (§ 4 Abs. 5 EStG)"})}</p>
+                    )}
                   </div>
                 </>
               )}
@@ -547,7 +602,7 @@ const Receipts = () => {
                 <Button type="button" variant="outline" className="flex-1" onClick={() => setIsEditing(false)}>
                   {t("general.cancel")}
                 </Button>
-                <Button type="submit" className="flex-1" disabled={editSaving}>
+                <Button type="submit" className="flex-1" disabled={editSaving || editBewirtungMissing}>
                   {editSaving ? t("general.loading") : t("general.save")}
                 </Button>
               </div>

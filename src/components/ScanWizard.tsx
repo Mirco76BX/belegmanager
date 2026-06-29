@@ -591,12 +591,19 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       const finalVatRate = vatRate ? parseFloat(vatRate) : (scanResult?.tax_rate ?? null);
       const finalVatAmount = vatAmount ? parseFloat(vatAmount) : null;
 
+      const requiredOk = !isBewirtung || (
+        (!requiredFields.includes("person_met") || !!personMet.trim()) &&
+        (!requiredFields.includes("meeting_purpose") || !!meetingPurpose.trim())
+      );
+      const accountingStatus = skipDetails || !requiredOk ? "open" : "ready";
+
       const receiptData: any = {
         user_id: user.id, date: date || (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`; })(),
         amount: parsedOriginalAmount, description: description || null,
         company_id: companyId || null, file_path: filePath,
         receipt_type: isFuelReceipt ? "fuel" : "general",
         status: skipDetails ? "pending" : "complete",
+        accounting_status: accountingStatus,
         vat_amount: finalVatAmount,
         vat_rate: finalVatRate,
         currency,
@@ -1222,7 +1229,19 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
               </>
             )}
 
-            <Button className="w-full gap-2" onClick={() => handleSave(false)} disabled={saving}>
+            {isBewirtung && (!personMet.trim() || !meetingPurpose.trim()) && (
+              <p className="text-xs text-destructive">
+                {tt({
+                  de: "Bitte Pflichtfelder ausfüllen (§ 4 Abs. 5 EStG).",
+                  en: "Please fill required fields (§ 4 Abs. 5 EStG).",
+                })}
+              </p>
+            )}
+            <Button
+              className="w-full gap-2"
+              onClick={() => handleSave(false)}
+              disabled={saving || (isBewirtung && (!personMet.trim() || !meetingPurpose.trim()))}
+            >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               {saving
                 ? tt({de:"Speichern...", en:"Saving..."})
