@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Camera, Receipt as ReceiptIcon, Trash2, Pencil, ScanLine } from "lucide-react";
 import ScanWizard from "@/components/ScanWizard";
 import ReceiptsInlineTable from "@/components/ReceiptsInlineTable";
+import ContactCombobox from "@/components/ContactCombobox";
+import PurposeAutocomplete from "@/components/PurposeAutocomplete";
 import { getRequiredFields } from "@/lib/taxCategories";
 
 interface VatItem {
@@ -34,6 +36,7 @@ interface Receipt {
   file_path: string | null;
   status: string;
   company_id: string | null;
+  contact_id?: string | null;
   created_at: string;
   receipt_type?: string;
   license_plate?: string | null;
@@ -73,6 +76,7 @@ const Receipts = () => {
 
   const [editPersonMet, setEditPersonMet] = useState("");
   const [editOrganization, setEditOrganization] = useState("");
+  const [editContactId, setEditContactId] = useState<string | null>(null);
   const [editMeetingPurpose, setEditMeetingPurpose] = useState("");
   const [editCompanyId, setEditCompanyId] = useState("");
   const [editLicensePlate, setEditLicensePlate] = useState("");
@@ -124,6 +128,7 @@ const Receipts = () => {
     if (!detailReceipt) return;
     setEditPersonMet(detailReceipt.person_met || "");
     setEditOrganization(detailReceipt.organization || "");
+    setEditContactId(detailReceipt.contact_id || null);
     setEditMeetingPurpose(detailReceipt.meeting_purpose || "");
     setEditCompanyId(detailReceipt.company_id || "");
     setEditLicensePlate(detailReceipt.license_plate || "");
@@ -166,9 +171,22 @@ const Receipts = () => {
       updateData.license_plate = editLicensePlate || null;
       updateData.mileage = editMileage ? parseFloat(editMileage) : null;
     } else {
+      let finalContactId = editContactId;
+      if (editPersonMet.trim()) {
+        try {
+          const { data: cid, error: rpcErr } = await supabase.rpc("upsert_business_contact", {
+            _full_name: editPersonMet.trim(),
+            _organization: editOrganization.trim() || undefined,
+          });
+          if (!rpcErr && cid) finalContactId = cid as unknown as string;
+        } catch (err) {
+          console.warn("upsert_business_contact failed", err);
+        }
+      }
       updateData.person_met = editPersonMet || null;
       updateData.organization = editOrganization || null;
       updateData.meeting_purpose = editMeetingPurpose || null;
+      updateData.contact_id = finalContactId;
     }
 
     // Status-Awareness: ready when all required fields filled, otherwise open
@@ -565,31 +583,38 @@ const Receipts = () => {
                   )}
                   <div className="space-y-1.5">
                     <Label className="text-sm">
-                      {t("receipts.person")}
+                      {tt({de:"Geschäftskontakt / Teilnehmer", en:"Business contact / Participants"})}
                       {editIsBewirtung && editRequiredFields.includes("person_met") && <span className="text-destructive ml-1">*</span>}
                     </Label>
-                    <Input
-                      value={editPersonMet}
-                      onChange={(e) => setEditPersonMet(e.target.value)}
-                      className={`h-10 ${editIsBewirtung && editRequiredFields.includes("person_met") && !editPersonMet.trim() ? "border-destructive ring-1 ring-destructive/40" : ""}`}
+                    <ContactCombobox
+                      value={editContactId}
+                      displayName={editPersonMet}
+                      displayOrg={editOrganization}
+                      onChange={(id, name, org) => {
+                        setEditContactId(id);
+                        setEditPersonMet(name);
+                        setEditOrganization(org || "");
+                      }}
+                      required={editIsBewirtung}
+                      invalid={editIsBewirtung && editRequiredFields.includes("person_met") && !editPersonMet.trim()}
                     />
                     {editIsBewirtung && editRequiredFields.includes("person_met") && !editPersonMet.trim() && (
                       <p className="text-xs text-destructive">{tt({de:"Pflichtfeld (§ 4 Abs. 5 EStG)", en:"Required (§ 4 Abs. 5 EStG)"})}</p>
                     )}
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm">{t("receipts.organization")}</Label>
-                    <Input value={editOrganization} onChange={(e) => setEditOrganization(e.target.value)} className="h-10" />
-                  </div>
-                  <div className="space-y-1.5">
                     <Label className="text-sm">
                       {t("receipts.meetingPurpose")}
                       {editIsBewirtung && editRequiredFields.includes("meeting_purpose") && <span className="text-destructive ml-1">*</span>}
                     </Label>
-                    <Input
+                    <PurposeAutocomplete
                       value={editMeetingPurpose}
-                      onChange={(e) => setEditMeetingPurpose(e.target.value)}
-                      className={`h-10 ${editIsBewirtung && editRequiredFields.includes("meeting_purpose") && !editMeetingPurpose.trim() ? "border-destructive ring-1 ring-destructive/40" : ""}`}
+                      onChange={setEditMeetingPurpose}
+                      className="h-10"
+                      invalid={editIsBewirtung && editRequiredFields.includes("meeting_purpose") && !editMeetingPurpose.trim()}
+                      placeholder={editIsBewirtung
+                        ? tt({de:"Konkreter Anlass (§ 4 Abs. 5 EStG) – Vorschläge im Dropdown", en:"Specific purpose – suggestions in dropdown"})
+                        : tt({de:"Zweck eingeben…", en:"Enter purpose…"})}
                     />
                     {editIsBewirtung && editRequiredFields.includes("meeting_purpose") && !editMeetingPurpose.trim() && (
                       <p className="text-xs text-destructive">{tt({de:"Zweck des Meetings ist Pflicht (§ 4 Abs. 5 EStG)", en:"Meeting purpose required (§ 4 Abs. 5 EStG)"})}</p>

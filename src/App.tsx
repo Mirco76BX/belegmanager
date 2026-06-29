@@ -30,6 +30,7 @@ import NativeAuthCallback from "@/pages/NativeAuthCallback";
 import AdvisorSetup from "@/pages/AdvisorSetup";
 import Landing from "@/pages/Landing";
 import Trust from "@/pages/Trust";
+import Contacts from "@/pages/Contacts";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -125,6 +126,7 @@ const App = () => (
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/receipts" element={<Receipts />} />
                 <Route path="/companies" element={<Companies />} />
+                <Route path="/contacts" element={<Contacts />} />
                 <Route path="/expense-report" element={<ExpenseReport />} />
                 <Route path="/fahrtkosten" element={<Fahrtkosten />} />
                 <Route path="/admin/users" element={<AdminUsers />} />
