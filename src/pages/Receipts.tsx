@@ -171,9 +171,22 @@ const Receipts = () => {
       updateData.license_plate = editLicensePlate || null;
       updateData.mileage = editMileage ? parseFloat(editMileage) : null;
     } else {
+      let finalContactId = editContactId;
+      if (editPersonMet.trim()) {
+        try {
+          const { data: cid, error: rpcErr } = await supabase.rpc("upsert_business_contact", {
+            _full_name: editPersonMet.trim(),
+            _organization: editOrganization.trim() || undefined,
+          });
+          if (!rpcErr && cid) finalContactId = cid as unknown as string;
+        } catch (err) {
+          console.warn("upsert_business_contact failed", err);
+        }
+      }
       updateData.person_met = editPersonMet || null;
       updateData.organization = editOrganization || null;
       updateData.meeting_purpose = editMeetingPurpose || null;
+      updateData.contact_id = finalContactId;
     }
 
     // Status-Awareness: ready when all required fields filled, otherwise open
