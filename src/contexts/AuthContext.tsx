@@ -2,51 +2,158 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
+// ─────────────────────────────────────────────────────────────────────
+// Pricing-Konfiguration: 4 aktive Tiers + Add-on User + Scan-Pack
+// Plus deprecated relax/master Legacy-Stubs (werden in Sub-Step 6 entfernt
+// wenn PricingPlans/Pricing/Account auf die neuen Tiers migriert sind).
+// ─────────────────────────────────────────────────────────────────────
 export const TIERS = {
-  free: { name: "FREE", maxScans: 10 },
-  tax_advisor: { name: "STEUERBERATER", maxScans: 50 },
+  free: {
+    name: "FREE",
+    maxScans: 7,
+    features: ["Basis-Scan"],
+  },
+  tax_advisor: {
+    name: "STEUERBERATER",
+    maxScans: 50,
+    features: ["Steuerberater-Magic-Link", "Mandanten-Verwaltung"],
+  },
+  basic: {
+    name: "BASIC",
+    maxScans: 50,
+    pricing: {
+      monthly: { price: 1.99, currency: "EUR" },
+      yearly: { price: 15, currency: "EUR" },
+    },
+    features: ["Belegverwaltung", "Reisekosten", "PDF-Report"],
+  },
+  pro: {
+    name: "PRO",
+    maxScans: 200,
+    pricing: {
+      monthly: { price: 9.99, currency: "EUR" },
+      yearly: { price: 79, currency: "EUR" },
+    },
+    features: ["Alles aus BASIC", "DATEV-Export", "GoBD-Festschreibung", "Multi-Mandant"],
+  },
+  business: {
+    name: "BUSINESS",
+    maxScans: 1000,
+    multiUserIncluded: 5,
+    pricing: {
+      monthly: { price: 19.99, currency: "EUR" },
+      yearly: { price: 159, currency: "EUR" },
+    },
+    features: ["Alles aus PRO", "API-Zugang", "5 User inkl.", "Team-Scan-Pool"],
+  },
+  cfo: {
+    name: "CFO",
+    maxScans: Number.POSITIVE_INFINITY,
+    pricing: {
+      monthly: { price: 39, currency: "EUR" },
+    },
+    features: ["Alles aus BUSINESS", "Unlimited Scans"],
+  },
+  trial_active: {
+    name: "TRIAL",
+    maxScans: 30,
+    features: [
+      "Alle PRO-Features für 30 Tage",
+      "DATEV-Export",
+      "GoBD-Festschreibung",
+      "Multi-Mandant",
+    ],
+  },
+  trial_blocked: {
+    name: "TRIAL ABGELAUFEN",
+    maxScans: 0,
+    features: ["Account gesperrt — bitte upgraden"],
+  },
+  // ─── DEPRECATED Legacy-Stubs (werden in Sub-Step 6 entfernt) ────────
   relax: {
-    name: "RELAX",
+    name: "RELAX (deprecated)",
     maxScans: 150,
-    yearly: {
-      price_id: "price_1T8dZK2OSLlEeYaUvGn20UPk",
-      product_id: "prod_U6rHCwqL7uWXeh",
-      price: 12,
-    },
-    monthly: {
-      price_id: "price_1T8dd52OSLlEeYaUnkzNTDZd",
-      product_id: "prod_U6rLEE9hn7z3AX",
-      price: 3,
-    },
+    yearly: { price_id: "", product_id: "" },
+    monthly: { price_id: "", product_id: "" },
   },
   master: {
-    name: "MASTER",
-    maxScans: Infinity,
-    yearly: {
-      price_id: "price_1T8dgW2OSLlEeYaUifi4Z36n",
-      product_id: "prod_U6rPZtvWVoYlGl",
-      price: 49,
-    },
-    monthly: {
-      price_id: "price_1T8l4i2OSLlEeYaU3OzHyBBP",
-      product_id: "prod_U6z2fWio959aX5",
-      price: 6,
-    },
+    name: "MASTER (deprecated)",
+    maxScans: Number.POSITIVE_INFINITY,
+    yearly: { price_id: "", product_id: "" },
+    monthly: { price_id: "", product_id: "" },
   },
 } as const;
 
-const RELAX_PRODUCT_IDS = [TIERS.relax.yearly.product_id, TIERS.relax.monthly.product_id, "coupon_relax"];
-const MASTER_PRODUCT_IDS = [TIERS.master.yearly.product_id, TIERS.master.monthly.product_id, "coupon_master"];
+export type SubscriptionTier =
+  | "free"
+  | "tax_advisor"
+  | "basic"
+  | "pro"
+  | "business"
+  | "cfo"
+  | "trial_active"
+  | "trial_blocked"
+  | "relax"
+  | "master";
+
+export type SubscriptionSource =
+  | "founder_override"
+  | "stripe"
+  | "coupon"
+  | "tax_advisor"
+  | "trial"
+  | "free";
+
+const TIER_BASE_SCANS: Record<SubscriptionTier, number> = {
+  free: 7,
+  tax_advisor: 50,
+  basic: 50,
+  pro: 200,
+  business: 1000,
+  cfo: Number.POSITIVE_INFINITY,
+  trial_active: 30,
+  trial_blocked: 0,
+  relax: 150,
+  master: Number.POSITIVE_INFINITY,
+};
+
+/**
+ * Effektives Scan-Limit: Tier-Basis + Add-on-User-Boost (nur BUSINESS:
+ * +200 pro Add-on-User) + Scan-Pack-Top-up.
+ */
+export function effectiveScanQuota(
+  tier: SubscriptionTier,
+  scanQuotaTopup: number = 0,
+  addonUserSeats: number = 0
+): number {
+  if (tier === "trial_blocked") return 0;
+  const base = TIER_BASE_SCANS[tier];
+  if (!Number.isFinite(base)) return Number.POSITIVE_INFINITY;
+  const addonBoost = tier === "business" ? addonUserSeats * 200 : 0;
+  return base + addonBoost + scanQuotaTopup;
+}
 
 const VIEW_MODE_KEY = "belegmanager.viewMode";
-
 export type ViewMode = "personal" | "advisor";
+
+interface TrialInfo {
+  active: boolean;
+  blocked: boolean;
+  endsAt: string | null;
+  blockedAt: string | null;
+  deletionAt: string | null;
+}
 
 interface SubscriptionState {
   subscribed: boolean;
+  tier: SubscriptionTier;
+  source: SubscriptionSource;
   productId: string | null;
   subscriptionEnd: string | null;
-  tier: "free" | "relax" | "master" | "tax_advisor";
+  scanQuotaTopup: number;
+  scansUsedThisMonth: number;
+  addonUserSeats: number;
+  trial: TrialInfo | null;
   loading: boolean;
 }
 
@@ -64,6 +171,19 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
+const initialSubscription: SubscriptionState = {
+  subscribed: false,
+  tier: "free",
+  source: "free",
+  productId: null,
+  subscriptionEnd: null,
+  scanQuotaTopup: 0,
+  scansUsedThisMonth: 0,
+  addonUserSeats: 0,
+  trial: null,
+  loading: true,
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -76,13 +196,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const stored = window.localStorage.getItem(VIEW_MODE_KEY);
     return stored === "advisor" || stored === "personal" ? stored : "personal";
   });
-  const [subscription, setSubscription] = useState<SubscriptionState>({
-    subscribed: false,
-    productId: null,
-    subscriptionEnd: null,
-    tier: "free",
-    loading: true,
-  });
+  const [subscription, setSubscription] = useState<SubscriptionState>(initialSubscription);
 
   const setViewMode = (mode: ViewMode) => {
     setViewModeState(mode);
@@ -91,7 +205,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {}
   };
 
-  // Force personal mode if user is not an advisor
   useEffect(() => {
     if (!isAdvisor && viewMode !== "personal") {
       setViewMode("personal");
@@ -102,77 +215,68 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const uid = userId || user?.id;
     if (!uid) return;
     try {
-      // Always fetch the advisor flag from profile (independent of tier path)
       const { data: profile } = await supabase
         .from("profiles")
         .select("is_tax_advisor")
         .eq("id", uid)
         .maybeSingle();
-      const advisorFlag = !!profile?.is_tax_advisor;
-      setIsAdvisor(advisorFlag);
+      setIsAdvisor(!!profile?.is_tax_advisor);
 
-      // Check subscription/coupon first (may grant higher tier than tax_advisor)
       const { data, error } = await supabase.functions.invoke("check-subscription");
-      if (!error && data?.subscribed) {
-        const pid = data?.product_id;
-        const tier = MASTER_PRODUCT_IDS.includes(pid) ? "master" : RELAX_PRODUCT_IDS.includes(pid) ? "relax" : "free";
-        setSubscription({
-          subscribed: true,
-          productId: data?.product_id ?? null,
-          subscriptionEnd: data?.subscription_end ?? null,
-          tier,
-          loading: false,
-        });
+      if (error || !data) {
+        setSubscription({ ...initialSubscription, loading: false });
         return;
       }
 
-      // Fall back to tax_advisor profile check
-      if (advisorFlag) {
-        setSubscription({
-          subscribed: true,
-          productId: null,
-          subscriptionEnd: null,
-          tier: "tax_advisor",
-          loading: false,
-        });
-        return;
-      }
+      const tier = (data.tier as SubscriptionTier) ?? "free";
+      const source = (data.source as SubscriptionSource) ?? "free";
 
-      // No subscription
       setSubscription({
-        subscribed: false,
-        productId: null,
-        subscriptionEnd: null,
-        tier: "free",
+        subscribed: !!data.subscribed,
+        tier,
+        source,
+        productId: data.product_id ?? null,
+        subscriptionEnd: data.subscription_end ?? null,
+        scanQuotaTopup: typeof data.scan_quota_topup === "number" ? data.scan_quota_topup : 0,
+        scansUsedThisMonth: typeof data.scans_used_this_month === "number" ? data.scans_used_this_month : 0,
+        addonUserSeats: typeof data.addon_user_seats === "number" ? data.addon_user_seats : 0,
+        trial: data.trial
+          ? {
+              active: !!data.trial.active,
+              blocked: !!data.trial.blocked,
+              endsAt: data.trial.ends_at ?? null,
+              blockedAt: data.trial.blocked_at ?? null,
+              deletionAt: data.trial.deletion_at ?? null,
+            }
+          : null,
         loading: false,
       });
     } catch {
-      setSubscription(prev => ({ ...prev, loading: false }));
+      setSubscription((prev) => ({ ...prev, loading: false }));
     }
   };
 
   useEffect(() => {
-    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange((event, sess) => {
+      setSession(sess);
+      setUser(sess?.user ?? null);
       setLoading(false);
-      if (session?.user) {
-        setTimeout(() => checkSubscription(session.user.id), 0);
+      if (sess?.user) {
+        setTimeout(() => checkSubscription(sess.user.id), 0);
       } else {
         setIsAdvisor(false);
-        setSubscription({ subscribed: false, productId: null, subscriptionEnd: null, tier: "free", loading: false });
+        setSubscription({ ...initialSubscription, loading: false });
       }
-
       if (event === "TOKEN_REFRESHED") {
         console.log("[Auth] Token refreshed automatically");
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(({ data: { session: sess } }) => {
+      setSession(sess);
+      setUser(sess?.user ?? null);
       setLoading(false);
-      if (session?.user) checkSubscription(session.user.id);
+      if (sess?.user) checkSubscription(sess.user.id);
     });
 
     const refreshInterval = setInterval(async () => {
@@ -216,7 +320,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, subscription, isAdvisor, viewMode, setViewMode, checkSubscription, signIn, signUp, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        loading,
+        subscription,
+        isAdvisor,
+        viewMode,
+        setViewMode,
+        checkSubscription,
+        signIn,
+        signUp,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

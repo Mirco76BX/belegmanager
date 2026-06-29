@@ -178,6 +178,31 @@ serve(async (req) => {
       return jsonResponse({ ok: true, warm: true, ts: new Date().toISOString() });
     }
 
+    // Health-check: real mini AI call for uptime monitoring
+    if (body.health === true) {
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) return jsonResponse({ ok: true, ai_ok: false, error: "missing_key" }, 200);
+      const started = Date.now();
+      try {
+        const ctrl = new AbortController();
+        const tId = setTimeout(() => ctrl.abort(), 10_000);
+        const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [{ role: "user", content: "ping" }],
+            max_tokens: 1,
+          }),
+          signal: ctrl.signal,
+        });
+        clearTimeout(tId);
+        return jsonResponse({ ok: true, ai_ok: r.ok, latency_ms: Date.now() - started, status: r.status });
+      } catch (e) {
+        return jsonResponse({ ok: true, ai_ok: false, latency_ms: Date.now() - started, error: String((e as Error).message || e) });
+      }
+    }
+
     const MAX_PAGES = 10;
     const MAX_IMAGE_BYTES = 5_000_000; // ~5MB per image (base64 string length)
     const MAX_TOTAL_BYTES = 25_000_000; // ~25MB total payload
@@ -232,45 +257,111 @@ serve(async (req) => {
       }, 429);
     }
 
-    // --- 3. Plan check (monthly scans for FREE/tax_advisor/relax) ---
+    // --- 2b. Trial-Blocked check (hard block) ---
+    {
+      const { data: trialProfile } = await admin
+        .from("profiles")
+        .select("trial_started_at, trial_blocked_at")
+        .eq("id", userId)
+        .maybeSingle();
+      const TRIAL_DURATION_MS = 30 * 24 * 3600 * 1000;
+      const startedAt = trialProfile?.trial_started_at
+        ? new Date(trialProfile.trial_started_at).getTime()
+        : null;
+      const isExpired = startedAt !== null && Date.now() >= startedAt + TRIAL_DURATION_MS;
+      if (trialProfile?.trial_blocked_at || isExpired) {
+        // Allow if user has an alternate non-trial entitlement (coupon/tax_advisor).
+        // Stripe entitlements are checked in check-subscription; here we rely on
+        // the same deriveTier signal — if it returns non-free, user has access.
+        const altTier = await deriveTier(admin, userId);
+        if (altTier === "free") {
+          return jsonResponse({
+            error: "trial_blocked",
+            message: "Trial abgelaufen — Account gesperrt. Bitte Plan wählen.",
+            retry_after: null,
+          }, 403);
+        }
+      }
+    }
+
+    // --- 3. Plan check (monthly scans) ---
+    // Quota is tracked on profiles.scans_used_this_month (append-only counter
+    // incremented AFTER each successful AI call). Decoupled from receipts.count
+    // to prevent bypass via receipt deletion.
     const tier = await deriveTier(admin, userId);
-    const limit = TIER_LIMITS[tier];
-    if (Number.isFinite(limit)) {
-      const monthStart = new Date();
-      monthStart.setUTCDate(1);
-      monthStart.setUTCHours(0, 0, 0, 0);
-      const { count: monthCount } = await admin
-        .from("receipts")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .gte("created_at", monthStart.toISOString());
-      if ((monthCount ?? 0) >= limit) {
+    const baseLimit = TIER_LIMITS[tier];
+    const { data: quotaProfile } = await admin
+      .from("profiles")
+      .select("scans_used_this_month, scan_quota_topup")
+      .eq("id", userId)
+      .maybeSingle();
+    const usedThisMonth = quotaProfile?.scans_used_this_month ?? 0;
+    const topup = quotaProfile?.scan_quota_topup ?? 0;
+    if (Number.isFinite(baseLimit)) {
+      const effectiveLimit = baseLimit + topup;
+      if (usedThisMonth >= effectiveLimit) {
         const tierLabel = tier === "free" ? "FREE" : tier === "tax_advisor" ? "STEUERBERATER" : "RELAX";
-        const upgrade = tier === "master" ? "" : tier === "relax" ? " Upgrade auf MASTER für unbegrenzte Scans." : " Upgrade auf RELAX für 150 Scans pro Monat.";
+        const upgrade = tier === "relax" ? " Upgrade auf MASTER für unbegrenzte Scans." : " Upgrade auf RELAX für 150 Scans pro Monat.";
         return jsonResponse({
           error: "limit_reached",
           tier,
-          limit,
-          message: `Monatslimit erreicht (${monthCount}/${limit} im ${tierLabel}-Tarif).${upgrade}`,
+          limit: effectiveLimit,
+          message: `Monatslimit erreicht (${usedThisMonth}/${effectiveLimit} im ${tierLabel}-Tarif).${upgrade}`,
         }, 402);
       }
     }
 
-    // --- 4. AI call ---
+    // --- 4. AI call with 45s timeout + 1× retry on 5xx/network error ---
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{ role: "user", content: buildImageContent(images) }],
-      }),
+    const aiPayload = JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [{ role: "user", content: buildImageContent(images) }],
     });
+
+    async function callAi(): Promise<{ response?: Response; networkError?: unknown; timedOut?: boolean }> {
+      const ctrl = new AbortController();
+      const timeoutId = setTimeout(() => ctrl.abort(), 45_000);
+      try {
+        const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: aiPayload,
+          signal: ctrl.signal,
+        });
+        return { response: r };
+      } catch (e) {
+        const timedOut = (e as Error)?.name === "AbortError";
+        return { networkError: e, timedOut };
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+
+    let attempt = await callAi();
+
+    // Decide whether to retry: 5xx OR network error (NOT timeout, NOT 4xx)
+    const firstStatus = attempt.response?.status;
+    const isServerError = !!firstStatus && firstStatus >= 500 && firstStatus < 600;
+    const isNetworkError = !!attempt.networkError && !attempt.timedOut;
+
+    if (isServerError || isNetworkError) {
+      console.log(`[scan-receipt] retry after first failure status=${firstStatus ?? "network"}`);
+      await new Promise((r) => setTimeout(r, 500));
+      attempt = await callAi();
+    }
+
+    if (attempt.timedOut) {
+      return jsonResponse({ error: "ai_timeout", message: "KI-Anfrage hat zu lange gedauert. Bitte erneut versuchen." }, 504);
+    }
+
+    if (!attempt.response) {
+      // network error after retry
+      return jsonResponse({ error: "ai_unavailable", message: "KI-Service kurz nicht erreichbar.", retry_after: 30 }, 503);
+    }
+
+    const response = attempt.response;
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -279,7 +370,12 @@ serve(async (req) => {
       if (response.status === 402) {
         return jsonResponse({ error: "ai_credits", message: "KI-Guthaben aufgebraucht. Bitte Admin informieren." }, 402);
       }
-      const errorText = await response.text();
+      if (response.status >= 500) {
+        const errorText = await response.text().catch(() => "");
+        console.error("AI gateway 5xx after retry:", response.status, errorText);
+        return jsonResponse({ error: "ai_unavailable", message: "KI-Service kurz nicht erreichbar.", retry_after: 30 }, 503);
+      }
+      const errorText = await response.text().catch(() => "");
       console.error("AI gateway error:", response.status, errorText);
       throw new Error(`AI gateway error: ${response.status}`);
     }
@@ -304,8 +400,12 @@ serve(async (req) => {
 
     extracted = postProcess(extracted);
 
-    // --- 5. Log successful scan for rate limiting ---
+    // --- 5. Log successful scan for rate limiting + increment monthly quota ---
     await admin.from("scan_rate_log").insert({ user_id: userId });
+    // Atomic increment AFTER a successful AI call. Failures above return early
+    // and never reach this point, so the counter stays in sync with real usage.
+    const { error: incErr } = await admin.rpc("increment_scan_usage", { _user_id: userId });
+    if (incErr) console.warn("increment_scan_usage error:", incErr.message);
     // Opportunistic cleanup (5% of requests)
     if (Math.random() < 0.05) {
       const oneHourAgo = new Date(Date.now() - 3_600_000).toISOString();

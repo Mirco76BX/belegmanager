@@ -168,14 +168,15 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
         .then(({ data }) => { if (data) setCustomPurposes(data as any); });
 
       const tierConfig = TIERS[subscription.tier] || TIERS.free;
-      const maxScans = tierConfig.maxScans;
+      const maxScans = tierConfig.maxScans + (subscription.scanQuotaTopup ?? 0);
 
-      if (maxScans !== Infinity) {
-        supabase.from("receipts").select("id", { count: "exact", head: true })
-          .then(({ count }) => { const c = count ?? 0; setScanCount(c); if (c >= maxScans) setLimitReached(true); });
+      if (Number.isFinite(maxScans)) {
+        const used = subscription.scansUsedThisMonth ?? 0;
+        setScanCount(used);
+        if (used >= maxScans) setLimitReached(true);
       } else { setScanCount(null); setLimitReached(false); }
     }
-  }, [open, defaultCompanyId, user, subscription.tier]);
+  }, [open, defaultCompanyId, user, subscription.tier, subscription.scansUsedThisMonth, subscription.scanQuotaTopup]);
 
   const convertToEur = async (value: number | null, detectedCurrency?: string, receiptDate?: string | null) => {
     if (value == null) return null;
@@ -268,8 +269,21 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
     setPages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const isTrialBlocked = subscription.tier === "trial_blocked";
+
   const handleStartScan = async () => {
     if (pages.length === 0) return;
+    if (isTrialBlocked) {
+      toast({
+        title: tt({ de: "Account gesperrt", en: "Account locked" }),
+        description: tt({
+          de: "Trial abgelaufen. Bitte wähle einen Plan.",
+          en: "Trial expired. Please choose a plan.",
+        }),
+        variant: "destructive",
+      });
+      return;
+    }
     setStep("scanning");
 
     // Use first page as main preview/file
@@ -312,6 +326,32 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
           toast({
             title: tt({ de: "Kurze Pause", en: "Short pause" }),
             description: msg || tt({ de: "Bitte einen Moment warten — kurze Pause vor dem nächsten Scan.", en: "Please wait a moment before the next scan." }),
+          });
+          setStep("upload"); setFile(null); setPreview(null);
+          return;
+        }
+        if (code === "ai_timeout" || code === "ai_unavailable" || status === 503 || status === 504) {
+          toast({
+            title: tt({ de: "KI vorübergehend nicht erreichbar", en: "AI temporarily unavailable" }),
+            description: tt({ de: "AI-Service kurz nicht erreichbar. Bitte erneut versuchen.", en: "AI service briefly unavailable. Please try again." }),
+            variant: "destructive",
+          });
+          setStep("upload"); setFile(null); setPreview(null);
+          return;
+        }
+        if (status === 403 || code === "trial_blocked") {
+          toast({
+            title: tt({ de: "Account gesperrt", en: "Account locked" }),
+            description: tt({
+              de: "Trial abgelaufen. Bitte wähle einen Plan.",
+              en: "Trial expired. Please choose a plan.",
+            }),
+            variant: "destructive",
+            action: (
+              <ToastAction altText="Upgrade" onClick={() => navigate("/pricing")}>
+                {tt({ de: "Plan wählen", en: "Choose plan" })}
+              </ToastAction>
+            ),
           });
           setStep("upload"); setFile(null); setPreview(null);
           return;
@@ -636,7 +676,30 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
           </DialogTitle>
         </DialogHeader>
 
-        {limitReached && (
+        {isTrialBlocked && (
+          <div className="flex flex-col items-center gap-4 py-6 text-center">
+            <AlertTriangle className="h-10 w-10 text-destructive" />
+            <h3 className="font-semibold text-foreground">
+              {tt({ de: "Account gesperrt — Trial abgelaufen", en: "Account locked — trial expired" })}
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              {tt({
+                de: "Dein 30-Tage-Trial ist abgelaufen. Um wieder Belege scannen zu können, wähle bitte einen Plan. Deine bestehenden Daten bleiben weiterhin lesbar.",
+                en: "Your 30-day trial has expired. To scan receipts again, please choose a plan. Your existing data remains readable.",
+              })}
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose}>
+                {tt({ de: "Später", en: "Later" })}
+              </Button>
+              <Button onClick={() => { onClose(); navigate("/pricing"); }}>
+                {tt({ de: "Jetzt Plan wählen", en: "Choose plan now" })}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!isTrialBlocked && limitReached && (
           <div className="flex flex-col items-center gap-4 py-6 text-center">
             <AlertTriangle className="h-10 w-10 text-destructive" />
             <h3 className="font-semibold text-foreground">
@@ -659,7 +722,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
           </div>
         )}
 
-        {step === "upload" && !limitReached && (
+        {step === "upload" && !limitReached && !isTrialBlocked && (
           <div className="space-y-4">
             {scanCount !== null && !limitReached && (
               <p className="text-xs text-muted-foreground text-right">

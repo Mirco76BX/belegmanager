@@ -5,3 +5,13 @@ verify_jwt = true
 
 [functions.convert-currency]
 verify_jwt = true
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+
+[functions.cleanup-expired-trials]
+verify_jwt = false
+
+[functions.admin-delete-user]
+verify_jwt = true

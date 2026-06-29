@@ -4,8 +4,46 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+// ─────────────────────────────────────────────────────────────────────
+// Whitelist: Produkte die via Self-Service-Checkout buchbar sind.
+// Sandbox-Product-IDs — werden in Sub-Step 8 beim Live-Switch durch
+// Live-IDs ersetzt.
+// ─────────────────────────────────────────────────────────────────────
+const ALLOWED_PRODUCT_IDS = new Set<string>([
+  "prod_UdRow3yNW8hP20",  // BelegManager BASIC
+  "prod_UdRo7Q2vuXLGnB",  // BelegManager PRO
+  "prod_UdRqYozsiuaiFS",  // BelegManager BUSINESS
+  "prod_UdRqbEso4okAzf",  // BelegManager BUSINESS Add-on User
+  "prod_UdRrHLUUtrAEU4",  // BelegManager CFO
+  "prod_UdRsyk6KmmwUyO",  // BelegManager Scan-Pack 50 (one-time)
+]);
+
+// One-time-Purchases (Stripe-Mode "payment" statt "subscription")
+const ONE_TIME_PRODUCT_IDS = new Set<string>([
+  "prod_UdRsyk6KmmwUyO",  // Scan-Pack 50
+]);
+
+// Sanity-Check gegen Tippfehler bei BUSINESS Add-on User Multi-Seat-Buchung
+const MAX_QUANTITY = 50;
+
+const ALLOWED_ORIGINS = [
+  "https://belegmanager.online",
+  "https://www.belegmanager.online",
+  "https://belegmanager.lovable.app",
+  "https://id-preview--5196d375-f0b6-42d1-b73c-097cbd42414c.lovable.app",
+  "http://localhost:8080",
+  "http://localhost:3000",
+];
+
+const jsonResp = (status: number, body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -18,77 +56,87 @@ serve(async (req) => {
   );
 
   try {
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return jsonResp(401, { error: "unauthorized" });
+
     const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
+    const { data: userData } = await supabaseClient.auth.getUser(token);
+    const user = userData.user;
+    if (!user?.email) return jsonResp(401, { error: "unauthorized" });
 
-    const { priceId, couponCode } = await req.json();
-    if (!priceId) throw new Error("priceId is required");
+    const body = await req.json().catch(() => null) as
+      | { priceId?: string; couponCode?: string; quantity?: number }
+      | null;
+    if (!body?.priceId) return jsonResp(400, { error: "priceId is required" });
 
-    const ALLOWED_PRICE_IDS = new Set([
-      "price_1T8dZK2OSLlEeYaUvGn20UPk", // relax yearly
-      "price_1T8dd52OSLlEeYaUnkzNTDZd", // relax monthly
-      "price_1T8dgW2OSLlEeYaUifi4Z36n", // master yearly
-      "price_1T8l4i2OSLlEeYaU3OzHyBBP", // master monthly
-    ]);
-    if (!ALLOWED_PRICE_IDS.has(priceId)) {
-      return new Response(JSON.stringify({ error: "Invalid price" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const priceId = body.priceId;
+    const quantity =
+      body.quantity && Number.isInteger(body.quantity)
+        ? Math.max(1, Math.min(MAX_QUANTITY, body.quantity))
+        : 1;
+
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeKey) {
+      console.error("STRIPE_SECRET_KEY not configured");
+      return jsonResp(500, { error: "internal_error" });
+    }
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+
+    // ─── Server-seitige Validierung: priceId → zugehöriges Product ───
+    let price: Stripe.Price;
+    try {
+      price = await stripe.prices.retrieve(priceId);
+    } catch {
+      return jsonResp(400, { error: "Invalid price" });
+    }
+    if (!price.active) return jsonResp(400, { error: "Price not active" });
+
+    const productId =
+      typeof price.product === "string" ? price.product : price.product.id;
+    if (!ALLOWED_PRODUCT_IDS.has(productId)) {
+      return jsonResp(400, { error: "Product not allowed" });
     }
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
+    // ─── Mode-Auswahl: Subscription vs. One-time ─────────────────────
+    const mode: "subscription" | "payment" = ONE_TIME_PRODUCT_IDS.has(productId)
+      ? "payment"
+      : "subscription";
+
+    // ─── Customer ────────────────────────────────────────────────────
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    let customerId: string | undefined;
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
-    }
+    const customerId = customers.data.length > 0 ? customers.data[0].id : undefined;
 
-    // Resolve coupon if provided
+    // ─── Coupon (nur bei Subscription-Mode; Stripe lehnt Coupon in payment-mode ab) ───
     const discounts: { coupon: string }[] = [];
-    if (couponCode) {
-      // List coupons and find by name match
+    if (body.couponCode && mode === "subscription") {
       const coupons = await stripe.coupons.list({ limit: 100 });
       const match = coupons.data.find(
-        (c) => c.name?.toLowerCase() === couponCode.toLowerCase() && c.valid
+        (c) => c.name?.toLowerCase() === body.couponCode!.toLowerCase() && c.valid
       );
-      if (!match) throw new Error("Ungültiger Gutscheincode / Invalid coupon code");
+      if (!match) return jsonResp(400, { error: "Ungültiger Gutscheincode" });
       discounts.push({ coupon: match.id });
     }
 
-    // Whitelist origin to prevent phishing via attacker-controlled Origin header
-    const ALLOWED_ORIGINS = [
-      "https://belegmanager.online",
-      "https://www.belegmanager.online",
-      "https://belegmanager.lovable.app",
-      "https://id-preview--5196d375-f0b6-42d1-b73c-097cbd42414c.lovable.app",
-      "http://localhost:8080",
-      "http://localhost:3000",
-    ];
+    // ─── Origin-Whitelist gegen Open-Redirect/Phishing ───────────────
     const requestOrigin = req.headers.get("origin") || "";
-    const origin = ALLOWED_ORIGINS.includes(requestOrigin) ? requestOrigin : "https://belegmanager.online";
+    const origin = ALLOWED_ORIGINS.includes(requestOrigin)
+      ? requestOrigin
+      : "https://belegmanager.online";
+
+    // ─── Checkout-Session erstellen ──────────────────────────────────
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
-      line_items: [{ price: priceId, quantity: 1 }],
-      mode: "subscription",
-      ...(discounts.length > 0 ? { discounts } : {}),
-      success_url: `${origin}/pricing?success=true`,
+      line_items: [{ price: priceId, quantity }],
+      mode,
+      ...(discounts.length > 0 && mode === "subscription" ? { discounts } : {}),
+      success_url: `${origin}/pricing?success=true${mode === "payment" ? "&type=topup" : ""}`,
       cancel_url: `${origin}/pricing?canceled=true`,
     });
 
-    return new Response(JSON.stringify({ url: session.url }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return jsonResp(200, { url: session.url });
   } catch (error) {
     console.error("create-checkout error:", error);
-    return new Response(JSON.stringify({ error: "internal_error" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return jsonResp(500, { error: "internal_error" });
   }
 });

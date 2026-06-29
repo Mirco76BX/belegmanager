@@ -22,7 +22,17 @@ const Pricing = () => {
 
   useEffect(() => {
     if (searchParams.get("success") === "true") {
-      toast.success(tt({de:"Abo erfolgreich abgeschlossen!", en:"Subscription successful!", tr:"Abonelik başarılı!", ar:"تم الاشتراك بنجاح!", ru:"Подписка оформлена!"}));
+      if (searchParams.get("type") === "topup") {
+        toast.success(tt({
+          de: "🎉 +50 Scans gutgeschrieben! Top-ups laufen nie ab.",
+          en: "🎉 +50 scans added! Top-ups never expire.",
+          tr: "🎉 +50 tarama eklendi! Top-up'lar süresiz.",
+          ar: "🎉 تمت إضافة 50 مسحاً! الباقات الإضافية لا تنتهي صلاحيتها.",
+          ru: "🎉 +50 сканов добавлено! Top-up не истекает.",
+        }));
+      } else {
+        toast.success(tt({de:"Abo erfolgreich abgeschlossen!", en:"Subscription successful!", tr:"Abonelik başarılı!", ar:"تم الاشتراك بنجاح!", ru:"Подписка оформлена!"}));
+      }
       checkSubscription();
     }
     if (searchParams.get("canceled") === "true") {
@@ -72,9 +82,8 @@ const Pricing = () => {
     } catch (e: any) { toast.error(e.message || "Portal failed"); } finally { setPortalLoading(false); }
   };
 
-  const isRelax = subscription.tier === "relax";
-  const isMaster = subscription.tier === "master";
-  const isPaid = isRelax || isMaster;
+  const PAID_TIERS = new Set(["basic", "pro", "business", "cfo"]);
+  const isPaid = PAID_TIERS.has(subscription.tier);
 
   return (
     <div className="space-y-8 pb-24 md:pb-8">
@@ -111,7 +120,7 @@ const Pricing = () => {
       )}
 
       <PricingPlans
-        currentTier={subscription.tier}
+        currentTier={subscription.tier as any}
         renderAction={(plan) => {
           if (plan.priceId && !isPaid && subscription.tier !== plan.id) {
             return (
@@ -134,6 +143,12 @@ const Pricing = () => {
           }
           return null;
         }}
+        renderScanPackAction={(priceId) => (
+          <Button size="sm" variant="outline" onClick={() => handleCheckout(priceId)} disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {tt({ de: "Top-up kaufen", en: "Buy Top-up" })}
+          </Button>
+        )}
       />
       {isPaid && subscription.subscriptionEnd && (
         <p className="text-center text-sm text-muted-foreground">

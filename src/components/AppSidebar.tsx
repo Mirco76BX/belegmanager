@@ -2,7 +2,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard, UserCircle, Users, Car, Briefcase, ArrowLeftRight } from "lucide-react";
+import { LayoutDashboard, Receipt, Building2, FileSpreadsheet, LogOut, FileText, Shield, Menu, X, ScanLine, Upload, CreditCard, UserCircle, Users, Car, Briefcase, ArrowLeftRight, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InviteDialog from "@/components/InviteDialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -10,12 +10,32 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { useState } from "react";
 
 const AppSidebar = () => {
-  const { signOut, isAdvisor, viewMode, setViewMode } = useAuth();
+  const { signOut, isAdvisor, viewMode, setViewMode, subscription } = useAuth();
   const { t, lang, setLang } = useLanguage();
   const { isAdmin } = useUserRole();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const isTrialBlocked = subscription.tier === "trial_blocked";
+
+  const handleOpenScan = () => {
+    if (isTrialBlocked) {
+      import("sonner").then(({ toast }) =>
+        toast.error(
+          lang === "de"
+            ? "Account gesperrt. Bitte Plan wählen, um neue Belege hochzuladen."
+            : "Account locked. Please choose a plan to upload new receipts."
+        )
+      );
+      navigate("/pricing");
+      return;
+    }
+    navigate("/receipts");
+    setTimeout(() => window.dispatchEvent(new CustomEvent("open-scan")), 100);
+  };
+
+  const blockedTooltip = lang === "de" ? "Trial abgelaufen — bitte upgraden" : "Trial expired — please upgrade";
 
 
   const isTaxAdvisor = viewMode === "advisor";
@@ -25,13 +45,15 @@ const AppSidebar = () => {
     navigate("/");
   };
 
+  const pricingLabel = lang === "de" ? "Preise & Top-ups" : "Pricing & Top-ups";
   const navItems = [
-    { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/" },
-    { key: "nav.receipts" as const, icon: Receipt, path: "/receipts" },
-    { key: "nav.companies" as const, icon: Building2, path: "/companies" },
-    { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report" },
-    { key: "nav.fahrtkosten" as const, icon: Car, path: "/fahrtkosten" },
-    ...(isTaxAdvisor ? [{ key: "nav.clients" as const, icon: Users, path: "/clients" }] : []),
+    { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/", label: undefined as string | undefined },
+    { key: "nav.receipts" as const, icon: Receipt, path: "/receipts", label: undefined },
+    { key: "nav.companies" as const, icon: Building2, path: "/companies", label: undefined },
+    { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report", label: undefined },
+    { key: "nav.fahrtkosten" as const, icon: Car, path: "/fahrtkosten", label: undefined },
+    ...(isTaxAdvisor ? [{ key: "nav.clients" as const, icon: Users, path: "/clients", label: undefined }] : []),
+    { key: "nav.pricing" as any, icon: Tag, path: "/pricing", label: pricingLabel },
   ];
 
   return (
@@ -62,7 +84,7 @@ const AppSidebar = () => {
                 }`}
               >
                 <item.icon className="h-4 w-4" />
-                {t(item.key)}
+                {item.label ?? t(item.key)}
               </button>
             );
           })}
@@ -71,11 +93,9 @@ const AppSidebar = () => {
         {location.pathname !== "/admin/users" && (
           <div className="px-3 pb-2">
             <Button
-              className="w-full gap-2"
-              onClick={() => {
-                navigate("/receipts");
-                setTimeout(() => window.dispatchEvent(new CustomEvent("open-scan")), 100);
-              }}
+              className={`w-full gap-2 ${isTrialBlocked ? "opacity-50 cursor-not-allowed" : ""}`}
+              title={isTrialBlocked ? blockedTooltip : undefined}
+              onClick={handleOpenScan}
             >
               <Upload className="h-4 w-4" />
               {lang === "de" ? "Beleg hochladen" : "Upload Receipt"}
@@ -236,8 +256,8 @@ const AppSidebar = () => {
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border safe-area-bottom">
         <div className="grid grid-cols-5 items-end py-2">
-          {/* First two nav items */}
-          {navItems.slice(0, 2).map((item) => {
+          {/* First two nav items (exclude pricing on mobile bottom nav) */}
+          {navItems.filter(i => i.path !== "/pricing").slice(0, 2).map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <button
@@ -248,7 +268,7 @@ const AppSidebar = () => {
                 }`}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium">{t(item.key)}</span>
+                <span className="text-[10px] font-medium">{item.label ?? t(item.key)}</span>
               </button>
             );
           })}
@@ -256,18 +276,16 @@ const AppSidebar = () => {
           {/* Central Scan Button — exact center column */}
           <div className="flex justify-center">
             <button
-              onClick={() => {
-                navigate("/receipts");
-                setTimeout(() => window.dispatchEvent(new CustomEvent("open-scan")), 100);
-              }}
-              className="flex items-center justify-center -mt-10 h-[4.5rem] w-[4.5rem] rounded-full bg-primary text-primary-foreground shadow-2xl active:scale-95 transition-transform ring-4 ring-sidebar"
+              onClick={handleOpenScan}
+              title={isTrialBlocked ? blockedTooltip : undefined}
+              className={`flex items-center justify-center -mt-10 h-[4.5rem] w-[4.5rem] rounded-full bg-primary text-primary-foreground shadow-2xl active:scale-95 transition-transform ring-4 ring-sidebar ${isTrialBlocked ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <ScanLine className="h-8 w-8" />
             </button>
           </div>
 
-          {/* Last two nav items */}
-          {navItems.slice(2).map((item) => {
+          {/* Last two nav items (exclude pricing on mobile bottom nav) */}
+          {navItems.filter(i => i.path !== "/pricing").slice(2).slice(0, 2).map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <button
@@ -278,7 +296,7 @@ const AppSidebar = () => {
                 }`}
               >
                 <item.icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium">{t(item.key)}</span>
+                <span className="text-[10px] font-medium">{item.label ?? t(item.key)}</span>
               </button>
             );
           })}

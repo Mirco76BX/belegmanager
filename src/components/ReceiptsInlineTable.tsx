@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Check, X, Eye } from "lucide-react";
+import { Trash2, Check, X, Eye, Pencil } from "lucide-react";
 
 const PURPOSE_PRESETS = [
   { value: "Geschäftsessen", de: "🍽️ Geschäftsessen", en: "🍽️ Business meal" },
@@ -130,7 +130,7 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
           <TableRow
             key={r.id}
             className={isEditing(r.id) ? "bg-primary/5 border-l-2 border-l-primary" : "cursor-pointer hover:bg-muted/50"}
-            onClick={() => !isEditing(r.id) && startEdit(r)}
+            onClick={() => !isEditing(r.id) && onOpenDetail(r)}
           >
             {isEditing(r.id) ? (
               <>
@@ -246,10 +246,13 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => onOpenDetail(r)}>
+                    <Button variant="ghost" size="sm" onClick={() => onOpenDetail(r)} title={tt({de:"Vorschau", en:"Preview", tr:"Önizleme", ar:"معاينة", ru:"Просмотр"})}>
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => onDelete(r.id, r.file_path)}>
+                    <Button variant="ghost" size="sm" onClick={() => startEdit(r)} title={tt({de:"Bearbeiten", en:"Edit", tr:"Düzenle", ar:"تعديل", ru:"Изменить"})}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => onDelete(r.id, r.file_path)} title={tt({de:"Löschen", en:"Delete", tr:"Sil", ar:"حذف", ru:"Удалить"})}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>

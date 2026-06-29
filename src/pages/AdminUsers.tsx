@@ -46,13 +46,35 @@ const AdminUsers = () => {
   };
 
   const deleteUser = async (profile: Profile) => {
-    const { error } = await supabase.from("profiles").delete().eq("id", profile.id);
-    if (error) {
-      toast({ title: error.message, variant: "destructive" });
-    } else {
-      toast({ title: tt({de:"Profil gelöscht", en:"Profile deleted", tr:"Profil silindi", ar:"تم حذف الملف", ru:"Профиль удалён"}) });
-      fetchProfiles();
+    const confirmMsg = tt({
+      de: `Account ${profile.email} unwiderruflich löschen?\n\nAlle Belege, Firmen und Daten werden mitgelöscht (CASCADE).`,
+      en: `Permanently delete account ${profile.email}?\n\nAll receipts, companies and data will be removed (CASCADE).`,
+      tr: `${profile.email} hesabı kalıcı olarak silinsin mi?`,
+      ar: `حذف الحساب ${profile.email} نهائيًا؟`,
+      ru: `Удалить аккаунт ${profile.email} безвозвратно?`,
+    });
+    if (!window.confirm(confirmMsg)) return;
+
+    const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+      body: { user_id: profile.id },
+    });
+    if (error || (data && (data as any).error)) {
+      toast({
+        title: error?.message ?? (data as any)?.error ?? "Delete failed",
+        variant: "destructive",
+      });
+      return;
     }
+    toast({
+      title: tt({
+        de: "Nutzer gelöscht",
+        en: "User deleted",
+        tr: "Kullanıcı silindi",
+        ar: "تم حذف المستخدم",
+        ru: "Пользователь удалён",
+      }),
+    });
+    fetchProfiles();
   };
 
   if (roleLoading) return <div className="text-muted-foreground">{t("general.loading")}</div>;

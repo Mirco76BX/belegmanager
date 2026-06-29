@@ -115,6 +115,36 @@ export type Database = {
           },
         ]
       }
+      business_seats: {
+        Row: {
+          granted_at: string
+          id: string
+          note: string | null
+          owner_id: string
+          revoked_at: string | null
+          seat_user_id: string
+          source: string
+        }
+        Insert: {
+          granted_at?: string
+          id?: string
+          note?: string | null
+          owner_id: string
+          revoked_at?: string | null
+          seat_user_id: string
+          source?: string
+        }
+        Update: {
+          granted_at?: string
+          id?: string
+          note?: string | null
+          owner_id?: string
+          revoked_at?: string | null
+          seat_user_id?: string
+          source?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           address: string | null
@@ -330,6 +360,36 @@ export type Database = {
         }
         Relationships: []
       }
+      founder_overrides: {
+        Row: {
+          expires_at: string | null
+          granted_at: string
+          granted_by: string | null
+          id: string
+          reason: string | null
+          tier: string
+          user_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          tier: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          tier?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       invitations: {
         Row: {
           created_at: string
@@ -364,8 +424,14 @@ export type Database = {
           kanzlei: string | null
           last_name: string | null
           onboarding_seen: boolean
+          scan_quota_topup: number
+          scans_period_start: string
+          scans_used_this_month: number
+          scheduled_deletion_at: string | null
           tax_advisor_email: string | null
           tax_advisor_name: string | null
+          trial_blocked_at: string | null
+          trial_started_at: string | null
         }
         Insert: {
           created_at?: string
@@ -379,8 +445,14 @@ export type Database = {
           kanzlei?: string | null
           last_name?: string | null
           onboarding_seen?: boolean
+          scan_quota_topup?: number
+          scans_period_start?: string
+          scans_used_this_month?: number
+          scheduled_deletion_at?: string | null
           tax_advisor_email?: string | null
           tax_advisor_name?: string | null
+          trial_blocked_at?: string | null
+          trial_started_at?: string | null
         }
         Update: {
           created_at?: string
@@ -394,8 +466,14 @@ export type Database = {
           kanzlei?: string | null
           last_name?: string | null
           onboarding_seen?: boolean
+          scan_quota_topup?: number
+          scans_period_start?: string
+          scans_used_this_month?: number
+          scheduled_deletion_at?: string | null
           tax_advisor_email?: string | null
           tax_advisor_name?: string | null
+          trial_blocked_at?: string | null
+          trial_started_at?: string | null
         }
         Relationships: [
           {
@@ -603,6 +681,24 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_webhook_events: {
+        Row: {
+          event_id: string
+          event_type: string
+          processed_at: string
+        }
+        Insert: {
+          event_id: string
+          event_type: string
+          processed_at?: string
+        }
+        Update: {
+          event_id?: string
+          event_type?: string
+          processed_at?: string
+        }
+        Relationships: []
+      }
       tax_advisor_registrations: {
         Row: {
           id: string
@@ -688,6 +784,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_scan_usage: { Args: { _user_id: string }; Returns: number }
       is_tax_advisor: { Args: { _user_id: string }; Returns: boolean }
       redeem_coupon_atomic: {
         Args: { _code: string; _user_id: string }
@@ -698,6 +795,10 @@ export type Database = {
         }[]
       }
       register_as_tax_advisor: { Args: { _kanzlei: string }; Returns: string }
+      reset_scan_usage_if_new_period: {
+        Args: { _period_start: string; _user_id: string }
+        Returns: undefined
+      }
       update_receipt_accounting_status: {
         Args: { _receipt_id: string; _status: string }
         Returns: undefined
