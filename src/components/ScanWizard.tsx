@@ -126,6 +126,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   const [companyId, setCompanyId] = useState(defaultCompanyId || "");
   const [personMet, setPersonMet] = useState("");
   const [organization, setOrganization] = useState("");
+  const [contactId, setContactId] = useState<string | null>(null);
   const [meetingPurpose, setMeetingPurpose] = useState("");
   const [showCustomPurpose, setShowCustomPurpose] = useState(false);
   const [customPurposes, setCustomPurposes] = useState<{ id: string; label: string }[]>([]);
@@ -155,7 +156,7 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
       setPages([]);
       setDate(""); setAmount(""); setOriginalAmount(""); setDescription("");
       setCompanyId(defaultCompanyId || "");
-      setPersonMet(""); setOrganization(""); setMeetingPurpose("");
+      setPersonMet(""); setOrganization(""); setContactId(null); setMeetingPurpose("");
       setShowCustomPurpose(false); setShowNewCompany(false); setNewCompanyName("");
       setLimitReached(false); setIsFuelReceipt(false);
       setLicensePlate(""); setMileage(""); setMileageWarning(null);
