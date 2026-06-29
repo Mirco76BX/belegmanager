@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trash2, Check, X, Eye, Pencil } from "lucide-react";
+import { getRequiredFields } from "@/lib/taxCategories";
 
 const PURPOSE_PRESETS = [
   { value: "Geschäftsessen", de: "🍽️ Geschäftsessen", en: "🍽️ Business meal" },
@@ -36,6 +37,8 @@ interface Receipt {
   vat_amount?: number | null;
   vat_rate?: number | null;
   amount_eur?: number | null;
+  tax_category?: string | null;
+  accounting_status?: string;
 }
 
 interface Company {
@@ -65,14 +68,34 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
       person_met: r.person_met, organization: r.organization,
       meeting_purpose: r.meeting_purpose, company_id: r.company_id,
       receipt_type: r.receipt_type, license_plate: r.license_plate, mileage: r.mileage,
+      tax_category: r.tax_category,
     });
   };
 
   const cancelEdit = () => { setEditingId(null); setEditValues({}); };
 
-  const saveEdit = async (id: string) => {
-    setSaving(true);
+  const isBewirtungRow = (r: Receipt) => (editValues.tax_category ?? r.tax_category) === "bewirtung";
+  const requiredMissing = (r: Receipt) => {
+    if (!isBewirtungRow(r)) return false;
+    const req = getRequiredFields((editValues.tax_category ?? r.tax_category) || null);
+    if (req.includes("person_met") && !(editValues.person_met || "").trim()) return true;
+    if (req.includes("meeting_purpose") && !(editValues.meeting_purpose || "").trim()) return true;
+    return false;
+  };
+
+  const saveEdit = async (id: string, row: Receipt) => {
     const isFuel = editValues.receipt_type === "fuel";
+    if (!isFuel && requiredMissing(row)) {
+      toast({
+        title: tt({
+          de: "Bitte Zweck des Meetings ausfüllen (Pflicht nach § 4 Abs. 5 EStG)",
+          en: "Please fill meeting purpose (required by § 4 Abs. 5 EStG)",
+        }),
+        variant: "destructive",
+      });
+      return;
+    }
+    setSaving(true);
     const updateData: any = {
       company_id: editValues.company_id || null,
       status: "complete",
@@ -84,6 +107,9 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
       updateData.person_met = editValues.person_met || null;
       updateData.organization = editValues.organization || null;
       updateData.meeting_purpose = editValues.meeting_purpose || null;
+    }
+    if (isBewirtungRow(row)) {
+      updateData.accounting_status = requiredMissing(row) ? "open" : "ready";
     }
 
     const { error } = await supabase.from("receipts").update(updateData).eq("id", id);
@@ -183,16 +209,21 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
                         <Input
                           value={editValues.person_met || ""}
                           onChange={(e) => setEditValues(v => ({ ...v, person_met: e.target.value }))}
-                          className="h-9 text-sm w-[130px] bg-background shadow-sm"
+                          className={`h-9 text-sm w-[130px] bg-background shadow-sm ${isBewirtungRow(r) && !(editValues.person_met || "").trim() ? "border-destructive ring-1 ring-destructive/40" : ""}`}
                           placeholder={tt({de:"Person…", en:"Person…", tr:"Kişi…", ar:"شخص…", ru:"Человек…"})}
                         />
                         <Input
                           value={editValues.meeting_purpose || ""}
                           onChange={(e) => setEditValues(v => ({ ...v, meeting_purpose: e.target.value }))}
-                          className="h-9 text-sm w-[130px] bg-background shadow-sm"
-                          placeholder={tt({de:"Zweck…", en:"Purpose…", tr:"Amaç…", ar:"الغرض…", ru:"Цель…"})}
+                          className={`h-9 text-sm w-[130px] bg-background shadow-sm ${isBewirtungRow(r) && !(editValues.meeting_purpose || "").trim() ? "border-destructive ring-1 ring-destructive/40" : ""}`}
+                          placeholder={isBewirtungRow(r) ? tt({de:"Zweck * (Pflicht)", en:"Purpose * (required)"}) : tt({de:"Zweck…", en:"Purpose…", tr:"Amaç…", ar:"الغرض…", ru:"Цель…"})}
                         />
                       </div>
+                      {isBewirtungRow(r) && requiredMissing(r) && (
+                        <p className="text-[10px] text-destructive">
+                          {tt({de:"Pflichtfeld (§ 4 Abs. 5 EStG)", en:"Required (§ 4 Abs. 5 EStG)"})}
+                        </p>
+                      )}
                       <div className="flex flex-wrap gap-1">
                         {PURPOSE_PRESETS.map((p) => (
                           <button
@@ -214,7 +245,7 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-0.5">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => saveEdit(r.id)} disabled={saving}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => saveEdit(r.id, r)} disabled={saving || requiredMissing(r)}>
                       <Check className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted" onClick={cancelEdit}>
