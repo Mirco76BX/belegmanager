@@ -1170,67 +1170,55 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
               <>
                 <div className="space-y-1.5">
                   <Label className={`text-sm ${isBewirtung ? "font-semibold text-foreground" : ""}`}>
-                    {tt({de:"Getroffene Person / Teilnehmer", en:"Person Met / Participants"})}
+                    {tt({de:"Geschäftskontakt / Teilnehmer", en:"Business contact / Participants"})}
                     {isBewirtung && <span className="text-destructive ml-1">*</span>}
                   </Label>
-                  <Input
-                    value={personMet}
-                    onChange={(e) => setPersonMet(e.target.value)}
-                    className={`h-11 text-base ${isBewirtung && !personMet.trim() ? "ring-2 ring-destructive/50" : ""}`}
-                    placeholder={isBewirtung ? tt({de:"Pflichtfeld bei Bewirtung", en:"Required for entertainment"}) : ""}
+                  <ContactCombobox
+                    value={contactId}
+                    displayName={personMet}
+                    displayOrg={organization}
+                    onChange={(id, name, org) => {
+                      setContactId(id);
+                      setPersonMet(name);
+                      setOrganization(org || "");
+                    }}
+                    required={isBewirtung}
+                    invalid={isBewirtung && !personMet.trim()}
+                    placeholder={isBewirtung
+                      ? tt({de:"Pflichtfeld bei Bewirtung – Kontakt wählen oder neu anlegen", en:"Required for entertainment – pick or create contact"})
+                      : tt({de:"Kontakt suchen oder neu anlegen…", en:"Search or create contact…"})}
                   />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm">{tt({de:"Unternehmung/Organisation", en:"Organization"})}</Label>
-                  <Input value={organization} onChange={(e) => setOrganization(e.target.value)} className="h-11 text-base" />
+                  <p className="text-[11px] text-muted-foreground">
+                    {tt({
+                      de: "Aus deinen Geschäftskontakten wählen oder direkt neu anlegen.",
+                      en: "Pick from your business contacts or create a new one.",
+                    })}
+                  </p>
                 </div>
                 <div className="space-y-1.5">
                   <Label className={`text-sm ${isBewirtung ? "font-semibold text-foreground" : ""}`}>
                     {isBewirtung ? tt({de:"Anlass der Bewirtung", en:"Purpose of Entertainment"}) : tt({de:"Zweck", en:"Purpose"})}
                     {isBewirtung && <span className="text-destructive ml-1">*</span>}
                   </Label>
-                  <Select
-                    value={PURPOSE_PRESETS.some(p => p.value === meetingPurpose) || customPurposes.some(cp => cp.label === meetingPurpose)
-                      ? meetingPurpose : (meetingPurpose ? "custom" : "")}
-                    onValueChange={(val) => {
-                      if (val === "custom") { setMeetingPurpose(""); setShowCustomPurpose(true); }
-                      else { setMeetingPurpose(val); setShowCustomPurpose(false); }
-                    }}
-                  >
-                    <SelectTrigger className={`h-11 text-base ${isBewirtung && !meetingPurpose.trim() ? "ring-2 ring-destructive/50" : ""}`}>
-                      <SelectValue placeholder={tt({de:"Zweck wählen...", en:"Select purpose..."})} />
-                    </SelectTrigger>
-                    <SelectContent position="popper" sideOffset={4} className="max-h-56">
-                      {PURPOSE_PRESETS.map((p) => (
-                        <SelectItem key={p.value} value={p.value}>
-                          {tt({de: p.de, en: p.en, tr: p.tr, ar: p.ar, ru: p.ru})}
-                        </SelectItem>
-                      ))}
-                      {customPurposes.length > 0 && (
-                        <>
-                          <div className="px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider border-t mt-1 pt-2">
-                            {tt({de:"Eigene Zwecke", en:"Custom purposes", tr:"Özel amaçlar", ar:"أغراض مخصصة", ru:"Свои цели"})}
-                          </div>
-                          {customPurposes.map((cp) => (
-                            <SelectItem key={cp.id} value={cp.label}>
-                              ⭐ {cp.label}
-                            </SelectItem>
-                          ))}
-                        </>
-                      )}
-                      <SelectItem value="custom">
-                        {tt({de:"✏️ Eigener Zweck...", en:"✏️ Custom purpose..."})}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {(showCustomPurpose || (!PURPOSE_PRESETS.some(p => p.value === meetingPurpose) && meetingPurpose !== "")) && (
-                    <Input value={meetingPurpose} onChange={(e) => setMeetingPurpose(e.target.value)}
-                      placeholder={isBewirtung ? tt({de:"Anlass eingeben (Pflicht)...", en:"Enter purpose (required)..."}) : tt({de:"Zweck eingeben...", en:"Enter purpose..."})}
-                      className={`h-11 text-base mt-2 ${isBewirtung && !meetingPurpose.trim() ? "ring-2 ring-destructive/50" : ""}`} autoFocus />
-                  )}
+                  <PurposeAutocomplete
+                    value={meetingPurpose}
+                    onChange={setMeetingPurpose}
+                    invalid={isBewirtung && !meetingPurpose.trim()}
+                    placeholder={isBewirtung
+                      ? tt({de:"Konkreter Anlass (§ 4 Abs. 5 EStG) – Vorschläge im Dropdown", en:"Specific purpose (§ 4 Abs. 5 EStG) – suggestions in dropdown"})
+                      : tt({de:"Zweck eingeben…", en:"Enter purpose…"})}
+                    className="h-11 text-base"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    {tt({
+                      de: "Frei editierbar. Vorschläge sind Hilfen – steuerlich muss der konkrete Anlass benannt sein.",
+                      en: "Free-form. Suggestions are helpers – the specific purpose must be stated for tax purposes.",
+                    })}
+                  </p>
                 </div>
               </>
             )}
+
 
             {isBewirtung && (!personMet.trim() || !meetingPurpose.trim()) && (
               <p className="text-xs text-destructive">
