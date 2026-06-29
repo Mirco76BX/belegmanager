@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trash2, Check, X, Eye, Pencil } from "lucide-react";
+import { getRequiredFields } from "@/lib/taxCategories";
 
 const PURPOSE_PRESETS = [
   { value: "Geschäftsessen", de: "🍽️ Geschäftsessen", en: "🍽️ Business meal" },
