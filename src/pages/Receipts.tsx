@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Camera, Receipt as ReceiptIcon, Trash2, Pencil, ScanLine } from "lucide-react";
 import ScanWizard from "@/components/ScanWizard";
 import ReceiptsInlineTable from "@/components/ReceiptsInlineTable";
+import ContactCombobox from "@/components/ContactCombobox";
+import PurposeAutocomplete from "@/components/PurposeAutocomplete";
 import { getRequiredFields } from "@/lib/taxCategories";
 
 interface VatItem {
@@ -34,6 +36,7 @@ interface Receipt {
   file_path: string | null;
   status: string;
   company_id: string | null;
+  contact_id?: string | null;
   created_at: string;
   receipt_type?: string;
   license_plate?: string | null;
@@ -73,6 +76,7 @@ const Receipts = () => {
 
   const [editPersonMet, setEditPersonMet] = useState("");
   const [editOrganization, setEditOrganization] = useState("");
+  const [editContactId, setEditContactId] = useState<string | null>(null);
   const [editMeetingPurpose, setEditMeetingPurpose] = useState("");
   const [editCompanyId, setEditCompanyId] = useState("");
   const [editLicensePlate, setEditLicensePlate] = useState("");
@@ -124,6 +128,7 @@ const Receipts = () => {
     if (!detailReceipt) return;
     setEditPersonMet(detailReceipt.person_met || "");
     setEditOrganization(detailReceipt.organization || "");
+    setEditContactId(detailReceipt.contact_id || null);
     setEditMeetingPurpose(detailReceipt.meeting_purpose || "");
     setEditCompanyId(detailReceipt.company_id || "");
     setEditLicensePlate(detailReceipt.license_plate || "");
