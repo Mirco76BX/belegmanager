@@ -133,9 +133,28 @@ const Receipts = () => {
 
   const isFuel = (r: Receipt | null) => r?.receipt_type === "fuel";
 
+  const editIsBewirtung = detailReceipt?.tax_category === "bewirtung";
+  const editRequiredFields = getRequiredFields(detailReceipt?.tax_category || null);
+  const editBewirtungMissing =
+    editIsBewirtung &&
+    ((editRequiredFields.includes("person_met") && !editPersonMet.trim()) ||
+      (editRequiredFields.includes("meeting_purpose") && !editMeetingPurpose.trim()));
+
   const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!detailReceipt) return;
+
+    if (editBewirtungMissing) {
+      toast({
+        title: tt({
+          de: "Bitte Zweck des Meetings ausfüllen (Pflicht nach § 4 Abs. 5 EStG)",
+          en: "Please fill meeting purpose (required by § 4 Abs. 5 EStG)",
+        }),
+        variant: "destructive",
+      });
+      return;
+    }
+
     setEditSaving(true);
 
     const updateData: any = {
@@ -150,6 +169,11 @@ const Receipts = () => {
       updateData.person_met = editPersonMet || null;
       updateData.organization = editOrganization || null;
       updateData.meeting_purpose = editMeetingPurpose || null;
+    }
+
+    // Status-Awareness: ready when all required fields filled, otherwise open
+    if (editIsBewirtung) {
+      updateData.accounting_status = editBewirtungMissing ? "open" : "ready";
     }
 
     const { error } = await supabase.from("receipts").update(updateData).eq("id", detailReceipt.id);
