@@ -1229,7 +1229,19 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
               </>
             )}
 
-            <Button className="w-full gap-2" onClick={() => handleSave(false)} disabled={saving}>
+            {isBewirtung && (!personMet.trim() || !meetingPurpose.trim()) && (
+              <p className="text-xs text-destructive">
+                {tt({
+                  de: "Bitte Pflichtfelder ausfüllen (§ 4 Abs. 5 EStG).",
+                  en: "Please fill required fields (§ 4 Abs. 5 EStG).",
+                })}
+              </p>
+            )}
+            <Button
+              className="w-full gap-2"
+              onClick={() => handleSave(false)}
+              disabled={saving || (isBewirtung && (!personMet.trim() || !meetingPurpose.trim()))}
+            >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               {saving
                 ? tt({de:"Speichern...", en:"Saving..."})
