@@ -209,16 +209,21 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
                         <Input
                           value={editValues.person_met || ""}
                           onChange={(e) => setEditValues(v => ({ ...v, person_met: e.target.value }))}
-                          className="h-9 text-sm w-[130px] bg-background shadow-sm"
+                          className={`h-9 text-sm w-[130px] bg-background shadow-sm ${isBewirtungRow(r) && !(editValues.person_met || "").trim() ? "border-destructive ring-1 ring-destructive/40" : ""}`}
                           placeholder={tt({de:"Person…", en:"Person…", tr:"Kişi…", ar:"شخص…", ru:"Человек…"})}
                         />
                         <Input
                           value={editValues.meeting_purpose || ""}
                           onChange={(e) => setEditValues(v => ({ ...v, meeting_purpose: e.target.value }))}
-                          className="h-9 text-sm w-[130px] bg-background shadow-sm"
-                          placeholder={tt({de:"Zweck…", en:"Purpose…", tr:"Amaç…", ar:"الغرض…", ru:"Цель…"})}
+                          className={`h-9 text-sm w-[130px] bg-background shadow-sm ${isBewirtungRow(r) && !(editValues.meeting_purpose || "").trim() ? "border-destructive ring-1 ring-destructive/40" : ""}`}
+                          placeholder={isBewirtungRow(r) ? tt({de:"Zweck * (Pflicht)", en:"Purpose * (required)"}) : tt({de:"Zweck…", en:"Purpose…", tr:"Amaç…", ar:"الغرض…", ru:"Цель…"})}
                         />
                       </div>
+                      {isBewirtungRow(r) && requiredMissing(r) && (
+                        <p className="text-[10px] text-destructive">
+                          {tt({de:"Pflichtfeld (§ 4 Abs. 5 EStG)", en:"Required (§ 4 Abs. 5 EStG)"})}
+                        </p>
+                      )}
                       <div className="flex flex-wrap gap-1">
                         {PURPOSE_PRESETS.map((p) => (
                           <button
@@ -240,7 +245,7 @@ const ReceiptsInlineTable = ({ receipts, companies, onDelete, onOpenDetail, onSa
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-0.5">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => saveEdit(r.id)} disabled={saving}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => saveEdit(r.id, r)} disabled={saving || requiredMissing(r)}>
                       <Check className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted" onClick={cancelEdit}>
