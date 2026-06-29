@@ -123,7 +123,7 @@ export function guessTaxCategoryFromScan(vendor: string | null, description: str
   const text = [vendor, description].filter(Boolean).join(" ").toLowerCase();
   if (text.match(/hotel|hostel|airbnb|übernachtung|booking/)) return "reisekosten_uebernachtung";
   if (text.match(/taxi|uber|bahn|flug|flight|zug|train|bus/)) return "reisekosten_fahrt";
-  if (text.match(/restaurant|gaststätte|bistro|café|essen|pizza|burger/)) return "bewirtung";
+  if (text.match(/restaurant|gaststätte|bistro|café|cafe|essen|pizza|burger|rasthaus|raststätte|raststaette|autohof|kantine|catering|food|beverages|coffee|imbiss|hotel-restaurant|serways/)) return "bewirtung";
   if (text.match(/tankstelle|shell|aral|total|esso|jet|agip|benzin|diesel/)) return "tankkosten";
   if (text.match(/büro|office|staples|papier|drucker/)) return "bueromaterial";
   if (text.match(/telekom|vodafone|o2|telefon|internet|1&1/)) return "telekommunikation";
