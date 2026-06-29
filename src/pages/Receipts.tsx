@@ -583,31 +583,38 @@ const Receipts = () => {
                   )}
                   <div className="space-y-1.5">
                     <Label className="text-sm">
-                      {t("receipts.person")}
+                      {tt({de:"Geschäftskontakt / Teilnehmer", en:"Business contact / Participants"})}
                       {editIsBewirtung && editRequiredFields.includes("person_met") && <span className="text-destructive ml-1">*</span>}
                     </Label>
-                    <Input
-                      value={editPersonMet}
-                      onChange={(e) => setEditPersonMet(e.target.value)}
-                      className={`h-10 ${editIsBewirtung && editRequiredFields.includes("person_met") && !editPersonMet.trim() ? "border-destructive ring-1 ring-destructive/40" : ""}`}
+                    <ContactCombobox
+                      value={editContactId}
+                      displayName={editPersonMet}
+                      displayOrg={editOrganization}
+                      onChange={(id, name, org) => {
+                        setEditContactId(id);
+                        setEditPersonMet(name);
+                        setEditOrganization(org || "");
+                      }}
+                      required={editIsBewirtung}
+                      invalid={editIsBewirtung && editRequiredFields.includes("person_met") && !editPersonMet.trim()}
                     />
                     {editIsBewirtung && editRequiredFields.includes("person_met") && !editPersonMet.trim() && (
                       <p className="text-xs text-destructive">{tt({de:"Pflichtfeld (§ 4 Abs. 5 EStG)", en:"Required (§ 4 Abs. 5 EStG)"})}</p>
                     )}
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm">{t("receipts.organization")}</Label>
-                    <Input value={editOrganization} onChange={(e) => setEditOrganization(e.target.value)} className="h-10" />
-                  </div>
-                  <div className="space-y-1.5">
                     <Label className="text-sm">
                       {t("receipts.meetingPurpose")}
                       {editIsBewirtung && editRequiredFields.includes("meeting_purpose") && <span className="text-destructive ml-1">*</span>}
                     </Label>
-                    <Input
+                    <PurposeAutocomplete
                       value={editMeetingPurpose}
-                      onChange={(e) => setEditMeetingPurpose(e.target.value)}
-                      className={`h-10 ${editIsBewirtung && editRequiredFields.includes("meeting_purpose") && !editMeetingPurpose.trim() ? "border-destructive ring-1 ring-destructive/40" : ""}`}
+                      onChange={setEditMeetingPurpose}
+                      className="h-10"
+                      invalid={editIsBewirtung && editRequiredFields.includes("meeting_purpose") && !editMeetingPurpose.trim()}
+                      placeholder={editIsBewirtung
+                        ? tt({de:"Konkreter Anlass (§ 4 Abs. 5 EStG) – Vorschläge im Dropdown", en:"Specific purpose – suggestions in dropdown"})
+                        : tt({de:"Zweck eingeben…", en:"Enter purpose…"})}
                     />
                     {editIsBewirtung && editRequiredFields.includes("meeting_purpose") && !editMeetingPurpose.trim() && (
                       <p className="text-xs text-destructive">{tt({de:"Zweck des Meetings ist Pflicht (§ 4 Abs. 5 EStG)", en:"Meeting purpose required (§ 4 Abs. 5 EStG)"})}</p>
