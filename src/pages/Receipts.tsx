@@ -555,17 +555,45 @@ const Receipts = () => {
                 </>
               ) : (
                 <>
+                  {editIsBewirtung && (
+                    <div className="rounded-md bg-primary/5 border border-primary/20 p-2 text-xs text-primary">
+                      {tt({
+                        de: "Bei Bewirtungskosten sind gemäß § 4 Abs. 5 EStG Teilnehmer und Anlass Pflicht.",
+                        en: "For entertainment (§ 4 Abs. 5 EStG), participants and purpose are required.",
+                      })}
+                    </div>
+                  )}
                   <div className="space-y-1.5">
-                    <Label className="text-sm">{t("receipts.person")}</Label>
-                    <Input value={editPersonMet} onChange={(e) => setEditPersonMet(e.target.value)} className="h-10" />
+                    <Label className="text-sm">
+                      {t("receipts.person")}
+                      {editIsBewirtung && editRequiredFields.includes("person_met") && <span className="text-destructive ml-1">*</span>}
+                    </Label>
+                    <Input
+                      value={editPersonMet}
+                      onChange={(e) => setEditPersonMet(e.target.value)}
+                      className={`h-10 ${editIsBewirtung && editRequiredFields.includes("person_met") && !editPersonMet.trim() ? "border-destructive ring-1 ring-destructive/40" : ""}`}
+                    />
+                    {editIsBewirtung && editRequiredFields.includes("person_met") && !editPersonMet.trim() && (
+                      <p className="text-xs text-destructive">{tt({de:"Pflichtfeld (§ 4 Abs. 5 EStG)", en:"Required (§ 4 Abs. 5 EStG)"})}</p>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm">{t("receipts.organization")}</Label>
                     <Input value={editOrganization} onChange={(e) => setEditOrganization(e.target.value)} className="h-10" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm">{t("receipts.meetingPurpose")}</Label>
-                    <Input value={editMeetingPurpose} onChange={(e) => setEditMeetingPurpose(e.target.value)} className="h-10" />
+                    <Label className="text-sm">
+                      {t("receipts.meetingPurpose")}
+                      {editIsBewirtung && editRequiredFields.includes("meeting_purpose") && <span className="text-destructive ml-1">*</span>}
+                    </Label>
+                    <Input
+                      value={editMeetingPurpose}
+                      onChange={(e) => setEditMeetingPurpose(e.target.value)}
+                      className={`h-10 ${editIsBewirtung && editRequiredFields.includes("meeting_purpose") && !editMeetingPurpose.trim() ? "border-destructive ring-1 ring-destructive/40" : ""}`}
+                    />
+                    {editIsBewirtung && editRequiredFields.includes("meeting_purpose") && !editMeetingPurpose.trim() && (
+                      <p className="text-xs text-destructive">{tt({de:"Zweck des Meetings ist Pflicht (§ 4 Abs. 5 EStG)", en:"Meeting purpose required (§ 4 Abs. 5 EStG)"})}</p>
+                    )}
                   </div>
                 </>
               )}
@@ -574,7 +602,7 @@ const Receipts = () => {
                 <Button type="button" variant="outline" className="flex-1" onClick={() => setIsEditing(false)}>
                   {t("general.cancel")}
                 </Button>
-                <Button type="submit" className="flex-1" disabled={editSaving}>
+                <Button type="submit" className="flex-1" disabled={editSaving || editBewirtungMissing}>
                   {editSaving ? t("general.loading") : t("general.save")}
                 </Button>
               </div>
