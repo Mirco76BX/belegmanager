@@ -241,6 +241,11 @@ const Auth = () => {
                     {isLogin ? t("auth.register") : t("auth.login")}
                   </button>
                 </div>
+                <div className="mt-3 text-center text-sm">
+                  <Link to="/pricing" className="text-muted-foreground hover:text-primary hover:underline">
+                    {tt({de:"Noch unsicher? Preise vergleichen →", en:"Still unsure? Compare pricing →", tr:"Hâlâ kararsız mısın? Fiyatları karşılaştır →", ar:"ما زلت متردداً؟ قارن الأسعار →", ru:"Сомневаетесь? Сравнить тарифы →"})}
+                  </Link>
+                </div>
                   </>
                 )}
               </CardContent>
