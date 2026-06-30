@@ -424,7 +424,21 @@ const Receipts = () => {
           {!isEditing && detailReceipt && (
             <div className="space-y-4">
               {detailImageUrl && (
-                <img src={detailImageUrl} alt="Receipt" className="w-full max-h-48 object-contain rounded-lg border bg-muted" />
+                <button
+                  type="button"
+                  onClick={() => setPreviewUrl(detailImageUrl)}
+                  className="block w-full cursor-zoom-in group"
+                  aria-label={tt({de:"Beleg vergrößern", en:"Zoom receipt", tr:"Fişi büyüt", ar:"تكبير الإيصال", ru:"Увеличить чек"})}
+                >
+                  <img
+                    src={detailImageUrl}
+                    alt="Receipt"
+                    className="w-full max-h-48 object-contain rounded-lg border bg-muted transition-opacity group-hover:opacity-90"
+                  />
+                  <span className="mt-1 block text-center text-xs text-muted-foreground">
+                    {tt({de:"Tippen zum Vergrößern", en:"Tap to zoom", tr:"Büyütmek için dokun", ar:"اضغط للتكبير", ru:"Нажмите, чтобы увеличить"})}
+                  </span>
+                </button>
               )}
 
               <div className="space-y-2.5">
