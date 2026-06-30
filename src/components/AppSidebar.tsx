@@ -50,12 +50,17 @@ const AppSidebar = () => {
     { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/", label: undefined as string | undefined },
     { key: "nav.receipts" as const, icon: Receipt, path: "/receipts", label: undefined },
     { key: "nav.companies" as const, icon: Building2, path: "/companies", label: undefined },
-    { key: "nav.contacts" as any, icon: Users, path: "/contacts", label: lang === "de" ? "Kontakte" : "Contacts" },
     { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report", label: undefined },
     { key: "nav.fahrtkosten" as const, icon: Car, path: "/fahrtkosten", label: undefined },
+    { key: "nav.contacts" as any, icon: Users, path: "/contacts", label: lang === "de" ? "Kontakte" : "Contacts" },
     ...(isTaxAdvisor ? [{ key: "nav.clients" as const, icon: Users, path: "/clients", label: undefined }] : []),
     { key: "nav.pricing" as any, icon: Tag, path: "/pricing", label: pricingLabel },
   ];
+
+  // Items that appear in mobile bottom-nav (first 4 non-pricing)
+  const bottomNavPaths = navItems.filter(i => i.path !== "/pricing").slice(0, 4).map(i => i.path);
+  // Items that need to live in the mobile hamburger menu (everything else)
+  const mobileMenuNavItems = navItems.filter(i => !bottomNavPaths.includes(i.path));
 
   return (
     <>
