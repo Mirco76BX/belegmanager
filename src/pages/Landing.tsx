@@ -363,8 +363,8 @@ const Landing = () => {
 
       {/* HERO */}
       <section className="border-b border-border">
-        <div className="mx-auto grid max-w-6xl gap-x-16 gap-y-10 px-4 py-16 md:grid-cols-2 md:py-24 md:items-center">
-          <div className="space-y-6">
+        <div className="mx-auto grid max-w-6xl gap-x-16 gap-y-8 px-4 py-10 sm:py-14 md:grid-cols-2 md:py-24 md:items-center">
+          <div className="space-y-5 md:space-y-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
               <MapPin className="h-3 w-3" />
               {tt({
@@ -375,7 +375,7 @@ const Landing = () => {
                 ru: "Made in Germany · GDPR · GoBD",
               })}
             </div>
-            <h1 className="text-4xl font-bold leading-tight tracking-tight md:text-5xl">
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold leading-tight tracking-tight">
               {tt({
                 de: "Schluss mit Schuhkarton-Buchhaltung.",
                 en: "End the shoebox bookkeeping.",
@@ -383,7 +383,7 @@ const Landing = () => {
                 ar: "نهاية محاسبة صندوق الأحذية.",
                 ru: "Конец «коробочной» бухгалтерии.",
               })}
-              <span className="block text-primary mt-2">
+              <span className="block text-primary mt-2 text-xl sm:text-2xl md:text-4xl">
                 {tt({
                   de: "3 Minuten pro Woche statt 15 Stunden im Monat.",
                   en: "3 minutes a week instead of 15 hours a month.",
@@ -393,7 +393,7 @@ const Landing = () => {
                 })}
               </span>
             </h1>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-base sm:text-lg text-muted-foreground">
               {tt({
                 de: "Fotografieren. Erledigt. DATEV-fertig für den Steuerberater.",
                 en: "Snap it. Done. DATEV-ready for your tax advisor.",
@@ -403,7 +403,7 @@ const Landing = () => {
               })}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button size="lg" asChild>
+              <Button size="lg" asChild className="w-full sm:w-auto">
                 <Link to="/auth">
                   {tt({
                     de: "Kostenlos testen — 7 Scans, keine Kreditkarte",
@@ -415,7 +415,7 @@ const Landing = () => {
                   <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" asChild>
+              <Button size="lg" variant="outline" asChild className="w-full sm:w-auto">
                 <a href="#how">
                   {tt({ de: "Wie funktioniert's?", en: "How it works", tr: "Nasıl çalışır?", ar: "كيف يعمل؟", ru: "Как это работает" })}
                 </a>
