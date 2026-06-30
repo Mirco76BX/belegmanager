@@ -50,12 +50,17 @@ const AppSidebar = () => {
     { key: "nav.dashboard" as const, icon: LayoutDashboard, path: "/", label: undefined as string | undefined },
     { key: "nav.receipts" as const, icon: Receipt, path: "/receipts", label: undefined },
     { key: "nav.companies" as const, icon: Building2, path: "/companies", label: undefined },
-    { key: "nav.contacts" as any, icon: Users, path: "/contacts", label: lang === "de" ? "Kontakte" : "Contacts" },
     { key: "nav.expenseReport" as const, icon: FileSpreadsheet, path: "/expense-report", label: undefined },
     { key: "nav.fahrtkosten" as const, icon: Car, path: "/fahrtkosten", label: undefined },
+    { key: "nav.contacts" as any, icon: Users, path: "/contacts", label: lang === "de" ? "Kontakte" : "Contacts" },
     ...(isTaxAdvisor ? [{ key: "nav.clients" as const, icon: Users, path: "/clients", label: undefined }] : []),
     { key: "nav.pricing" as any, icon: Tag, path: "/pricing", label: pricingLabel },
   ];
+
+  // Items that appear in mobile bottom-nav (first 4 non-pricing)
+  const bottomNavPaths = navItems.filter(i => i.path !== "/pricing").slice(0, 4).map(i => i.path);
+  // Items that need to live in the mobile hamburger menu (everything else)
+  const mobileMenuNavItems = navItems.filter(i => !bottomNavPaths.includes(i.path));
 
   return (
     <>
@@ -189,7 +194,31 @@ const AppSidebar = () => {
 
       {/* Mobile Dropdown Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed top-[52px] left-0 right-0 z-40 bg-sidebar border-b border-sidebar-border px-4 py-3 space-y-1 animate-fade-in">
+        <div className="md:hidden fixed top-[52px] left-0 right-0 z-40 bg-sidebar border-b border-sidebar-border px-4 py-3 space-y-1 animate-fade-in max-h-[calc(100vh-52px)] overflow-y-auto">
+          {mobileMenuNavItems.length > 0 && (
+            <div className="pb-2 mb-2 border-b border-sidebar-border space-y-1">
+              <p className="px-3 pt-1 pb-1 text-[10px] uppercase tracking-wider text-sidebar-foreground/50">
+                {lang === "de" ? "Navigation" : "Navigation"}
+              </p>
+              {mobileMenuNavItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => { navigate(item.path); setMobileMenuOpen(false); }}
+                    className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
+                      isActive
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    }`}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label ?? t(item.key)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {isAdvisor && (
             <button
               onClick={() => { handleToggleViewMode(); setMobileMenuOpen(false); }}
