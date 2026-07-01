@@ -412,7 +412,11 @@ const Receipts = () => {
       />
 
       <Dialog open={detailOpen} onOpenChange={(o) => { if (!o) { setDetailOpen(false); setIsEditing(false); } }}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent
+          className="max-w-lg max-h-[90vh] overflow-y-auto"
+          onPointerDownOutside={(e) => { if (isEditing) e.preventDefault(); }}
+          onEscapeKeyDown={(e) => { if (isEditing) e.preventDefault(); }}
+        >
           <DialogHeader>
             <DialogTitle>
               {isEditing

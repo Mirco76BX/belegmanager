@@ -691,7 +691,11 @@ const ScanWizard = ({ open, onClose, onSaved, companies, defaultCompanyId, onCom
   return (
     <>
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-lg max-h-[90vh] overflow-y-auto"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>
             {step === "upload" && tt({de:"Beleg scannen", en:"Scan Receipt"})}
