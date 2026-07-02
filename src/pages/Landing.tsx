@@ -450,7 +450,7 @@ const Landing = () => {
               </Button>
             </div>
           </div>
-          <div className="relative">
+          <div className="relative min-w-0">
             <div className="overflow-hidden rounded-2xl border border-border shadow-2xl">
               <img
                 src={receiptScanImg}
