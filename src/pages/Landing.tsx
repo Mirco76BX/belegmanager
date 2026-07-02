@@ -426,7 +426,7 @@ const Landing = () => {
               })}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button size="lg" asChild className="w-full sm:w-auto whitespace-normal text-center h-auto min-h-11 py-3 sm:whitespace-nowrap">
+              <Button size="lg" asChild className="w-full sm:w-auto !whitespace-normal text-center h-auto min-h-11 py-3 sm:!whitespace-nowrap">
                 <Link to="/auth">
                   <span className="sm:hidden">
                     {tt({ de: "Kostenlos testen", en: "Try free", tr: "Ücretsiz dene", ar: "جرّب مجاناً", ru: "Попробовать бесплатно" })}
