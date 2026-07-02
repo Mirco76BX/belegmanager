@@ -351,7 +351,7 @@ const Landing = () => {
             </div>
             <span className="text-lg font-semibold">BelegManager</span>
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2">
             <LanguageSwitcher />
             <Button variant="ghost" size="sm" asChild>
               <Link to="/auth">{tt({ de: "Anmelden", en: "Sign in", tr: "Giriş", ar: "تسجيل الدخول", ru: "Войти" })}</Link>
@@ -359,6 +359,27 @@ const Landing = () => {
             <Button size="sm" asChild>
               <Link to="/auth">{tt({ de: "Kostenlos starten", en: "Start free", tr: "Ücretsiz başla", ar: "ابدأ مجاناً", ru: "Начать бесплатно" })}</Link>
             </Button>
+          </div>
+          <div className="flex md:hidden items-center gap-1.5">
+            <Button size="sm" asChild className="h-8 px-2.5 text-xs">
+              <Link to="/auth">{tt({ de: "Kostenlos starten", en: "Start free", tr: "Ücretsiz başla", ar: "ابدأ مجاناً", ru: "Начать" })}</Link>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Menu">
+                  <Menu className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/auth">{tt({ de: "Anmelden", en: "Sign in", tr: "Giriş", ar: "تسجيل الدخول", ru: "Войти" })}</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <div className="px-1 py-1">
+                  <LanguageSwitcher showLabel />
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
