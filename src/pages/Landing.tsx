@@ -9,6 +9,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Menu } from "lucide-react";
 import {
   FileText,
   Clock,
@@ -347,9 +349,9 @@ const Landing = () => {
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
               <FileText className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-lg font-semibold">BelegManager</span>
+            <span className="hidden min-[360px]:inline text-lg font-semibold">BelegManager</span>
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2">
             <LanguageSwitcher />
             <Button variant="ghost" size="sm" asChild>
               <Link to="/auth">{tt({ de: "Anmelden", en: "Sign in", tr: "Giriş", ar: "تسجيل الدخول", ru: "Войти" })}</Link>
@@ -358,13 +360,34 @@ const Landing = () => {
               <Link to="/auth">{tt({ de: "Kostenlos starten", en: "Start free", tr: "Ücretsiz başla", ar: "ابدأ مجاناً", ru: "Начать бесплатно" })}</Link>
             </Button>
           </div>
+          <div className="flex md:hidden items-center gap-1.5">
+            <Button size="sm" asChild className="h-8 px-2.5 text-xs">
+              <Link to="/auth">{tt({ de: "Kostenlos starten", en: "Start free", tr: "Ücretsiz başla", ar: "ابدأ مجاناً", ru: "Начать" })}</Link>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Menu">
+                  <Menu className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/auth">{tt({ de: "Anmelden", en: "Sign in", tr: "Giriş", ar: "تسجيل الدخول", ru: "Войти" })}</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <div className="px-1 py-1">
+                  <LanguageSwitcher showLabel />
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 
       {/* HERO */}
       <section className="border-b border-border">
         <div className="mx-auto grid max-w-6xl gap-x-16 gap-y-8 px-4 py-10 sm:py-14 md:grid-cols-2 md:py-24 md:items-center">
-          <div className="space-y-5 md:space-y-6">
+          <div className="min-w-0 space-y-5 md:space-y-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
               <MapPin className="h-3 w-3" />
               {tt({
@@ -403,15 +426,20 @@ const Landing = () => {
               })}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button size="lg" asChild className="w-full sm:w-auto">
+              <Button size="lg" asChild className="w-full sm:w-auto !whitespace-normal text-center h-auto min-h-11 py-3 sm:!whitespace-nowrap">
                 <Link to="/auth">
-                  {tt({
-                    de: "Kostenlos testen — 7 Scans, keine Kreditkarte",
-                    en: "Try free — 7 scans, no credit card",
-                    tr: "Ücretsiz dene — 7 tarama, kart yok",
-                    ar: "جرّب مجاناً — 7 عمليات مسح، بدون بطاقة",
-                    ru: "Попробовать бесплатно — 7 сканов, без карты",
-                  })}
+                  <span className="sm:hidden">
+                    {tt({ de: "Kostenlos testen", en: "Try free", tr: "Ücretsiz dene", ar: "جرّب مجاناً", ru: "Попробовать бесплатно" })}
+                  </span>
+                  <span className="hidden sm:inline">
+                    {tt({
+                      de: "Kostenlos testen — 7 Scans, keine Kreditkarte",
+                      en: "Try free — 7 scans, no credit card",
+                      tr: "Ücretsiz dene — 7 tarama, kart yok",
+                      ar: "جرّب مجاناً — 7 عمليات مسح، بدون بطاقة",
+                      ru: "Попробовать бесплатно — 7 сканов, без карты",
+                    })}
+                  </span>
                   <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
@@ -422,7 +450,7 @@ const Landing = () => {
               </Button>
             </div>
           </div>
-          <div className="relative">
+          <div className="relative min-w-0">
             <div className="overflow-hidden rounded-2xl border border-border shadow-2xl">
               <img
                 src={receiptScanImg}
