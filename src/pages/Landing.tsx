@@ -426,15 +426,20 @@ const Landing = () => {
               })}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button size="lg" asChild className="w-full sm:w-auto">
+              <Button size="lg" asChild className="w-full sm:w-auto whitespace-normal text-center h-auto min-h-11 py-3 sm:whitespace-nowrap">
                 <Link to="/auth">
-                  {tt({
-                    de: "Kostenlos testen — 7 Scans, keine Kreditkarte",
-                    en: "Try free — 7 scans, no credit card",
-                    tr: "Ücretsiz dene — 7 tarama, kart yok",
-                    ar: "جرّب مجاناً — 7 عمليات مسح، بدون بطاقة",
-                    ru: "Попробовать бесплатно — 7 сканов, без карты",
-                  })}
+                  <span className="sm:hidden">
+                    {tt({ de: "Kostenlos testen", en: "Try free", tr: "Ücretsiz dene", ar: "جرّب مجاناً", ru: "Попробовать бесплатно" })}
+                  </span>
+                  <span className="hidden sm:inline">
+                    {tt({
+                      de: "Kostenlos testen — 7 Scans, keine Kreditkarte",
+                      en: "Try free — 7 scans, no credit card",
+                      tr: "Ücretsiz dene — 7 tarama, kart yok",
+                      ar: "جرّب مجاناً — 7 عمليات مسح، بدون بطاقة",
+                      ru: "Попробовать бесплатно — 7 сканов, без карты",
+                    })}
+                  </span>
                   <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
