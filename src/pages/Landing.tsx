@@ -387,7 +387,7 @@ const Landing = () => {
       {/* HERO */}
       <section className="border-b border-border">
         <div className="mx-auto grid max-w-6xl gap-x-16 gap-y-8 px-4 py-10 sm:py-14 md:grid-cols-2 md:py-24 md:items-center">
-          <div className="space-y-5 md:space-y-6">
+          <div className="min-w-0 space-y-5 md:space-y-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
               <MapPin className="h-3 w-3" />
               {tt({
